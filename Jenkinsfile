@@ -40,7 +40,13 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh "./mvnw $MAVEN_PARAMS -Dnoassembly -Dmaven.test.skip.exec=true -DdeployAtEnd=true clean install deploy:deploy"
+                sh "./mvnw $MAVEN_PARAMS -Dnoassembly -Dmaven.test.skip.exec=true clean install"
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh "./mvnw $MAVEN_PARAMS -Pfastinstall -Dmaven.test.skip.exec=true deploy"
             }
         }
 
