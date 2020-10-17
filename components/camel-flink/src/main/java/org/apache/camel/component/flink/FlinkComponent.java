@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,22 +19,28 @@ package org.apache.camel.component.flink;
 import java.util.Map;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.streaming.api.datastream.DataStream;
 
 /**
  * The flink component can be used to send DataSet or DataStream jobs to Apache Flink cluster.
  */
-public class FlinkComponent extends UriEndpointComponent {
+@Component("flink")
+public class FlinkComponent extends DefaultComponent {
 
+    @Metadata
     private DataSet ds;
+    @Metadata
     private DataSetCallback dataSetCallback;
+    @Metadata
     private DataStream dataStream;
+    @Metadata
     private DataStreamCallback dataStreamCallback;
 
     public FlinkComponent() {
-        super(FlinkEndpoint.class);
     }
 
     @Override

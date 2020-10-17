@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,12 +19,14 @@ package org.apache.camel.component.file.remote;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.file.GenericFileOperationFailedException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.apache.camel.test.junit5.TestSupport.assertFileExists;
+import static org.apache.camel.test.junit5.TestSupport.assertIsInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class FtpProducerRootFileExistFailTest extends FtpServerTestSupport {
 
     private String getFtpUrl() {
@@ -32,7 +34,7 @@ public class FtpProducerRootFileExistFailTest extends FtpServerTestSupport {
     }
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         // create existing file on ftp server
@@ -45,16 +47,12 @@ public class FtpProducerRootFileExistFailTest extends FtpServerTestSupport {
             template.sendBodyAndHeader(getFtpUrl(), "Bye World", Exchange.FILE_NAME, "hello.txt");
             fail("Should have thrown an exception");
         } catch (CamelExecutionException e) {
-            GenericFileOperationFailedException cause = assertIsInstanceOf(GenericFileOperationFailedException.class, e.getCause());
+            GenericFileOperationFailedException cause
+                    = assertIsInstanceOf(GenericFileOperationFailedException.class, e.getCause());
             assertEquals("File already exist: hello.txt. Cannot write new file.", cause.getMessage());
         }
 
         // root file should still exist
         assertFileExists(FTP_ROOT_DIR + "/hello.txt");
-    }
-
-    @Override
-    public boolean isUseRouteBuilder() {
-        return false;
     }
 }

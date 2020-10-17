@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,10 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.cloud.ServiceDiscovery;
 import org.apache.camel.cloud.ServiceDiscoveryFactory;
 import org.apache.camel.component.consul.ConsulConfiguration;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.spi.annotations.CloudServiceFactory;
+import org.apache.camel.support.jsse.SSLContextParameters;
 
+@CloudServiceFactory("consul-service-discovery")
 public class ConsulServiceDiscoveryFactory implements ServiceDiscoveryFactory {
     private final ConsulConfiguration configuration;
 
@@ -47,6 +49,7 @@ public class ConsulServiceDiscoveryFactory implements ServiceDiscoveryFactory {
 
     /**
      * @deprecated, @deprecated replaced by {@link #getDatacenter()} ()}
+     * 
      * @return
      */
     @Deprecated

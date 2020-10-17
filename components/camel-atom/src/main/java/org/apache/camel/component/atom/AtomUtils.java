@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 
 import org.apache.abdera.Abdera;
 import org.apache.abdera.model.Document;
@@ -47,19 +48,25 @@ public final class AtomUtils {
     /**
      * Parses the given uri and returns the response as a atom feed document.
      *
-     * @param uri the uri for the atom feed.
-     * @return the document
+     * @param  uri            the uri for the atom feed.
+     * @return                the document
      * @throws IOException    is thrown if error reading from the uri
      * @throws ParseException is thrown if the parsing failed
      */
     public static Document<Feed> parseDocument(String uri) throws IOException, ParseException {
-        InputStream in = new URL(uri).openStream();
+        URL feedUrl = new URL(uri);
+        URLConnection urlConn = feedUrl.openConnection();
+        urlConn.setConnectTimeout(60000);
+        urlConn.setReadTimeout(60000);
+        InputStream in = urlConn.getInputStream();
         return parseInputStream(in);
     }
 
     public static Document<Feed> parseDocument(String uri, String username, String password) throws IOException {
         URL feedUrl = new URL(uri);
         HttpURLConnection httpcon = (HttpURLConnection) feedUrl.openConnection();
+        httpcon.setConnectTimeout(60000);
+        httpcon.setReadTimeout(60000);
         String encoding = Base64.encodeBase64String(username.concat(":").concat(password).getBytes());
         httpcon.setRequestProperty("Authorization", "Basic " + encoding);
         InputStream in = httpcon.getInputStream();

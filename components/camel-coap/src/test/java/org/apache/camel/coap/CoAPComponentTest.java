@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,49 +22,67 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.AvailablePortFinder;
-import org.apache.camel.test.junit4.CamelTestSupport;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class CoAPComponentTest extends CamelTestSupport {
-    static final int PORT = AvailablePortFinder.getNextAvailable();
-    
-    @Produce(uri = "direct:start")
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class CoAPComponentTest extends CoAPTestSupport {
+
+    protected static final int TCP_PORT = AvailablePortFinder.getNextAvailable();
+
+    @Produce("direct:start")
     protected ProducerTemplate sender;
-    
+
+    @Produce("direct:starttcp")
+    protected ProducerTemplate tcpSender;
+
     @Test
-    public void testCoAP() throws Exception {
-        NetworkConfig.createStandardWithoutFile();
-        CoapClient client = new CoapClient("coap://localhost:" + PORT + "/TestResource");
-        CoapResponse rsp = client.get();
-        assertEquals("Hello ", rsp.getResponseText());
-        
+    void testCoAPComponent() throws Exception {
+        CoapClient client = createClient("/TestResource");
+        CoapResponse response = client.post("Camel", MediaTypeRegistry.TEXT_PLAIN);
+        assertEquals("Hello Camel", response.getResponseText());
+
         MockEndpoint mock = getMockEndpoint("mock:result");
         mock.expectedMinimumMessageCount(1);
         mock.expectedBodiesReceived("Hello Camel CoAP");
-        mock.expectedHeaderReceived(Exchange.CONTENT_TYPE, MediaTypeRegistry.toString(MediaTypeRegistry.APPLICATION_OCTET_STREAM));
+        mock.expectedHeaderReceived(Exchange.CONTENT_TYPE,
+                MediaTypeRegistry.toString(MediaTypeRegistry.APPLICATION_OCTET_STREAM));
         mock.expectedHeaderReceived(CoAPConstants.COAP_RESPONSE_CODE, CoAP.ResponseCode.CONTENT.toString());
         sender.sendBody("Camel CoAP");
         assertMockEndpointsSatisfied();
     }
 
+    @Test
+    void testCoAPComponentTLS() throws Exception {
+        MockEndpoint mock = getMockEndpoint("mock:result");
+        mock.expectedMinimumMessageCount(1);
+        mock.expectedBodiesReceived("Hello Camel CoAP");
+        mock.expectedHeaderReceived(Exchange.CONTENT_TYPE,
+                MediaTypeRegistry.toString(MediaTypeRegistry.APPLICATION_OCTET_STREAM));
+        mock.expectedHeaderReceived(CoAPConstants.COAP_RESPONSE_CODE, CoAP.ResponseCode.CONTENT.toString());
+        tcpSender.sendBody("Camel CoAP");
+        assertMockEndpointsSatisfied();
+    }
+
     @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             @Override
-            public void configure() throws Exception {
-                from("coap://localhost:" + PORT + "/TestResource")
-                    .convertBodyTo(String.class)
-                    .to("log:exch")
-                    .transform(body().prepend("Hello "))
-                    .to("log:exch");    
-                
-                from("direct:start").to("coap://localhost:" + PORT + "/TestResource").to("mock:result");
+            public void configure() {
+                fromF("coap://localhost:%d/TestResource", PORT).convertBodyTo(String.class).transform(body().prepend("Hello "));
+
+                fromF("coap+tcp://localhost:%d/TestResource", TCP_PORT).convertBodyTo(String.class)
+                        .transform(body().prepend("Hello "));
+
+                from("direct:start").toF("coap://localhost:%d/TestResource", PORT).to("mock:result");
+
+                from("direct:starttcp").toF("coap+tcp://localhost:%d/TestResource", TCP_PORT).to("mock:result");
             }
         };
     }
+
 }

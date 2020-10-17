@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,23 +18,22 @@ package org.apache.camel.component.etcd;
 
 import mousio.etcd4j.EtcdClient;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 
 /**
  * The etcd consumer.
  */
 public abstract class AbstractEtcdConsumer extends DefaultConsumer {
     private final EtcdConfiguration configuration;
-    private final EtcdNamespace namespace;
     private final String path;
 
     private EtcdClient client;
 
-    protected AbstractEtcdConsumer(AbstractEtcdEndpoint endpoint, Processor processor, EtcdConfiguration configuration, EtcdNamespace namespace, String path) {
+    protected AbstractEtcdConsumer(AbstractEtcdEndpoint endpoint, Processor processor, EtcdConfiguration configuration,
+                                   String path) {
         super(endpoint, processor);
 
         this.configuration = configuration;
-        this.namespace = namespace;
         this.path = path;
         this.client = null;
     }
@@ -50,7 +49,7 @@ public abstract class AbstractEtcdConsumer extends DefaultConsumer {
 
     protected EtcdClient getClient() throws Exception {
         if (client == null) {
-            client = ((EtcdEndpoint)getEndpoint()).createClient();
+            client = ((EtcdEndpoint) getEndpoint()).createClient();
         }
 
         return client;
@@ -58,10 +57,6 @@ public abstract class AbstractEtcdConsumer extends DefaultConsumer {
 
     public EtcdConfiguration getConfiguration() {
         return configuration;
-    }
-
-    public EtcdNamespace getNamespace() {
-        return namespace;
     }
 
     public String getPath() {

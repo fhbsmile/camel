@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,6 +20,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+
 import org.apache.camel.dataformat.bindy.Format;
 import org.apache.camel.dataformat.bindy.FormattingOptions;
 import org.apache.camel.dataformat.bindy.PatternFormat;
@@ -33,7 +34,8 @@ public class LocalTimeFormatFactory extends AbstractFormatFactory {
 
     @Override
     public Format<?> build(FormattingOptions formattingOptions) {
-        return new LocalTimePatternFormat(formattingOptions.getPattern(),
+        return new LocalTimePatternFormat(
+                formattingOptions.getPattern(),
                 formattingOptions.getTimezone(),
                 formattingOptions.getLocale());
     }
@@ -54,11 +56,13 @@ public class LocalTimeFormatFactory extends AbstractFormatFactory {
             }
         }
 
+        @Override
         public String format(LocalTime object) throws Exception {
             ObjectHelper.notNull(this.pattern, "pattern");
             return this.getDateFormat().format(object);
         }
 
+        @Override
         public LocalTime parse(String string) throws Exception {
 
             LocalTime date;
@@ -81,6 +85,7 @@ public class LocalTimeFormatFactory extends AbstractFormatFactory {
             return result;
         }
 
+        @Override
         public String getPattern() {
             return pattern;
         }

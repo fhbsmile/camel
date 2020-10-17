@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 package org.apache.camel.processor.idempotent.jdbc;
 
 import java.sql.Timestamp;
+
 import javax.sql.DataSource;
 
 import org.springframework.dao.DataAccessException;
@@ -28,11 +29,16 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * Default implementation of {@link AbstractJdbcMessageIdRepository}
  */
-public class JdbcMessageIdRepository extends AbstractJdbcMessageIdRepository<String> {
+public class JdbcMessageIdRepository extends AbstractJdbcMessageIdRepository {
+
+    private static final String DEFAULT_TABLENAME = "CAMEL_MESSAGEPROCESSED";
 
     private boolean createTableIfNotExists = true;
+    private String tableName;
+
     private String tableExistsString = "SELECT 1 FROM CAMEL_MESSAGEPROCESSED WHERE 1 = 0";
-    private String createString = "CREATE TABLE CAMEL_MESSAGEPROCESSED (processorName VARCHAR(255), messageId VARCHAR(100), createdAt TIMESTAMP)";
+    private String createString
+            = "CREATE TABLE CAMEL_MESSAGEPROCESSED (processorName VARCHAR(255), messageId VARCHAR(100), createdAt TIMESTAMP)";
     private String queryString = "SELECT COUNT(*) FROM CAMEL_MESSAGEPROCESSED WHERE processorName = ? AND messageId = ?";
     private String insertString = "INSERT INTO CAMEL_MESSAGEPROCESSED (processorName, messageId, createdAt) VALUES (?, ?, ?)";
     private String deleteString = "DELETE FROM CAMEL_MESSAGEPROCESSED WHERE processorName = ? AND messageId = ?";
@@ -52,11 +58,26 @@ public class JdbcMessageIdRepository extends AbstractJdbcMessageIdRepository<Str
     public JdbcMessageIdRepository(JdbcTemplate jdbcTemplate, TransactionTemplate transactionTemplate) {
         super(jdbcTemplate, transactionTemplate);
     }
-    
+
+    @Override
+    protected void doInit() throws Exception {
+        super.doInit();
+
+        if (tableName != null) {
+            // update query strings from default table name to the new table name
+            tableExistsString = tableExistsString.replaceFirst(DEFAULT_TABLENAME, tableName);
+            createString = createString.replaceFirst(DEFAULT_TABLENAME, tableName);
+            queryString = queryString.replaceFirst(DEFAULT_TABLENAME, tableName);
+            insertString = insertString.replaceFirst(DEFAULT_TABLENAME, tableName);
+            deleteString = deleteString.replaceFirst(DEFAULT_TABLENAME, tableName);
+            clearString = clearString.replaceFirst(DEFAULT_TABLENAME, tableName);
+        }
+    }
+
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-        
+
         transactionTemplate.execute(new TransactionCallback<Boolean>() {
             public Boolean doInTransaction(TransactionStatus status) {
                 try {
@@ -71,7 +92,8 @@ public class JdbcMessageIdRepository extends AbstractJdbcMessageIdRepository<Str
                             log.info("table created with query '{}'", getCreateString());
                         } catch (DataAccessException dae) {
                             // we will fail if we cannot create it
-                            log.error("Can't create table for JdbcMessageIdRepository with query '{}' because of: {}. This may be a permissions problem. Please create this table and try again.",
+                            log.error(
+                                    "Can't create table for JdbcMessageIdRepository with query '{}' because of: {}. This may be a permissions problem. Please create this table and try again.",
                                     getCreateString(), e.getMessage());
                             throw dae;
                         }
@@ -82,7 +104,7 @@ public class JdbcMessageIdRepository extends AbstractJdbcMessageIdRepository<Str
                 }
                 return Boolean.TRUE;
             }
-        });   
+        });
     }
 
     @Override
@@ -99,7 +121,7 @@ public class JdbcMessageIdRepository extends AbstractJdbcMessageIdRepository<Str
     protected int delete(String key) {
         return jdbcTemplate.update(getDeleteString(), processorName, key);
     }
-    
+
     @Override
     protected int delete() {
         return jdbcTemplate.update(getClearString(), processorName);
@@ -120,7 +142,18 @@ public class JdbcMessageIdRepository extends AbstractJdbcMessageIdRepository<Str
     public void setTableExistsString(String tableExistsString) {
         this.tableExistsString = tableExistsString;
     }
-    
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    /**
+     * To use a custom table name instead of the default name: CAMEL_MESSAGEPROCESSED
+     */
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
     public String getCreateString() {
         return createString;
     }

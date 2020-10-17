@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,18 +33,18 @@ import org.apache.camel.component.crypto.cms.sig.SignedDataVerifier;
 import org.apache.camel.component.crypto.cms.util.KeystoreUtil;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.SimpleRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.apache.camel.util.jsse.KeyStoreParameters;
+import org.apache.camel.support.SimpleRegistry;
+import org.apache.camel.support.jsse.KeyStoreParameters;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class ProcessorsTest extends CamelTestSupport {
 
     private SimpleRegistry simpleReg;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpProvider() {
         Security.addProvider(new BouncyCastleProvider());
     }
@@ -60,6 +60,7 @@ public class ProcessorsTest extends CamelTestSupport {
         assertMockEndpointsSatisfied();
     }
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
         simpleReg = new SimpleRegistry();
         CamelContext context = new DefaultCamelContext(simpleReg);
@@ -94,15 +95,15 @@ public class ProcessorsTest extends CamelTestSupport {
                 DefaultSignerInfo signerInfo = new DefaultSignerInfo();
 
                 signerInfo.setIncludeCertificates(true); // optional default
-                                                         // value is true
+                                                        // value is true
                 signerInfo.setSignatureAlgorithm("SHA256withRSA"); // mandatory
                 signerInfo.setPrivateKeyAlias("rsa");
                 signerInfo.setKeyStoreParameters(keystore);
 
                 SignedDataCreatorConfiguration config = new SignedDataCreatorConfiguration(new DefaultCamelContext());
-                config.setSigner(signerInfo);
+                config.addSigner(signerInfo);
                 config.setIncludeContent(true); // optional default value is
-                                                // true
+                                               // true
                 config.init();
                 SignedDataCreator signer = new SignedDataCreator(config);
 
@@ -111,8 +112,9 @@ public class ProcessorsTest extends CamelTestSupport {
 
                 SignedDataVerifier verifier = new SignedDataVerifier(verifierConf);
 
-                from("direct:start").to("log:before").process(signer).process(encryptor).to("log:signed_encrypted").process(decryptor).process(verifier).convertBodyTo(String.class)
-                    .to("log:after").to("mock:result");
+                from("direct:start").to("log:before").process(signer).process(encryptor).to("log:signed_encrypted")
+                        .process(decryptor).process(verifier).convertBodyTo(String.class)
+                        .to("log:after").to("mock:result");
 
             }
         };

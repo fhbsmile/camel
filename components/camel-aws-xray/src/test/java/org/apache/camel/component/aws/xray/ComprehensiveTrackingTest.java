@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,13 +16,17 @@
  */
 package org.apache.camel.component.aws.xray;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.camel.Handler;
+import org.apache.camel.builder.NotifyBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.aws.xray.bean.SomeBean;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ComprehensiveTrackingTest extends CamelAwsXRayTestSupport {
 
@@ -30,32 +34,33 @@ public class ComprehensiveTrackingTest extends CamelAwsXRayTestSupport {
 
     public ComprehensiveTrackingTest() {
         super(
-                TestDataBuilder.createTrace().inRandomOrder()
-                        .withSegment(TestDataBuilder.createSegment("start")
-                                .withSubsegment(TestDataBuilder.createSubsegment("direct:a")
-                                        .withSubsegment(TestDataBuilder.createSubsegment("a")
-                                                .withSubsegment(TestDataBuilder.createSubsegment("seda:b"))
-                                                .withSubsegment(TestDataBuilder.createSubsegment("seda:c"))
-                                                // note that the subsegment name matches the routeId
-                                                .withSubsegment(TestDataBuilder.createSubsegment("test"))
-                                                // no tracing of the invoke checker bean as it wasn't annotated with
-                                                // @XRayTrace
-                                        )
-                                )
-                        )
-                        .withSegment(TestDataBuilder.createSegment("b"))
-                        .withSegment(TestDataBuilder.createSegment("c")
-                                // disabled by the LogSegmentDecorator (-> .to("log:...");
-                                //.withSubsegment(TestDataBuilder.createSubsegment("log:test"))
-                        )
-                        .withSegment(TestDataBuilder.createSegment("d"))
-                        // note no test-segment here!
-        );
+              TestDataBuilder.createTrace().inRandomOrder()
+                      .withSegment(TestDataBuilder.createSegment("start").inRandomOrder()
+                              .withSubsegment(TestDataBuilder.createSubsegment("seda:d"))
+                              .withSubsegment(TestDataBuilder.createSubsegment("direct:a")))
+                      .withSegment(TestDataBuilder.createSegment("a")
+                              .withSubsegment(TestDataBuilder.createSubsegment("seda:b"))
+                              .withSubsegment(TestDataBuilder.createSubsegment("seda:c"))
+                      // no tracing of the invoke checker bean as it wasn't annotated with
+                      // @XRayTrace
+                      )
+                      .withSegment(TestDataBuilder.createSegment("b"))
+                      .withSegment(TestDataBuilder.createSegment("c")
+                      // disabled by the LogSegmentDecorator (-> .to("log:...");
+                      //.withSubsegment(TestDataBuilder.createSubsegment("log:test"))
+                      )
+                      .withSegment(TestDataBuilder.createSegment("d"))
+                      .withSegment(TestDataBuilder.createSegment("test")));
     }
 
     @Test
     public void testRoute() throws Exception {
+        NotifyBuilder notify = new NotifyBuilder(context).from("seda:test").whenDone(1).create();
+
         template.requestBody("direct:start", "Hello");
+
+        assertThat("Not all exchanges were fully processed",
+                notify.matches(10, TimeUnit.SECONDS), is(equalTo(true)));
 
         verify();
 

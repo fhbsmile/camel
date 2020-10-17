@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,9 +17,11 @@
 package org.apache.camel.component.wordpress.api.model;
 
 import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 /**
@@ -161,7 +163,8 @@ public abstract class TextPublishable extends Publishable {
     // @formatter:off
     @Override
     public String toString() {
-        return toStringHelper(this).add("ID", this.getId()).add("Status", this.getStatus()).addValue(this.guid).addValue(this.getTitle()).toString();
+        return toStringHelper(this).add("ID", this.getId()).add("Status", this.getStatus()).addValue(this.guid)
+                .addValue(this.getTitle()).toString();
     }
     // @formatter:on
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -41,7 +41,8 @@ public class ResultSetIterator implements Iterator, Closeable {
     private final AtomicBoolean closed = new AtomicBoolean();
     private int rowNum;
 
-    public ResultSetIterator(Connection connection, Statement statement, ResultSet resultSet, RowMapper rowMapper) throws SQLException {
+    public ResultSetIterator(Connection connection, Statement statement, ResultSet resultSet,
+                             RowMapper rowMapper) throws SQLException {
         this.connection = connection;
         this.statement = statement;
         this.resultSet = resultSet;
@@ -91,7 +92,7 @@ public class ResultSetIterator implements Iterator, Closeable {
         try {
             resultSet.close();
         } catch (SQLException e) {
-            LOG.warn("Error by closing result set: " + e, e);
+            LOG.warn("Error by closing result set: {}", e, e);
         }
     }
 
@@ -99,7 +100,7 @@ public class ResultSetIterator implements Iterator, Closeable {
         try {
             statement.close();
         } catch (SQLException e) {
-            LOG.warn("Error by closing statement: " + e, e);
+            LOG.warn("Error by closing statement: {}", e, e);
         }
     }
 
@@ -107,7 +108,7 @@ public class ResultSetIterator implements Iterator, Closeable {
         try {
             connection.close();
         } catch (SQLException e) {
-            LOG.warn("Error by closing connection: " + e, e);
+            LOG.warn("Error by closing connection: {}", e, e);
         }
     }
 

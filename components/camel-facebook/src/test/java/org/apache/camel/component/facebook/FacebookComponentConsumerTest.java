@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,20 +27,22 @@ import java.util.concurrent.TimeUnit;
 
 import facebook4j.FacebookException;
 import facebook4j.api.SearchMethods;
-
 import org.apache.camel.Consumer;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultPollingConsumerPollStrategy;
-import org.apache.camel.impl.ScheduledPollConsumer;
-import org.junit.Test;
+import org.apache.camel.support.DefaultPollingConsumerPollStrategy;
+import org.apache.camel.support.ScheduledPollConsumer;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class FacebookComponentConsumerTest extends CamelFacebookTestSupport {
     public static final String APACHE_FOUNDATION_PAGE_ID = "6538157161";
 
-    private final Set<String> searchNames = new HashSet<String>();
+    private final Set<String> searchNames = new HashSet<>();
     private List<String> excludedNames;
 
     public FacebookComponentConsumerTest() throws Exception {
@@ -79,7 +81,7 @@ public class FacebookComponentConsumerTest extends CamelFacebookTestSupport {
 
         final String rawJSON = mock.getExchanges().get(0).getIn().getHeader(FacebookConstants.RAW_JSON_HEADER, String.class);
         assertNotNull("Null rawJSON", rawJSON);
-        assertFalse("Empty rawJSON", rawJSON.isEmpty());
+        assertFalse(rawJSON.isEmpty(), "Empty rawJSON");
     }
 
     @Test
@@ -96,13 +98,14 @@ public class FacebookComponentConsumerTest extends CamelFacebookTestSupport {
 
     private void ignoreDeprecatedApiError() {
         for (final Route route : context().getRoutes()) {
-            ((ScheduledPollConsumer)route.getConsumer()).setPollStrategy(new DefaultPollingConsumerPollStrategy() {
+            ((ScheduledPollConsumer) route.getConsumer()).setPollStrategy(new DefaultPollingConsumerPollStrategy() {
                 @Override
                 public boolean rollback(Consumer consumer, Endpoint endpoint, int retryCounter, Exception e) throws Exception {
                     if (e.getCause() instanceof FacebookException) {
                         FacebookException facebookException = (FacebookException) e.getCause();
-                        if (facebookException.getErrorCode() == 11 || facebookException.getErrorCode() == 12 || facebookException.getErrorCode() == 1) {
-                            context().stopRoute(route.getId());
+                        if (facebookException.getErrorCode() == 11 || facebookException.getErrorCode() == 12
+                                || facebookException.getErrorCode() == 1) {
+                            context().getRouteController().stopRoute(route.getId());
                             String method = ((FacebookEndpoint) route.getEndpoint()).getMethod();
                             MockEndpoint mock = getMockEndpoint("mock:consumeQueryResult" + method);
                             mock.expectedMinimumMessageCount(0);
@@ -123,30 +126,31 @@ public class FacebookComponentConsumerTest extends CamelFacebookTestSupport {
             public void configure() throws Exception {
                 // start with a 30 day window for the first delayed poll
                 String since = "RAW(" + new SimpleDateFormat(FacebookConstants.FACEBOOK_DATE_FORMAT).format(
-                    new Date(System.currentTimeMillis() - TimeUnit.MILLISECONDS.convert(30, TimeUnit.DAYS))) + ")";
+                        new Date(System.currentTimeMillis() - TimeUnit.MILLISECONDS.convert(30, TimeUnit.DAYS))) + ")";
 
                 for (String name : searchNames) {
                     if (!excludedNames.contains(name)) {
-                        // consumer.sendEmptyMessageWhenIdle is true since user may not have some items like events
+                        // sendEmptyMessageWhenIdle is true since user may not have some items like events
                         from("facebook://" + name + "?reading.limit=10&reading.locale=en.US&reading.since="
-                            + since + "&consumer.initialDelay=1000&consumer.sendEmptyMessageWhenIdle=true&"
-                            + getOauthParams())
-                            .to("mock:consumeResult" + name);
+                             + since + "&initialDelay=1000&sendEmptyMessageWhenIdle=true&"
+                             + getOauthParams())
+                                     .to("mock:consumeResult" + name);
                     }
 
                     from("facebook://" + name + "?query=cheese&reading.limit=10&reading.locale=en.US&reading.since="
-                        + since + "&consumer.initialDelay=1000&" + getOauthParams())
-                        .to("mock:consumeQueryResult" + name);
+                         + since + "&initialDelay=1000&" + getOauthParams())
+                                 .to("mock:consumeQueryResult" + name);
                 }
 
                 from("facebook://me?jsonStoreEnabled=true&" + getOauthParams())
-                    .to("mock:testJsonStoreEnabled");
+                        .to("mock:testJsonStoreEnabled");
 
                 // test unix timestamp support
-                long unixSince =  TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                    - TimeUnit.SECONDS.convert(30, TimeUnit.DAYS);
-                from("facebook://page?pageId=" + APACHE_FOUNDATION_PAGE_ID + "&reading.limit=10&reading.since=" + unixSince + "&" + getOauthParams())
-                        .to("mock:testPage");
+                long unixSince = TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                                 - TimeUnit.SECONDS.convert(30, TimeUnit.DAYS);
+                from("facebook://page?pageId=" + APACHE_FOUNDATION_PAGE_ID + "&reading.limit=10&reading.since=" + unixSince
+                     + "&" + getOauthParams())
+                             .to("mock:testPage");
 
                 // TODO add tests for the rest of the supported methods
             }

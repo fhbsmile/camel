@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,9 +18,11 @@ package org.apache.camel.component.undertow.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.RedirectHandler;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class CamelRootHandlerTest {
 
@@ -33,25 +35,25 @@ public class CamelRootHandlerTest {
 
         final RedirectHandler httpHandler = new RedirectHandler("http://whereever");
 
-        Assert.assertTrue(root.isEmpty());
+        assertTrue(root.isEmpty());
         root.add("/app1", null, false, httpHandler);
-        Assert.assertFalse(root.isEmpty());
+        assertFalse(root.isEmpty());
 
         try {
             root.add("/app1", null, false, new CamelWebSocketHandler());
-            Assert.fail(IllegalArgumentException.class.getName() + " expected");
+            fail(IllegalArgumentException.class.getName() + " expected");
         } catch (IllegalArgumentException expected) {
         }
 
         root.remove("/app1", null, false);
 
-        Assert.assertTrue(root.isEmpty());
+        assertTrue(root.isEmpty());
 
         /* now the other way round: register wsHandler and try to register httpHandler for the same path */
         root.add("/app2", null, false, new CamelWebSocketHandler());
         try {
             root.add("/app2", null, false, httpHandler);
-            Assert.fail(IllegalArgumentException.class.getName() + " expected");
+            fail(IllegalArgumentException.class.getName() + " expected");
         } catch (IllegalArgumentException expected) {
         }
 
@@ -61,20 +63,20 @@ public class CamelRootHandlerTest {
     public void countWsHandlerInstances() {
 
         final CamelRootHandler root = new CamelRootHandler(DEFAULT_HANDLER);
-        Assert.assertTrue(root.isEmpty());
+        assertTrue(root.isEmpty());
 
         root.add("/app1", null, false, new CamelWebSocketHandler());
-        Assert.assertFalse(root.isEmpty());
+        assertFalse(root.isEmpty());
 
         /* registering twice must work */
         root.add("/app1", null, false, new CamelWebSocketHandler());
-        Assert.assertFalse(root.isEmpty());
+        assertFalse(root.isEmpty());
 
         /* we have to remove twice for the root to become empty */
         root.remove("/app1", null, false);
-        Assert.assertFalse(root.isEmpty());
+        assertFalse(root.isEmpty());
         root.remove("/app1", null, false);
-        Assert.assertTrue(root.isEmpty());
+        assertTrue(root.isEmpty());
 
     }
 

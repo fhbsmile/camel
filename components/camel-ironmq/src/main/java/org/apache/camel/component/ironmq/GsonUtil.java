@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.gson.Gson;
-
 import org.apache.camel.Message;
 
 public final class GsonUtil {
@@ -30,11 +29,10 @@ public final class GsonUtil {
     }
 
     static class IronMqMessage {
-        private Map<String, Object> headers = new HashMap<String, Object>();
+        private Map<String, Object> headers = new HashMap<>();
         private String body;
 
         IronMqMessage(String body, Map<String, Object> headers) {
-            super();
             this.headers = headers;
             this.body = body;
         }

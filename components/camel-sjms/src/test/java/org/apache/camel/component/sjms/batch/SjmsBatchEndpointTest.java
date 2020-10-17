@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,42 +19,30 @@ package org.apache.camel.component.sjms.batch;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.camel.CamelContext;
 import org.apache.camel.FailedToCreateRouteException;
+import org.apache.camel.FailedToStartRouteException;
+import org.apache.camel.builder.AggregationStrategies;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.sjms.SjmsComponent;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.SimpleRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.apache.camel.util.toolbox.AggregationStrategies;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.apache.camel.support.SimpleRegistry;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SjmsBatchEndpointTest extends CamelTestSupport {
 
     // Create one embedded broker instance for the entire test, as we aren't actually
     // going to send any messages to it; we just need it so that the ConnectionFactory
     // has something local to connect to.
-    public static EmbeddedActiveMQBroker broker;
-
-    @BeforeClass
-    public static void setupBroker() {
-        broker = new EmbeddedActiveMQBroker("localhost");
-        try {
-            broker.before();
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
-    }
-
-    @AfterClass
-    public static void shutDownBroker() {
-        broker.after();
-    }
+    @RegisterExtension
+    public static EmbeddedActiveMQBroker broker = new EmbeddedActiveMQBroker("localhost");
 
     @Override
     protected CamelContext createCamelContext() throws Exception {
         SimpleRegistry registry = new SimpleRegistry();
-        registry.put("aggStrategy", AggregationStrategies.groupedExchange());
+        registry.bind("aggStrategy", AggregationStrategies.groupedExchange());
 
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory();
         connectionFactory.setBrokerURL(broker.getTcpConnectorUri());
@@ -77,17 +65,18 @@ public class SjmsBatchEndpointTest extends CamelTestSupport {
         return true;
     }
 
-    @Test(expected = FailedToCreateRouteException.class)
+    @Test
     public void testProducerFailure() throws Exception {
         context.addRoutes(new RouteBuilder() {
             public void configure() throws Exception {
                 from("direct:in").to("sjms-batch:testQueue?aggregationStrategy=#unknown");
             }
         });
-        context.start();
+        assertThrows(FailedToCreateRouteException.class,
+                () -> context.start());
     }
 
-    @Test(expected = FailedToCreateRouteException.class)
+    @Test
     public void testConsumerNegativePollDuration() throws Exception {
         context.addRoutes(new RouteBuilder() {
             @Override
@@ -96,10 +85,11 @@ public class SjmsBatchEndpointTest extends CamelTestSupport {
                         .to("mock:out");
             }
         });
-        context.start();
+        assertThrows(FailedToStartRouteException.class,
+                () -> context.start());
     }
 
-    @Test(expected = FailedToCreateRouteException.class)
+    @Test
     public void testConsumerNegativeConsumerCount() throws Exception {
         context.addRoutes(new RouteBuilder() {
             @Override
@@ -108,10 +98,11 @@ public class SjmsBatchEndpointTest extends CamelTestSupport {
                         .to("mock:out");
             }
         });
-        context.start();
+        assertThrows(FailedToStartRouteException.class,
+                () -> context.start());
     }
 
-    @Test(expected = FailedToCreateRouteException.class)
+    @Test
     public void testConsumerTopic() throws Exception {
         context.addRoutes(new RouteBuilder() {
             @Override
@@ -120,6 +111,7 @@ public class SjmsBatchEndpointTest extends CamelTestSupport {
                         .to("mock:out");
             }
         });
-        context.start();
+        assertThrows(FailedToCreateRouteException.class,
+                () -> context.start());
     }
 }

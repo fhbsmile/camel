@@ -30,8 +30,8 @@
         <!-- we define the json jackson data formats to be used -->
         <dataFormats>
             <!-- this uses the default unmarshal type that is a Map based -->
-            <json id="jack" library="Jackson"/>
-            <json id="pretty" library="Jackson" prettyPrint="true"/>
+            <json id="jack"/>
+            <json id="pretty" prettyPrint="true"/>
             <!-- and this one uses our own TestPojo class as unmarshal type -->
             <json id="pojo" library="Jackson" unmarshalTypeName="org.apache.camel.component.jackson.TestPojo"/>
             <!-- in addition to our own TestPojoView class we make use of the jsonView attribute here as filter -->
@@ -40,39 +40,39 @@
 
         <route>
             <from uri="direct:in"/>
-            <marshal ref="jack"/>
+            <marshal><custom ref="jack"/></marshal>
         </route>
 
         <route>
             <from uri="direct:inPretty"/>
-            <marshal ref="pretty"/>
+            <marshal><custom ref="pretty"/></marshal>
         </route>
 
         <route>
             <from uri="direct:back"/>
-            <unmarshal ref="jack"/>
+            <unmarshal><custom ref="jack"/></unmarshal>
             <to uri="mock:reverse"/>
         </route>
 
         <route>
             <from uri="direct:inPojo"/>
-            <marshal ref="pojo"/>
+            <marshal><custom ref="pojo"/></marshal>
         </route>
 
         <route>
             <from uri="direct:backPojo"/>
-            <unmarshal ref="pojo"/>
+            <unmarshal><custom ref="pojo"/></unmarshal>
             <to uri="mock:reversePojo"/>
         </route>
 
         <route>
             <from uri="direct:inAgeView"/>
-            <marshal ref="view"/>
+            <marshal><custom ref="view"/></marshal>
         </route>
 
         <route>
             <from uri="direct:backAgeView"/>
-            <unmarshal ref="view"/>
+            <unmarshal><custom ref="view"/></unmarshal>
             <to uri="mock:reverseAgeView"/>
         </route>
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,14 +17,13 @@
 package org.apache.camel.component.splunk;
 
 import com.splunk.Args;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.component.splunk.event.SplunkEvent;
 import org.apache.camel.component.splunk.support.DataWriter;
 import org.apache.camel.component.splunk.support.StreamDataWriter;
 import org.apache.camel.component.splunk.support.SubmitDataWriter;
 import org.apache.camel.component.splunk.support.TcpDataWriter;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +41,7 @@ public class SplunkProducer extends DefaultProducer {
         createWriter(producerType);
     }
 
+    @Override
     public void process(Exchange exchange) throws Exception {
         try {
             if (!dataWriter.isConnected()) {
@@ -68,30 +68,30 @@ public class SplunkProducer extends DefaultProducer {
 
     private void createWriter(ProducerType producerType) {
         switch (producerType) {
-        case TCP: {
-            LOG.debug("Creating TcpDataWriter");
-            dataWriter = new TcpDataWriter(endpoint, buildSplunkArgs());
-            ((TcpDataWriter)dataWriter).setPort(endpoint.getConfiguration().getTcpReceiverPort());
-            LOG.debug("TcpDataWriter created for endpoint {}", endpoint);
-            break;
-        }
-        case SUBMIT: {
-            LOG.debug("Creating SubmitDataWriter");
-            dataWriter = new SubmitDataWriter(endpoint, buildSplunkArgs());
-            ((SubmitDataWriter)dataWriter).setIndex(endpoint.getConfiguration().getIndex());
-            LOG.debug("SubmitDataWriter created for endpoint {}", endpoint);
-            break;
-        }
-        case STREAM: {
-            LOG.debug("Creating StreamDataWriter");
-            dataWriter = new StreamDataWriter(endpoint, buildSplunkArgs());
-            ((StreamDataWriter)dataWriter).setIndex(endpoint.getConfiguration().getIndex());
-            LOG.debug("StreamDataWriter created for endpoint {}", endpoint);
-            break;
-        }
-        default: {
-            throw new RuntimeException("unknown producerType");
-        }
+            case TCP: {
+                LOG.debug("Creating TcpDataWriter");
+                dataWriter = new TcpDataWriter(endpoint, buildSplunkArgs());
+                ((TcpDataWriter) dataWriter).setPort(endpoint.getConfiguration().getTcpReceiverPort());
+                LOG.debug("TcpDataWriter created for endpoint {}", endpoint);
+                break;
+            }
+            case SUBMIT: {
+                LOG.debug("Creating SubmitDataWriter");
+                dataWriter = new SubmitDataWriter(endpoint, buildSplunkArgs());
+                ((SubmitDataWriter) dataWriter).setIndex(endpoint.getConfiguration().getIndex());
+                LOG.debug("SubmitDataWriter created for endpoint {}", endpoint);
+                break;
+            }
+            case STREAM: {
+                LOG.debug("Creating StreamDataWriter");
+                dataWriter = new StreamDataWriter(endpoint, buildSplunkArgs());
+                ((StreamDataWriter) dataWriter).setIndex(endpoint.getConfiguration().getIndex());
+                LOG.debug("StreamDataWriter created for endpoint {}", endpoint);
+                break;
+            }
+            default: {
+                throw new RuntimeException("unknown producerType");
+            }
         }
     }
 

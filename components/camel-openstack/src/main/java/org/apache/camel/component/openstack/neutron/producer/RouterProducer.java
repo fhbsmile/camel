@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,6 +26,7 @@ import org.apache.camel.component.openstack.common.OpenstackConstants;
 import org.apache.camel.component.openstack.neutron.NeutronConstants;
 import org.apache.camel.component.openstack.neutron.NeutronEndpoint;
 import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.StringHelper;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.ActionResponse;
@@ -44,29 +45,29 @@ public class RouterProducer extends AbstractOpenstackProducer {
     public void process(Exchange exchange) throws Exception {
         final String operation = getOperation(exchange);
         switch (operation) {
-        case OpenstackConstants.CREATE:
-            doCreate(exchange);
-            break;
-        case OpenstackConstants.GET:
-            doGet(exchange);
-            break;
-        case OpenstackConstants.GET_ALL:
-            doGetAll(exchange);
-            break;
-        case OpenstackConstants.UPDATE:
-            doUpdate(exchange);
-            break;
-        case OpenstackConstants.DELETE:
-            doDelete(exchange);
-            break;
-        case NeutronConstants.ATTACH_INTERFACE:
-            doAttach(exchange);
-            break;
-        case NeutronConstants.DETACH_INTERFACE:
-            doDetach(exchange);
-            break;
-        default:
-            throw new IllegalArgumentException("Unsuproutered operation " + operation);
+            case OpenstackConstants.CREATE:
+                doCreate(exchange);
+                break;
+            case OpenstackConstants.GET:
+                doGet(exchange);
+                break;
+            case OpenstackConstants.GET_ALL:
+                doGetAll(exchange);
+                break;
+            case OpenstackConstants.UPDATE:
+                doUpdate(exchange);
+                break;
+            case OpenstackConstants.DELETE:
+                doDelete(exchange);
+                break;
+            case NeutronConstants.ATTACH_INTERFACE:
+                doAttach(exchange);
+                break;
+            case NeutronConstants.DETACH_INTERFACE:
+                doDetach(exchange);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsuproutered operation " + operation);
         }
     }
 
@@ -78,8 +79,9 @@ public class RouterProducer extends AbstractOpenstackProducer {
 
     private void doGet(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String id = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.ROUTER_ID, String.class), String.class);
-        ObjectHelper.notEmpty(id, "Router ID");
+        final String id
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.ROUTER_ID, String.class), String.class);
+        StringHelper.notEmpty(id, "Router ID");
         final Router result = os.networking().router().get(id);
         msg.setBody(result);
     }
@@ -98,10 +100,11 @@ public class RouterProducer extends AbstractOpenstackProducer {
 
     private void doDelete(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String id = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.ROUTER_ID, String.class), String.class);
-        ObjectHelper.notEmpty(id, "Router ID");
+        final String id
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.ROUTER_ID, String.class), String.class);
+        StringHelper.notEmpty(id, "Router ID");
         final ActionResponse response = os.networking().router().delete(id);
-        checkFailure(response, msg, "Delete router with ID " + id);
+        checkFailure(response, exchange, "Delete router with ID " + id);
     }
 
     private void doDetach(Exchange exchange) {
@@ -109,7 +112,7 @@ public class RouterProducer extends AbstractOpenstackProducer {
         final String routerId = msg.getHeader(NeutronConstants.ROUTER_ID, String.class);
         final String subnetId = msg.getHeader(NeutronConstants.SUBNET_ID, String.class);
         final String portId = msg.getHeader(NeutronConstants.PORT_ID, String.class);
-        ObjectHelper.notEmpty(routerId, "Router ID");
+        StringHelper.notEmpty(routerId, "Router ID");
         RouterInterface iface = os.networking().router().detachInterface(routerId, subnetId, portId);
         msg.setBody(iface);
     }
@@ -117,10 +120,11 @@ public class RouterProducer extends AbstractOpenstackProducer {
     private void doAttach(Exchange exchange) {
         final Message msg = exchange.getIn();
         final String routerId = msg.getHeader(NeutronConstants.ROUTER_ID, String.class);
-        final String subnetPortId = msg.getHeader(NeutronConstants.SUBNET_ID, msg.getHeader(NeutronConstants.PORT_ID), String.class);
+        final String subnetPortId
+                = msg.getHeader(NeutronConstants.SUBNET_ID, msg.getHeader(NeutronConstants.PORT_ID), String.class);
         final AttachInterfaceType type = msg.getHeader(NeutronConstants.ITERFACE_TYPE, AttachInterfaceType.class);
-        ObjectHelper.notEmpty(routerId, "Router ID");
-        ObjectHelper.notEmpty(subnetPortId, "Subnet/Port ID");
+        StringHelper.notEmpty(routerId, "Router ID");
+        StringHelper.notEmpty(subnetPortId, "Subnet/Port ID");
         ObjectHelper.notNull(type, "AttachInterfaceType ");
         RouterInterface routerInterface = os.networking().router().attachInterface(routerId, type, subnetPortId);
         msg.setBody(routerInterface);
@@ -133,7 +137,7 @@ public class RouterProducer extends AbstractOpenstackProducer {
             Map headers = message.getHeaders();
             RouterBuilder builder = Builders.router();
 
-            ObjectHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
+            StringHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
             builder.name(message.getHeader(OpenstackConstants.NAME, String.class));
 
             if (headers.containsKey(NeutronConstants.TENANT_ID)) {

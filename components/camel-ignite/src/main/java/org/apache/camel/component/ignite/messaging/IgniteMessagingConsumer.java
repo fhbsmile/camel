@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,7 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.component.ignite.IgniteConstants;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.slf4j.Logger;
@@ -72,7 +72,7 @@ public class IgniteMessagingConsumer extends DefaultConsumer {
         super.doStart();
 
         messaging.localListen(endpoint.getTopic(), predicate);
-        
+
         LOG.info("Started Ignite Messaging consumer for topic {}.", endpoint.getTopic());
     }
 
@@ -81,7 +81,7 @@ public class IgniteMessagingConsumer extends DefaultConsumer {
         super.doStop();
 
         messaging.stopLocalListen(endpoint.getTopic(), predicate);
-        
+
         LOG.info("Stopped Ignite Messaging consumer for topic {}.", endpoint.getTopic());
     }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,24 +18,25 @@ package org.apache.camel.spring;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.EndpointInject;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ContextConfiguration
 public class CircularComponentInjectionTest extends SpringRunWithTestSupport {
 
-    @EndpointInject(ref = "seda")
+    @EndpointInject("ref:seda")
     protected Endpoint sedaEndpoint;
 
-    @EndpointInject(ref = "log")
+    @EndpointInject("ref:log")
     protected Endpoint logEndpoint;
 
     @DirtiesContext
     @Test
     public void test() {
-        Assert.assertNotNull(sedaEndpoint);
-        Assert.assertNotNull(logEndpoint);
+        assertNotNull(sedaEndpoint);
+        assertNotNull(logEndpoint);
     }
 }

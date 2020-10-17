@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,13 +20,12 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.language.simple.SimpleLanguage;
 import org.springframework.jdbc.core.namedparam.AbstractSqlParameterSource;
 
 /**
- * A {@link org.springframework.jdbc.core.namedparam.SqlParameterSource} that is used by {@link com.opengamma.elsql.ElSql}
- * to lookup parameter values. This source will lookup in the Camel {@link Exchange} and {@link org.apache.camel.Message}
- * assuming they are Map based.
+ * A {@link org.springframework.jdbc.core.namedparam.SqlParameterSource} that is used by
+ * {@link com.opengamma.elsql.ElSql} to lookup parameter values. This source will lookup in the Camel {@link Exchange}
+ * and {@link org.apache.camel.Message} assuming they are Map based.
  */
 public class ElsqlSqlMapSource extends AbstractSqlParameterSource {
 
@@ -49,7 +48,7 @@ public class ElsqlSqlMapSource extends AbstractSqlParameterSource {
     public boolean hasValue(String paramName) {
         if ("body".equals(paramName)) {
             return true;
-        } else if (paramName.startsWith("${") && paramName.endsWith("}")) {
+        } else if ((paramName.startsWith("$simple{") || paramName.startsWith("${")) && paramName.endsWith("}")) {
             return true;
         } else {
             return bodyMap.containsKey(paramName) || headersMap.containsKey(paramName);
@@ -61,9 +60,16 @@ public class ElsqlSqlMapSource extends AbstractSqlParameterSource {
         Object answer;
         if ("body".equals(paramName)) {
             answer = exchange.getIn().getBody();
-        } else if (paramName.startsWith("${") && paramName.endsWith("}")) {
+        } else if ((paramName.startsWith("$simple{") || paramName.startsWith("${")) && paramName.endsWith("}")) {
             // its a simple language expression
-            answer = SimpleLanguage.expression(paramName).evaluate(exchange, Object.class);
+
+            // spring org.springframework.jdbc.core.namedparam.NamedParameterUtils.PARAMETER_SEPARATORS
+            // uses : as parameter separator and we may use colon in simple languages as well such as bean:foo
+            // so we have to use # instead and replace them back
+            paramName = paramName.replace('#', ':');
+
+            answer = exchange.getContext().resolveLanguage("simple").createExpression(paramName).evaluate(exchange,
+                    Object.class);
         } else {
             answer = bodyMap.get(paramName);
             if (answer == null) {

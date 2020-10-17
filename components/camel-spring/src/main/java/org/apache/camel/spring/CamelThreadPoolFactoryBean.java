@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,13 +33,12 @@ import org.springframework.context.ApplicationContextAware;
 
 /**
  * Configuration of thread pools
- *
- * @version 
  */
 @Metadata(label = "spring,configuration")
 @XmlRootElement(name = "threadPool")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class CamelThreadPoolFactoryBean extends AbstractCamelThreadPoolFactoryBean implements FactoryBean<ExecutorService>, ApplicationContextAware {
+public class CamelThreadPoolFactoryBean extends AbstractCamelThreadPoolFactoryBean
+        implements FactoryBean<ExecutorService>, ApplicationContextAware {
 
     @XmlTransient
     private ApplicationContext applicationContext;
@@ -49,6 +48,7 @@ public class CamelThreadPoolFactoryBean extends AbstractCamelThreadPoolFactoryBe
         return CamelContextResolverHelper.getCamelContextWithId(applicationContext, camelContextId);
     }
 
+    @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,16 +16,17 @@
  */
 package org.apache.camel.component.ehcache;
 
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.camel.RuntimeCamelException;
+import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
 import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.function.ThrowingHelper;
 import org.ehcache.CacheManager;
 import org.ehcache.config.CacheConfiguration;
 import org.ehcache.config.Configuration;
@@ -48,19 +49,19 @@ public class EhcacheConfiguration implements Cloneable {
     @UriParam
     private String configurationUri;
     @UriParam(label = "advanced")
-    private CacheConfiguration<?, ?> configuration;
+    private CacheConfiguration configuration;
     @UriParam(label = "advanced")
-    private Map<String, CacheConfiguration<?, ?>> configurations;
-    @UriParam(label = "advanced", javaType = "java.lang.String", defaultValue = "java.lang.Object")
-    private Class<?> keyType = Object.class;
-    @UriParam(label = "advanced", javaType = "java.lang.String", defaultValue = "java.lang.Object")
-    private Class<?> valueType = Object.class;
+    private Map<String, CacheConfiguration> configurations;
+    @UriParam(label = "advanced")
+    private String keyType;
+    @UriParam(label = "advanced")
+    private String valueType;
     @UriParam(label = "consumer", defaultValue = "ORDERED")
     private EventOrdering eventOrdering = EventOrdering.ORDERED;
     @UriParam(label = "consumer", defaultValue = "ASYNCHRONOUS")
     private EventFiring eventFiring = EventFiring.ASYNCHRONOUS;
-    @UriParam(label = "consumer", enums = "EVICTED,EXPIRED,REMOVED,CREATED,UPDATED", defaultValue = "EVICTED,EXPIRED,REMOVED,CREATED,UPDATED")
-    private Set<EventType> eventTypes = EnumSet.of(EventType.values()[0], EventType.values());
+    @UriParam(label = "consumer", enums = "EVICTED,EXPIRED,REMOVED,CREATED,UPDATED")
+    private String eventTypes;
 
     public EhcacheConfiguration() {
     }
@@ -94,6 +95,7 @@ public class EhcacheConfiguration implements Cloneable {
      * @deprecated use {@link #setConfigurationUri(String)} instead
      */
     @Deprecated
+    @Metadata(deprecationNote = "use configurationUri instead")
     public void setConfigUri(String configUri) {
         setConfigurationUri(configUri);
     }
@@ -103,8 +105,7 @@ public class EhcacheConfiguration implements Cloneable {
     }
 
     /**
-     * Configure if a cache need to be created if it does exist or can't be
-     * pre-configured.
+     * Configure if a cache need to be created if it does exist or can't be pre-configured.
      */
     public void setCreateCacheIfNotExist(boolean createCacheIfNotExist) {
         this.createCacheIfNotExist = createCacheIfNotExist;
@@ -115,8 +116,8 @@ public class EhcacheConfiguration implements Cloneable {
     }
 
     /**
-     * To configure the default cache action. If an action is set in the message
-     * header, then the operation from the header takes precedence.
+     * To configure the default cache action. If an action is set in the message header, then the operation from the
+     * header takes precedence.
      */
     public void setAction(String action) {
         this.action = action;
@@ -127,8 +128,8 @@ public class EhcacheConfiguration implements Cloneable {
     }
 
     /**
-     * To configure the default action key. If a key is set in the message
-     * header, then the key from the header takes precedence.
+     * To configure the default action key. If a key is set in the message header, then the key from the header takes
+     * precedence.
      */
     public void setKey(Object key) {
         this.key = key;
@@ -169,7 +170,7 @@ public class EhcacheConfiguration implements Cloneable {
     }
 
     /**
-     * Set the the delivery mode (ordered, unordered)
+     * Set the delivery mode (ordered, unordered)
      */
     public void setEventOrdering(String eventOrdering) {
         setEventOrdering(EventOrdering.valueOf(eventOrdering));
@@ -184,7 +185,7 @@ public class EhcacheConfiguration implements Cloneable {
     }
 
     /**
-     * Set the the delivery mode (synchronous, asynchronous)
+     * Set the delivery mode (synchronous, asynchronous)
      */
     public void setEventFiring(String eventFiring) {
         setEventFiring(EventFiring.valueOf(eventFiring));
@@ -194,25 +195,30 @@ public class EhcacheConfiguration implements Cloneable {
         this.eventFiring = eventFiring;
     }
 
-    public Set<EventType> getEventTypes() {
+    public String getEventTypes() {
         return eventTypes;
     }
 
-    /**
-     * Set the type of events to listen for
-     */
-    public void setEventTypes(String eventTypesString) {
-        Set<EventType> eventTypes = new HashSet<>();
-        String[] events = eventTypesString.split(",");
-        for (String event : events) {
-            eventTypes.add(EventType.valueOf(event));
-        }
+    public Set<EventType> getEventTypesSet() {
+        Set<EventType> answer = new LinkedHashSet<>();
 
-        setEventTypes(eventTypes);
+        String types = eventTypes;
+        if (types == null) {
+            types = "EVICTED,EXPIRED,REMOVED,CREATED,UPDATED";
+        }
+        String[] arr = types.split(",");
+        for (String s : arr) {
+            answer.add(EventType.valueOf(s));
+        }
+        return answer;
     }
 
-    public void setEventTypes(Set<EventType> eventTypes) {
-        this.eventTypes = new HashSet<>(eventTypes);
+    /**
+     * Set the type of events to listen for (EVICTED,EXPIRED,REMOVED,CREATED,UPDATED). You can specify multiple entries
+     * separated by comma.
+     */
+    public void setEventTypes(String eventTypes) {
+        this.eventTypes = eventTypes;
     }
 
     // ****************************
@@ -235,21 +241,21 @@ public class EhcacheConfiguration implements Cloneable {
     }
 
     public boolean hasConfiguration(String name) {
-        return ObjectHelper.applyIfNotEmpty(configurations, c -> c.containsKey(name), () -> false);
+        return ThrowingHelper.applyIfNotEmpty(configurations, c -> c.containsKey(name), () -> false);
     }
 
     /**
      * A map of cache configuration to be used to create caches.
      */
-    public Map<String, CacheConfiguration<?, ?>> getConfigurations() {
+    public Map<String, CacheConfiguration> getConfigurations() {
         return configurations;
     }
 
-    public void setConfigurations(Map<String, CacheConfiguration<?, ?>> configurations) {
+    public void setConfigurations(Map<String, CacheConfiguration> configurations) {
         this.configurations = Map.class.cast(configurations);
     }
 
-    public void addConfigurations(Map<String, CacheConfiguration<?, ?>> configurations) {
+    public void addConfigurations(Map<String, CacheConfiguration> configurations) {
         if (this.configurations == null) {
             this.configurations = new HashMap<>();
         }
@@ -257,25 +263,25 @@ public class EhcacheConfiguration implements Cloneable {
         this.configurations.putAll(configurations);
     }
 
-    public Class<?> getKeyType() {
+    public String getKeyType() {
         return keyType;
     }
 
     /**
      * The cache key type, default "java.lang.Object"
      */
-    public void setKeyType(Class<?> keyType) {
+    public void setKeyType(String keyType) {
         this.keyType = keyType;
     }
 
-    public Class<?> getValueType() {
+    public String getValueType() {
         return valueType;
     }
 
     /**
      * The cache value type, default "java.lang.Object"
      */
-    public void setValueType(Class<?> valueType) {
+    public void setValueType(String valueType) {
         this.valueType = valueType;
     }
 
@@ -285,7 +291,7 @@ public class EhcacheConfiguration implements Cloneable {
 
     public EhcacheConfiguration copy() {
         try {
-            return (EhcacheConfiguration)super.clone();
+            return (EhcacheConfiguration) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeCamelException(e);
         }

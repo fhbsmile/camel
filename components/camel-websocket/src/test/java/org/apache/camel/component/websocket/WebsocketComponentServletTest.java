@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,33 +16,39 @@
  */
 package org.apache.camel.component.websocket;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 
 /**
  *
  */
-@RunWith(MockitoJUnitRunner.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class WebsocketComponentServletTest {
 
     private static final String PROTOCOL = "ws";
     private static final String MESSAGE = "message";
     private static final String CONNECTION_KEY = "random-connection-key";
+    private static final InetSocketAddress ADDRESS = InetSocketAddress.createUnresolved("127.0.0.1", 12345);
 
+    @Mock
+    private Session session;
     @Mock
     private WebsocketConsumer consumer;
     @Mock
@@ -54,12 +60,12 @@ public class WebsocketComponentServletTest {
 
     private Map<String, WebSocketFactory> socketFactory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-        socketFactory = new HashMap<String, WebSocketFactory>();
+        socketFactory = new HashMap<>();
         socketFactory.put("default", new DefaultWebsocketFactory());
-        
         websocketComponentServlet = new WebsocketComponentServlet(sync, null, socketFactory);
+        when(session.getRemoteAddress()).thenReturn(ADDRESS);
     }
 
     @Test
@@ -82,9 +88,10 @@ public class WebsocketComponentServletTest {
         assertEquals(DefaultWebsocket.class, webSocket.getClass());
         DefaultWebsocket defaultWebsocket = webSocket;
         defaultWebsocket.setConnectionKey(CONNECTION_KEY);
+        defaultWebsocket.setSession(session);
         defaultWebsocket.onMessage(MESSAGE);
         InOrder inOrder = inOrder(consumer, sync, request);
-        inOrder.verify(consumer, times(1)).sendMessage(CONNECTION_KEY, MESSAGE);
+        inOrder.verify(consumer, times(1)).sendMessage(CONNECTION_KEY, MESSAGE, ADDRESS);
         inOrder.verifyNoMoreInteractions();
     }
 

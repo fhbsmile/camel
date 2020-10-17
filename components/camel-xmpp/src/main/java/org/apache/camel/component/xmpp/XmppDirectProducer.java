@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,7 @@ package org.apache.camel.component.xmpp;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeExchangeException;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
@@ -48,14 +48,16 @@ public class XmppDirectProducer extends DefaultProducer {
             // make sure we are connected
             if (!connection.isConnected()) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Reconnecting to: " + XmppEndpoint.getConnectionMessage(connection));
+                    LOG.debug("Reconnecting to: {}", XmppEndpoint.getConnectionMessage(connection));
                 }
 
                 connection.connect();
             }
         } catch (XMPPException e) {
-            throw new RuntimeExchangeException("Cannot connect to XMPP Server: "
-                    + ((connection != null) ? XmppEndpoint.getConnectionMessage(connection) : endpoint.getHost()),
+            throw new RuntimeExchangeException(
+                    "Cannot connect to XMPP Server: "
+                                               + ((connection != null)
+                                                       ? XmppEndpoint.getConnectionMessage(connection) : endpoint.getHost()),
                     exchange, e);
         }
 
@@ -74,12 +76,16 @@ public class XmppDirectProducer extends DefaultProducer {
                 throw new Exception("Body does not contain Stanza/Stanza[] object(s)");
             }
         } catch (XMPPException xmppe) {
-            throw new RuntimeExchangeException("Cannot send XMPP direct: from " + endpoint.getUser() + " to: "
-                    + XmppEndpoint.getConnectionMessage(connection), exchange, xmppe);
+            throw new RuntimeExchangeException(
+                    "Cannot send XMPP direct: from " + endpoint.getUser() + " to: "
+                                               + XmppEndpoint.getConnectionMessage(connection),
+                    exchange, xmppe);
 
         } catch (Exception e) {
-            throw new RuntimeExchangeException("Cannot send XMPP direct: from " + endpoint.getUser() + " to: "
-                    + XmppEndpoint.getConnectionMessage(connection), exchange, e);
+            throw new RuntimeExchangeException(
+                    "Cannot send XMPP direct: from " + endpoint.getUser() + " to: "
+                                               + XmppEndpoint.getConnectionMessage(connection),
+                    exchange, e);
         }
     }
 }

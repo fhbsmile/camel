@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,8 +18,12 @@ package org.apache.camel.component.wordpress.api.model;
 
 import java.io.Serializable;
 import java.util.List;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
 
+/**
+ * Search criterias.
+ */
 public class SearchCriteria implements Serializable {
 
     private static final long serialVersionUID = 1002576245120313648L;
@@ -30,10 +34,6 @@ public class SearchCriteria implements Serializable {
     private Order order;
     private List<Integer> exclude;
     private List<Integer> include;
-
-    public SearchCriteria() {
-
-    }
 
     public Integer getPage() {
         return page;
@@ -86,7 +86,8 @@ public class SearchCriteria implements Serializable {
     @Override
     public String toString() {
         // @formatter:off
-        return toStringHelper(this).add("Query", this.search).add("Page", page).add("Per Page", perPage).addValue(this.order).toString();
+        return toStringHelper(this).add("Query", this.search).add("Page", page).add("Per Page", perPage).addValue(this.order)
+                .toString();
     }
 
 }

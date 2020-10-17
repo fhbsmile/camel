@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,137 +20,144 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.client.MongoCollection;
-
 import org.apache.camel.builder.RouteBuilder;
+import org.bson.Document;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static com.mongodb.client.model.Filters.eq;
+import static org.apache.camel.component.mongodb.MongoDbConstants.MONGO_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MongoDbDynamicityTest extends AbstractMongoDbTest {
-    
+
     @Test
     public void testInsertDynamicityDisabled() {
-        assertEquals(0, testCollection.count());
+        assertEquals(0, testCollection.countDocuments());
         mongo.getDatabase("otherDB").drop();
         db.getCollection("otherCollection").drop();
-        assertFalse("The otherDB database should not exist",
-                StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false)
-                        .anyMatch("otherDB"::equals));
+        assertFalse(StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false).anyMatch("otherDB"::equals),
+                "The otherDB database should not exist");
 
         String body = "{\"_id\": \"testInsertDynamicityDisabled\", \"a\" : \"1\"}";
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(MongoDbConstants.DATABASE, "otherDB");
         headers.put(MongoDbConstants.COLLECTION, "otherCollection");
+        // Object result =
         template.requestBodyAndHeaders("direct:noDynamicity", body, headers);
 
-        DBObject b = testCollection.find(new BasicDBObject("_id", "testInsertDynamicityDisabled")).first();
-        assertNotNull("No record with 'testInsertDynamicityDisabled' _id", b);
-        
+        Document b = testCollection.find(eq(MONGO_ID, "testInsertDynamicityDisabled")).first();
+        assertNotNull(b, "No record with 'testInsertDynamicityDisabled' _id");
+
         body = "{\"_id\": \"testInsertDynamicityDisabledExplicitly\", \"a\" : \"1\"}";
+        // result =
         template.requestBodyAndHeaders("direct:noDynamicityExplicit", body, headers);
 
-        b = testCollection.find(new BasicDBObject("_id", "testInsertDynamicityDisabledExplicitly")).first();
-        assertNotNull("No record with 'testInsertDynamicityDisabledExplicitly' _id", b);
-        
-        assertFalse("The otherDB database should not exist",
-                StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false)
-                        .anyMatch("otherDB"::equals));
+        b = testCollection.find(eq(MONGO_ID, "testInsertDynamicityDisabledExplicitly")).first();
+        assertNotNull(b, "No record with 'testInsertDynamicityDisabledExplicitly' _id");
+
+        assertFalse(StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false).anyMatch("otherDB"::equals),
+                "The otherDB database should not exist");
 
     }
-    
+
     @Test
     public void testInsertDynamicityEnabledDBOnly() {
-        assertEquals(0, testCollection.count());
+        assertEquals(0, testCollection.countDocuments());
         mongo.getDatabase("otherDB").drop();
         db.getCollection("otherCollection").drop();
-        assertFalse("The otherDB database should not exist",
-                StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false)
-                        .anyMatch("otherDB"::equals));
+        assertFalse(StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false).anyMatch("otherDB"::equals),
+                "The otherDB database should not exist");
 
         String body = "{\"_id\": \"testInsertDynamicityEnabledDBOnly\", \"a\" : \"1\"}";
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(MongoDbConstants.DATABASE, "otherDB");
+        // Object result =
         template.requestBodyAndHeaders("direct:dynamicityEnabled", body, headers);
-        
-        MongoCollection<BasicDBObject> dynamicCollection = mongo.getDatabase("otherDB").getCollection(testCollection.getNamespace().getCollectionName(), BasicDBObject.class);
 
-        DBObject b = dynamicCollection.find(new BasicDBObject("_id", "testInsertDynamicityEnabledDBOnly")).first();
-        assertNotNull("No record with 'testInsertDynamicityEnabledDBOnly' _id", b);
+        MongoCollection<Document> localDynamicCollection
+                = mongo.getDatabase("otherDB").getCollection(testCollection.getNamespace().getCollectionName(), Document.class);
 
-        b = testCollection.find(new BasicDBObject("_id", "testInsertDynamicityEnabledDBOnly")).first();
-        assertNull("There is a record with 'testInsertDynamicityEnabledDBOnly' _id in the test collection", b);
-        
-        assertTrue("The otherDB database should exist",
-                StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false)
-                        .anyMatch("otherDB"::equals));
-        
+        Document b = localDynamicCollection.find(eq(MONGO_ID, "testInsertDynamicityEnabledDBOnly")).first();
+        assertNotNull(b, "No record with 'testInsertDynamicityEnabledDBOnly' _id");
+
+        b = testCollection.find(eq(MONGO_ID, "testInsertDynamicityEnabledDBOnly")).first();
+        assertNull(b, "There is a record with 'testInsertDynamicityEnabledDBOnly' _id in the test collection");
+
+        assertTrue(StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false).anyMatch("otherDB"::equals),
+                "The otherDB database should exist");
+
     }
-    
+
     @Test
     public void testInsertDynamicityEnabledCollectionOnly() {
-        assertEquals(0, testCollection.count());
+        assertEquals(0, testCollection.countDocuments());
         mongo.getDatabase("otherDB").drop();
         db.getCollection("otherCollection").drop();
-        assertFalse("The otherDB database should not exist",
-                StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false)
-                        .anyMatch("otherDB"::equals));
+        assertFalse(StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false).anyMatch("otherDB"::equals),
+                "The otherDB database should not exist");
 
         String body = "{\"_id\": \"testInsertDynamicityEnabledCollectionOnly\", \"a\" : \"1\"}";
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(MongoDbConstants.COLLECTION, "otherCollection");
+        // Object result =
         template.requestBodyAndHeaders("direct:dynamicityEnabled", body, headers);
-        
-        MongoCollection<BasicDBObject> dynamicCollection = db.getCollection("otherCollection", BasicDBObject.class);
 
-        DBObject b = dynamicCollection.find(new BasicDBObject("_id", "testInsertDynamicityEnabledCollectionOnly")).first();
-        assertNotNull("No record with 'testInsertDynamicityEnabledCollectionOnly' _id", b);
+        MongoCollection<Document> loaclDynamicCollection = db.getCollection("otherCollection", Document.class);
 
-        b = testCollection.find(new BasicDBObject("_id", "testInsertDynamicityEnabledDBOnly")).first();
-        assertNull("There is a record with 'testInsertDynamicityEnabledCollectionOnly' _id in the test collection", b);
-        
-        assertFalse("The otherDB database should not exist",
-                StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false)
-                        .anyMatch("otherDB"::equals));
+        Document b = loaclDynamicCollection.find(eq(MONGO_ID, "testInsertDynamicityEnabledCollectionOnly")).first();
+        assertNotNull(b, "No record with 'testInsertDynamicityEnabledCollectionOnly' _id");
+
+        b = testCollection.find(eq(MONGO_ID, "testInsertDynamicityEnabledDBOnly")).first();
+        assertNull(b, "There is a record with 'testInsertDynamicityEnabledCollectionOnly' _id in the test collection");
+
+        assertFalse(StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false).anyMatch("otherDB"::equals),
+                "The otherDB database should not exist");
     }
-    
+
     @Test
     public void testInsertDynamicityEnabledDBAndCollection() {
-        assertEquals(0, testCollection.count());
+        assertEquals(0, testCollection.countDocuments());
         mongo.getDatabase("otherDB").drop();
         db.getCollection("otherCollection").drop();
-        assertFalse("The otherDB database should not exist",
-                StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false)
-                        .anyMatch("otherDB"::equals));
+        assertFalse(StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false).anyMatch("otherDB"::equals),
+                "The otherDB database should not exist");
 
         String body = "{\"_id\": \"testInsertDynamicityEnabledDBAndCollection\", \"a\" : \"1\"}";
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(MongoDbConstants.DATABASE, "otherDB");
         headers.put(MongoDbConstants.COLLECTION, "otherCollection");
+        // Object result =
         template.requestBodyAndHeaders("direct:dynamicityEnabled", body, headers);
-        
-        MongoCollection<BasicDBObject> dynamicCollection = mongo.getDatabase("otherDB").getCollection("otherCollection", BasicDBObject.class);
 
-        DBObject b = dynamicCollection.find(new BasicDBObject("_id", "testInsertDynamicityEnabledDBAndCollection")).first();
-        assertNotNull("No record with 'testInsertDynamicityEnabledDBAndCollection' _id", b);
+        MongoCollection<Document> loaclDynamicCollection
+                = mongo.getDatabase("otherDB").getCollection("otherCollection", Document.class);
 
-        b = testCollection.find(new BasicDBObject("_id", "testInsertDynamicityEnabledDBOnly")).first();
-        assertNull("There is a record with 'testInsertDynamicityEnabledDBAndCollection' _id in the test collection", b);
-        
-        assertTrue("The otherDB database should exist",
-                StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false)
-                        .anyMatch("otherDB"::equals));
+        Document b = loaclDynamicCollection.find(eq(MONGO_ID, "testInsertDynamicityEnabledDBAndCollection")).first();
+        assertNotNull(b, "No record with 'testInsertDynamicityEnabledDBAndCollection' _id");
+
+        b = testCollection.find(eq(MONGO_ID, "testInsertDynamicityEnabledDBOnly")).first();
+        assertNull(b, "There is a record with 'testInsertDynamicityEnabledDBAndCollection' _id in the test collection");
+
+        assertTrue(StreamSupport.stream(mongo.listDatabaseNames().spliterator(), false).anyMatch("otherDB"::equals),
+                "The otherDB database should exist");
     }
-    
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() {
-                                
-                from("direct:noDynamicity").to("mongodb:myDb?database={{mongodb.testDb}}&collection={{mongodb.testCollection}}&operation=insert&writeConcern=SAFE");
-                from("direct:noDynamicityExplicit").to("mongodb:myDb?database={{mongodb.testDb}}&collection={{mongodb.testCollection}}&operation=insert&dynamicity=false&writeConcern=SAFE");
-                from("direct:dynamicityEnabled").to("mongodb:myDb?database={{mongodb.testDb}}&collection={{mongodb.testCollection}}&operation=insert&dynamicity=true&writeConcern=SAFE");
+
+                from("direct:noDynamicity")
+                        .to("mongodb:myDb?database={{mongodb.testDb}}&collection={{mongodb.testCollection}}&operation=insert");
+                from("direct:noDynamicityExplicit").to(
+                        "mongodb:myDb?database={{mongodb.testDb}}&collection={{mongodb.testCollection}}&operation=insert&dynamicity=false");
+                from("direct:dynamicityEnabled").to(
+                        "mongodb:myDb?database={{mongodb.testDb}}&collection={{mongodb.testCollection}}&operation=insert&dynamicity=true");
 
             }
         };

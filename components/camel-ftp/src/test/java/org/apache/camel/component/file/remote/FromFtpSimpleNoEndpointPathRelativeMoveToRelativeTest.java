@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,21 +19,18 @@ package org.apache.camel.component.file.remote;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
 public class FromFtpSimpleNoEndpointPathRelativeMoveToRelativeTest extends FtpServerTestSupport {
 
     protected String getFtpUrl() {
         return "ftp://admin@localhost:" + getPort() + "?password=admin&recursive=true&binary=false"
-                + "&move=.done&initialDelay=2500&delay=5000";
+               + "&move=.done&initialDelay=2500&delay=5000";
     }
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         prepareFtpServer();
@@ -55,7 +52,8 @@ public class FromFtpSimpleNoEndpointPathRelativeMoveToRelativeTest extends FtpSe
         template.sendBodyAndHeader(getFtpUrl(), "Bye", Exchange.FILE_NAME, "sub/bye.txt");
         template.sendBodyAndHeader(getFtpUrl(), "Goodday", Exchange.FILE_NAME, "sub/sub2/goodday.txt");
     }
-    
+
+    @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {

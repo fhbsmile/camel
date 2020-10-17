@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,9 +18,12 @@ package org.apache.camel.component.spring.integration;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultProducer;
 import org.apache.camel.spring.SpringCamelContext;
+import org.apache.camel.support.DefaultProducer;
 import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.StringHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.support.channel.BeanFactoryChannelResolver;
 import org.springframework.messaging.Message;
@@ -30,13 +33,14 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.core.DestinationResolver;
 
 /**
- * A producer of exchanges for the Spring Integration
- * Please specify the outputChannel in the endpoint url for this producer.
- * If the message pattern is inOut, the inputChannel property
- * should be set for receiving the response message.
- * @version 
+ * A producer of exchanges for the Spring Integration Please specify the outputChannel in the endpoint url for this
+ * producer. If the message pattern is inOut, the inputChannel property should be set for receiving the response
+ * message.
  */
-public class SpringIntegrationProducer extends DefaultProducer implements Processor {    
+public class SpringIntegrationProducer extends DefaultProducer implements Processor {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SpringIntegrationProducer.class);
+
     private final DestinationResolver<MessageChannel> destinationResolver;
     private DirectChannel inputChannel;
     private MessageChannel outputChannel;
@@ -61,7 +65,7 @@ public class SpringIntegrationProducer extends DefaultProducer implements Proces
                 outputChannelName = getEndpoint().getInputChannel();
             }
 
-            ObjectHelper.notEmpty(outputChannelName, "OutputChannelName", getEndpoint());
+            StringHelper.notEmpty(outputChannelName, "OutputChannelName", getEndpoint());
             outputChannel = destinationResolver.resolveDestination(outputChannelName);
         } else {
             outputChannel = getEndpoint().getMessageChannel();
@@ -74,8 +78,8 @@ public class SpringIntegrationProducer extends DefaultProducer implements Proces
         // if we do in-out we need to setup the input channel as well
         if (getEndpoint().isInOut()) {
             // we need to setup right inputChannel for further processing
-            ObjectHelper.notEmpty(getEndpoint().getInputChannel(), "InputChannel", getEndpoint());
-            inputChannel = (DirectChannel)destinationResolver.resolveDestination(getEndpoint().getInputChannel());
+            StringHelper.notEmpty(getEndpoint().getInputChannel(), "InputChannel", getEndpoint());
+            inputChannel = (DirectChannel) destinationResolver.resolveDestination(getEndpoint().getInputChannel());
 
             if (inputChannel == null) {
                 throw new IllegalArgumentException("Cannot resolve InputChannel on " + getEndpoint());
@@ -83,6 +87,7 @@ public class SpringIntegrationProducer extends DefaultProducer implements Proces
         }
     }
 
+    @Override
     public void process(final Exchange exchange) throws Exception {
         if (exchange.getPattern().isOutCapable()) {
 
@@ -95,15 +100,16 @@ public class SpringIntegrationProducer extends DefaultProducer implements Proces
             // subscribe so we can receive the reply from spring integration
             inputChannel.subscribe(new MessageHandler() {
                 public void handleMessage(Message<?> message) {
-                    log.debug("Received {} from InputChannel: {}", message, inputChannel);
+                    LOG.debug("Received {} from InputChannel: {}", message, inputChannel);
                     SpringIntegrationBinding.storeToCamelMessage(message, exchange.getOut());
                 }
             });
         }
-        org.springframework.messaging.Message<?> siOutmessage = SpringIntegrationBinding.createSpringIntegrationMessage(exchange);
+        org.springframework.messaging.Message<?> siOutmessage
+                = SpringIntegrationBinding.createSpringIntegrationMessage(exchange);
 
         // send the message to spring integration
-        log.debug("Sending {} to OutputChannel: {}", siOutmessage, outputChannel);
+        LOG.debug("Sending {} to OutputChannel: {}", siOutmessage, outputChannel);
         outputChannel.send(siOutmessage);
     }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,10 +20,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.camel.InvokeOnHeader;
 import org.apache.camel.Message;
 import org.apache.camel.component.infinispan.remote.InfinispanRemoteOperation;
-import org.apache.camel.impl.HeaderSelectorProducer;
+import org.apache.camel.spi.InvokeOnHeader;
+import org.apache.camel.support.HeaderSelectorProducer;
 import org.apache.camel.util.ObjectHelper;
 import org.infinispan.commons.api.BasicCache;
 import org.infinispan.query.dsl.Query;
@@ -33,24 +33,13 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     private final InfinispanConfiguration configuration;
     private final InfinispanManager manager;
 
-    public InfinispanProducer(InfinispanEndpoint endpoint, String cacheName, InfinispanConfiguration configuration) {
+    public InfinispanProducer(InfinispanEndpoint endpoint, String cacheName, InfinispanManager manager,
+                              InfinispanConfiguration configuration) {
         super(endpoint, InfinispanConstants.OPERATION, () -> configuration.getOperationOrDefault().name(), false);
 
         this.cacheName = cacheName;
         this.configuration = configuration;
-        this.manager = new InfinispanManager(endpoint.getCamelContext(), configuration);
-    }
-
-    @Override
-    protected void doStart() throws Exception {
-        super.doStart();
-        manager.start();
-    }
-
-    @Override
-    protected void doStop() throws Exception {
-        manager.stop();
-        super.doStop();
+        this.manager = manager;
     }
 
     // ************************************
@@ -58,11 +47,20 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     // ************************************
 
     @InvokeOnHeader("PUT")
-    @InvokeOnHeader(InfinispanConstants.PUT)
     void onPut(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
+        final Object key;
+        final Object value;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
         final Object result;
 
         if (hasLifespan(message)) {
@@ -85,11 +83,20 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("PUTASYNC")
-    @InvokeOnHeader(InfinispanConstants.PUT_ASYNC)
     void onPutAsync(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
+        final Object key;
+        final Object value;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
         final CompletableFuture<Object> result;
 
         if (hasLifespan(message)) {
@@ -112,18 +119,17 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("PUTALL")
-    @InvokeOnHeader(InfinispanConstants.PUT_ALL)
     void onPutAll(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
         final Map<Object, Object> map = message.getHeader(InfinispanConstants.MAP, Map.class);
 
         if (hasLifespan(message)) {
             long lifespan = message.getHeader(InfinispanConstants.LIFESPAN_TIME, long.class);
-            TimeUnit timeUnit =  message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
+            TimeUnit timeUnit = message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
 
             if (hasMaxIdleTime(message)) {
                 long maxIdle = message.getHeader(InfinispanConstants.MAX_IDLE_TIME, long.class);
-                TimeUnit maxIdleTimeUnit =  message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
+                TimeUnit maxIdleTimeUnit = message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
 
                 cache.putAll(map, lifespan, timeUnit, maxIdle, maxIdleTimeUnit);
             } else {
@@ -135,7 +141,6 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("PUTALLASYNC")
-    @InvokeOnHeader(InfinispanConstants.PUT_ALL_ASYNC)
     void onPutAllAsync(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
         final Map<Object, Object> map = message.getHeader(InfinispanConstants.MAP, Map.class);
@@ -143,11 +148,11 @@ public class InfinispanProducer extends HeaderSelectorProducer {
 
         if (hasLifespan(message)) {
             long lifespan = message.getHeader(InfinispanConstants.LIFESPAN_TIME, long.class);
-            TimeUnit timeUnit =  message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
+            TimeUnit timeUnit = message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
 
             if (hasMaxIdleTime(message)) {
                 long maxIdle = message.getHeader(InfinispanConstants.MAX_IDLE_TIME, long.class);
-                TimeUnit maxIdleTimeUnit =  message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
+                TimeUnit maxIdleTimeUnit = message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
 
                 result = cache.putAllAsync(map, lifespan, timeUnit, maxIdle, maxIdleTimeUnit);
             } else {
@@ -161,20 +166,29 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("PUTIFABSENT")
-    @InvokeOnHeader(InfinispanConstants.PUT_IF_ABSENT)
     void onPutIfAbsent(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
+        final Object key;
+        final Object value;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
         final Object result;
 
         if (hasLifespan(message)) {
             long lifespan = message.getHeader(InfinispanConstants.LIFESPAN_TIME, long.class);
-            TimeUnit timeUnit =  message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
+            TimeUnit timeUnit = message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
 
             if (hasMaxIdleTime(message)) {
                 long maxIdle = message.getHeader(InfinispanConstants.MAX_IDLE_TIME, long.class);
-                TimeUnit maxIdleTimeUnit =  message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
+                TimeUnit maxIdleTimeUnit = message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
 
                 result = cache.putIfAbsent(key, value, lifespan, timeUnit, maxIdle, maxIdleTimeUnit);
             } else {
@@ -188,20 +202,29 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("PUTIFABSENTASYNC")
-    @InvokeOnHeader(InfinispanConstants.PUT_IF_ABSENT_ASYNC)
     void onPutIfAbsentAsync(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
+        final Object key;
+        final Object value;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
         final CompletableFuture<Object> result;
 
         if (hasLifespan(message)) {
             long lifespan = message.getHeader(InfinispanConstants.LIFESPAN_TIME, long.class);
-            TimeUnit timeUnit =  message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
+            TimeUnit timeUnit = message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
 
             if (hasMaxIdleTime(message)) {
                 long maxIdle = message.getHeader(InfinispanConstants.MAX_IDLE_TIME, long.class);
-                TimeUnit maxIdleTimeUnit =  message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
+                TimeUnit maxIdleTimeUnit = message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
 
                 result = cache.putIfAbsentAsync(key, value, lifespan, timeUnit, maxIdle, maxIdleTimeUnit);
             } else {
@@ -215,52 +238,82 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("GET")
-    @InvokeOnHeader(InfinispanConstants.GET)
     void onGet(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
+        final Object key;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
         final Object result = cache.get(key);
 
         setResult(message, result);
     }
-    
+
     @InvokeOnHeader("GETORDEFAULT")
     void onGetOrDefault(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object defaultValue = message.getHeader(InfinispanConstants.DEFAULT_VALUE);
+        final Object key;
+        final Object defaultValue;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.DEFAULT_VALUE))) {
+            defaultValue = message.getHeader(InfinispanConstants.DEFAULT_VALUE);
+        } else {
+            defaultValue = configuration.getDefaultValue();
+        }
         final Object result = cache.getOrDefault(key, defaultValue);
 
         setResult(message, result);
     }
 
-
     @InvokeOnHeader("CONTAINSKEY")
-    @InvokeOnHeader(InfinispanConstants.CONTAINS_KEY)
     void onContainsKey(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
+        final Object key;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
         final Object result = cache.containsKey(key);
 
         setResult(message, result);
     }
 
     @InvokeOnHeader("CONTAINSVALUE")
-    @InvokeOnHeader(InfinispanConstants.CONTAINS_VALUE)
     void onContainsValue(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
+        final Object value;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
         final Object result = cache.containsValue(value);
 
         setResult(message, result);
     }
 
     @InvokeOnHeader("REMOVE")
-    @InvokeOnHeader(InfinispanConstants.REMOVE)
     void onRemove(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
+        final Object key;
+        final Object value;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
         final Object result;
 
         if (ObjectHelper.isEmpty(value)) {
@@ -273,11 +326,20 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("REMOVEASYNC")
-    @InvokeOnHeader(InfinispanConstants.REMOVE_ASYNC)
     void onRemoveAsync(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
+        final Object key;
+        final Object value;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
         final CompletableFuture<Object> resultRemoveAsyncKey;
         final CompletableFuture<Boolean> resultRemoveAsyncKeyValue;
 
@@ -291,21 +353,35 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("REPLACE")
-    @InvokeOnHeader(InfinispanConstants.REPLACE)
     void onReplace(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
-        final Object oldValue = message.getHeader(InfinispanConstants.OLD_VALUE);
+        final Object key;
+        final Object value;
+        final Object oldValue;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.OLD_VALUE))) {
+            oldValue = message.getHeader(InfinispanConstants.OLD_VALUE);
+        } else {
+            oldValue = configuration.getOldValue();
+        }
         final Object result;
 
         if (hasLifespan(message)) {
             long lifespan = message.getHeader(InfinispanConstants.LIFESPAN_TIME, long.class);
-            TimeUnit timeUnit =  message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
+            TimeUnit timeUnit = message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
 
             if (hasMaxIdleTime(message)) {
                 long maxIdle = message.getHeader(InfinispanConstants.MAX_IDLE_TIME, long.class);
-                TimeUnit maxIdleTimeUnit =  message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
+                TimeUnit maxIdleTimeUnit = message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
 
                 if (ObjectHelper.isEmpty(oldValue)) {
                     result = cache.replace(key, value, lifespan, timeUnit, maxIdle, maxIdleTimeUnit);
@@ -331,28 +407,43 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("REPLACEASYNC")
-    @InvokeOnHeader(InfinispanConstants.REPLACE_ASYNC)
     void onReplaceAsync(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-        final Object key = message.getHeader(InfinispanConstants.KEY);
-        final Object value = message.getHeader(InfinispanConstants.VALUE);
-        final Object oldValue = message.getHeader(InfinispanConstants.OLD_VALUE);
+        final Object key;
+        final Object value;
+        final Object oldValue;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.VALUE))) {
+            value = message.getHeader(InfinispanConstants.VALUE);
+        } else {
+            value = configuration.getValue();
+        }
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.OLD_VALUE))) {
+            oldValue = message.getHeader(InfinispanConstants.OLD_VALUE);
+        } else {
+            oldValue = configuration.getOldValue();
+        }
         final CompletableFuture<Object> resultWithNewValue;
         final CompletableFuture<Boolean> resultWithNewAndOldValue;
 
         if (hasLifespan(message)) {
             long lifespan = message.getHeader(InfinispanConstants.LIFESPAN_TIME, long.class);
-            TimeUnit timeUnit =  message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
+            TimeUnit timeUnit = message.getHeader(InfinispanConstants.LIFESPAN_TIME_UNIT, TimeUnit.class);
 
             if (hasMaxIdleTime(message)) {
                 long maxIdle = message.getHeader(InfinispanConstants.MAX_IDLE_TIME, long.class);
-                TimeUnit maxIdleTimeUnit =  message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
+                TimeUnit maxIdleTimeUnit = message.getHeader(InfinispanConstants.MAX_IDLE_TIME_UNIT, TimeUnit.class);
 
                 if (ObjectHelper.isEmpty(oldValue)) {
                     resultWithNewValue = cache.replaceAsync(key, value, lifespan, timeUnit, maxIdle, maxIdleTimeUnit);
                     setResult(message, resultWithNewValue);
                 } else {
-                    resultWithNewAndOldValue = cache.replaceAsync(key, oldValue, value, lifespan, timeUnit, maxIdle, maxIdleTimeUnit);
+                    resultWithNewAndOldValue
+                            = cache.replaceAsync(key, oldValue, value, lifespan, timeUnit, maxIdle, maxIdleTimeUnit);
                     setResult(message, resultWithNewAndOldValue);
                 }
             } else {
@@ -375,9 +466,8 @@ public class InfinispanProducer extends HeaderSelectorProducer {
         }
 
     }
-   
+
     @InvokeOnHeader("SIZE")
-    @InvokeOnHeader(InfinispanConstants.SIZE)
     void onSize(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
         final Object result = cache.size();
@@ -385,15 +475,12 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("CLEAR")
-    @InvokeOnHeader(InfinispanConstants.CLEAR)
     void onClear(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
-
         cache.clear();
     }
 
     @InvokeOnHeader("CLEARASYNC")
-    @InvokeOnHeader(InfinispanConstants.CLEAR_ASYNC)
     void onCLearAsync(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
         final CompletableFuture<Void> result = cache.clearAsync();
@@ -402,7 +489,6 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("QUERY")
-    @InvokeOnHeader(InfinispanConstants.QUERY)
     void onQuery(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
 
@@ -418,11 +504,36 @@ public class InfinispanProducer extends HeaderSelectorProducer {
     }
 
     @InvokeOnHeader("STATS")
-    @InvokeOnHeader(InfinispanConstants.STATS)
     void onStats(Message message) {
         final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
         final Object result = InfinispanUtil.asAdvanced(cache).getStats();
 
+        setResult(message, result);
+    }
+
+    @InvokeOnHeader("COMPUTE")
+    void onCompute(Message message) {
+        final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
+        final Object key;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        final Object result = cache.compute(key, configuration.getRemappingFunction());
+        setResult(message, result);
+    }
+
+    @InvokeOnHeader("COMPUTEASYNC")
+    void onComputeAsync(Message message) {
+        final BasicCache<Object, Object> cache = manager.getCache(message, this.cacheName);
+        final Object key;
+        if (ObjectHelper.isNotEmpty(message.getHeader(InfinispanConstants.KEY))) {
+            key = message.getHeader(InfinispanConstants.KEY);
+        } else {
+            key = configuration.getKey();
+        }
+        final CompletableFuture<Object> result = cache.computeAsync(key, configuration.getRemappingFunction());
         setResult(message, result);
     }
 
@@ -432,16 +543,17 @@ public class InfinispanProducer extends HeaderSelectorProducer {
 
     private boolean hasLifespan(Message message) {
         return !InfinispanUtil.isHeaderEmpty(message, InfinispanConstants.LIFESPAN_TIME)
-            && !InfinispanUtil.isHeaderEmpty(message, InfinispanConstants.LIFESPAN_TIME_UNIT);
+                && !InfinispanUtil.isHeaderEmpty(message, InfinispanConstants.LIFESPAN_TIME_UNIT);
     }
 
     private boolean hasMaxIdleTime(Message message) {
         return !InfinispanUtil.isHeaderEmpty(message, InfinispanConstants.MAX_IDLE_TIME)
-            && !InfinispanUtil.isHeaderEmpty(message, InfinispanConstants.MAX_IDLE_TIME_UNIT);
+                && !InfinispanUtil.isHeaderEmpty(message, InfinispanConstants.MAX_IDLE_TIME_UNIT);
     }
 
     private void setResult(Message message, Object result) {
-        String resultHeader = message.getHeader(InfinispanConstants.RESULT_HEADER, configuration::getResultHeader, String.class);
+        String resultHeader
+                = message.getHeader(InfinispanConstants.RESULT_HEADER, configuration::getResultHeader, String.class);
         if (resultHeader != null) {
             message.setHeader(resultHeader, result);
         } else {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,17 +22,18 @@ import org.apache.camel.component.salesforce.api.dto.bulk.ContentType;
 import org.apache.camel.component.salesforce.api.dto.bulk.JobInfo;
 import org.apache.camel.component.salesforce.api.dto.bulk.OperationEnum;
 import org.apache.camel.component.salesforce.dto.generated.Merchandise__c;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.support.jsse.SSLContextParameters;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Test;
 
-@Category(Standalone.class)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@Standalone
 public class BulkApiIntegrationTest extends AbstractBulkApiTestBase {
 
     @Test
@@ -40,7 +41,7 @@ public class BulkApiIntegrationTest extends AbstractBulkApiTestBase {
         final SalesforceComponent sf = context().getComponent("salesforce", SalesforceComponent.class);
         final String accessToken = sf.getSession().getAccessToken();
 
-        final SslContextFactory sslContextFactory = new SslContextFactory();
+        final SslContextFactory sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setSslContext(new SSLContextParameters().createSSLContext(context));
         final HttpClient httpClient = new HttpClient(sslContextFactory);
         httpClient.setConnectTimeout(60000);

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,12 +24,13 @@ import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests that a file move can occur on the server even if the remote stream was only partially read.
- *
- * @version 
  */
 public class SftpSimpleConsumeStreamingPartialReadTest extends SftpServerTestSupport {
 
@@ -47,16 +48,16 @@ public class SftpSimpleConsumeStreamingPartialReadTest extends SftpServerTestSup
         MockEndpoint mock = getMockEndpoint("mock:result");
         mock.expectedMessageCount(1);
         mock.expectedHeaderReceived(Exchange.FILE_NAME, "hello.txt");
-        
-        context.startRoute("foo");
+
+        context.getRouteController().startRoute("foo");
 
         assertMockEndpointsSatisfied();
         GenericFile<?> remoteFile1 = (GenericFile<?>) mock.getExchanges().get(0).getIn().getBody();
         assertTrue(remoteFile1.getBody() instanceof InputStream);
-        
+
         // Wait a little bit for the move to finish.
         Thread.sleep(2000);
-        
+
         File resultFile = new File(FTP_ROOT_DIR + File.separator + "failed", "hello.txt");
         assertTrue(resultFile.exists());
         assertFalse(resultFile.isDirectory());
@@ -68,24 +69,20 @@ public class SftpSimpleConsumeStreamingPartialReadTest extends SftpServerTestSup
             @Override
             public void configure() throws Exception {
                 from("sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR
-                         + "?username=admin&password=admin&delay=10s&disconnect=true&streamDownload=true"
-                         + "&move=done&moveFailed=failed")
-                    .routeId("foo").noAutoStartup()
-                    .process(new Processor() {
-                        
-                        @Override
-                        public void process(Exchange exchange) throws Exception {
-                            exchange.getIn().getBody(InputStream.class).read();
-                        }
-                    })
-                    .to("mock:result")
-                    .process(new Processor() {
-                        
-                        @Override
-                        public void process(Exchange exchange) throws Exception {
-                            throw new Exception("INTENTIONAL ERROR");
-                        }
-                    });
+                     + "?username=admin&password=admin&delay=10000&disconnect=true&streamDownload=true"
+                     + "&move=done&moveFailed=failed").routeId("foo").noAutoStartup().process(new Processor() {
+
+                         @Override
+                         public void process(Exchange exchange) throws Exception {
+                             exchange.getIn().getBody(InputStream.class).read();
+                         }
+                     }).to("mock:result").process(new Processor() {
+
+                         @Override
+                         public void process(Exchange exchange) throws Exception {
+                             throw new Exception("INTENTIONAL ERROR");
+                         }
+                     });
             }
         };
     }

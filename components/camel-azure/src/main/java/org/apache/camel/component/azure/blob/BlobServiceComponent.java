@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,39 +17,51 @@
 package org.apache.camel.component.azure.blob;
 
 import java.util.Map;
+import java.util.Set;
 
 import com.microsoft.azure.storage.StorageCredentials;
 import com.microsoft.azure.storage.StorageCredentialsAnonymous;
 import com.microsoft.azure.storage.blob.CloudBlob;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 
-public class BlobServiceComponent extends UriEndpointComponent {
-    
+@Deprecated
+@Component("azure-blob")
+public class BlobServiceComponent extends DefaultComponent {
+
+    public static final String MISSING_BLOB_CREDENTIALS_EXCEPTION_MESSAGE
+            = "One of azureBlobClient, credentials or both credentialsAccountName and credentialsAccountKey must be specified";
+
+    @Metadata(label = "advanced")
+    private BlobServiceConfiguration configuration;
+
     public BlobServiceComponent() {
-        super(BlobServiceEndpoint.class);
     }
 
     public BlobServiceComponent(CamelContext context) {
-        super(context, BlobServiceEndpoint.class);
+        super(context);
+        this.configuration = new BlobServiceConfiguration();
     }
 
+    @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        BlobServiceConfiguration configuration = new BlobServiceConfiguration();
-        setProperties(configuration, parameters);
+        final BlobServiceConfiguration configuration
+                = this.configuration != null ? this.configuration.copy() : new BlobServiceConfiguration();
 
         String[] parts = null;
         if (remaining != null) {
-            parts = remaining.split("/"); 
+            parts = remaining.split("/");
         }
         if (parts == null || parts.length < 2) {
             throw new IllegalArgumentException("At least the account and container names must be specified.");
         }
-        
+
         configuration.setAccountName(parts[0]);
         configuration.setContainerName(parts[1]);
-        
+
         if (parts.length > 2) {
             // Blob names can contain forward slashes
             StringBuilder sb = new StringBuilder();
@@ -61,21 +73,43 @@ public class BlobServiceComponent extends UriEndpointComponent {
             }
             configuration.setBlobName(sb.toString());
         }
-        
-        checkCredentials(configuration);
-        
+
         BlobServiceEndpoint endpoint = new BlobServiceEndpoint(uri, this, configuration);
         setProperties(endpoint, parameters);
+
+        checkAndSetRegistryClient(configuration);
+        checkCredentials(configuration);
+
         return endpoint;
     }
-    
+
+    public BlobServiceConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    /**
+     * The Blob Service configuration
+     */
+    public void setConfiguration(BlobServiceConfiguration configuration) {
+        this.configuration = configuration;
+    }
+
     private void checkCredentials(BlobServiceConfiguration cfg) {
         CloudBlob client = cfg.getAzureBlobClient();
-        StorageCredentials creds = client == null ? cfg.getCredentials() 
-            : client.getServiceClient().getCredentials(); 
-        if ((creds == null || creds instanceof StorageCredentialsAnonymous)
-            && !cfg.isPublicForRead()) {
-            throw new IllegalArgumentException("Credentials must be specified.");
+
+        //if no azureBlobClient is provided fallback to credentials
+        StorageCredentials creds = client == null
+                ? cfg.getAccountCredentials()
+                : client.getServiceClient().getCredentials();
+        if ((creds == null || creds instanceof StorageCredentialsAnonymous) && !cfg.isPublicForRead()) {
+            throw new IllegalArgumentException(MISSING_BLOB_CREDENTIALS_EXCEPTION_MESSAGE);
+        }
+    }
+
+    private void checkAndSetRegistryClient(BlobServiceConfiguration configuration) {
+        Set<CloudBlob> clients = getCamelContext().getRegistry().findByType(CloudBlob.class);
+        if (clients.size() == 1) {
+            configuration.setAzureBlobClient(clients.stream().findFirst().get());
         }
     }
 }

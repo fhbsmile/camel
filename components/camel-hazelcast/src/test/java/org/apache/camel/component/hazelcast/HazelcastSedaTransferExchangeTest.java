@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,12 +20,14 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HazelcastSedaTransferExchangeTest extends CamelTestSupport {
 
-    @EndpointInject(uri = "mock:result")
+    @EndpointInject("mock:result")
     private MockEndpoint mock;
 
     @Test
@@ -45,7 +47,7 @@ public class HazelcastSedaTransferExchangeTest extends CamelTestSupport {
         mock.reset();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void testExchangeTransferDisabled() throws InterruptedException {
         mock.expectedMessageCount(1);
         mock.expectedBodiesReceived("test");
@@ -56,7 +58,9 @@ public class HazelcastSedaTransferExchangeTest extends CamelTestSupport {
 
         template.send("direct:foo", exchange);
 
-        assertMockEndpointsSatisfied();
+        assertThrows(AssertionError.class,
+                () -> assertMockEndpointsSatisfied());
+
         mock.reset();
     }
 

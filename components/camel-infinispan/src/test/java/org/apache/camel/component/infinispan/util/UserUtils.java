@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,19 +17,20 @@
 package org.apache.camel.component.infinispan.util;
 
 import java.util.List;
+
 import org.infinispan.protostream.sampledomain.User;
 
 public final class UserUtils {
-    public static final User[] USERS = new User[]{
+    public static final User[] USERS = new User[] {
             createUser("nameA", "surnameA"),
             createUser("nameA", "surnameB"),
-            createUser("nameB", "surnameB")};
+            createUser("nameB", "surnameB") };
 
-    public static final User[] CQ_USERS = new User[]{
-        createUser("CQ01", "surname01"),
-        createUser("CQ02", "surname01"),
-        createUser("NQ03", "surname03"),
-        createUser("NQ04", "surname04")
+    public static final User[] CQ_USERS = new User[] {
+            createUser("CQ01", "surname01"),
+            createUser("CQ02", "surname01"),
+            createUser("NQ03", "surname03"),
+            createUser("NQ04", "surname04")
     };
 
     private UserUtils() {

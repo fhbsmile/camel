@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,46 +33,45 @@ import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
 
 /**
- * Fetches the X.509 certificates which can be used for the verification from a
- * Java keystore.
+ * Fetches the X.509 certificates which can be used for the verification from a Java keystore.
  */
 @UriParams
-public class DefaultSignedDataVerifierConfiguration extends DefaultCryptoCmsUnMarshallerConfiguration implements SignedDataVerifierConfiguration, Cloneable {
+public class DefaultSignedDataVerifierConfiguration extends DefaultCryptoCmsUnMarshallerConfiguration
+        implements SignedDataVerifierConfiguration, Cloneable {
 
-    @UriParam(label = "verify", defaultValue = "false")
-    private Boolean signedDataHeaderBase64 = Boolean.FALSE;
+    @UriParam(label = "verify")
+    private boolean signedDataHeaderBase64;
 
     @UriParam(label = "verify", defaultValue = "true")
-    private Boolean verifySignaturesOfAllSigners = Boolean.TRUE;
+    private boolean verifySignaturesOfAllSigners = true;
 
     /**
-     * Indicates whether the value in the header CamelCryptoCmsSignedData is
-     * base64 encoded. Default value is <code>false</code>.
+     * Indicates whether the value in the header CamelCryptoCmsSignedData is base64 encoded. Default value is
+     * <code>false</code>.
      * <p>
-     * Only relevant for detached signatures. In the detached signature case,
-     * the header contains the Signed Data object.
+     * Only relevant for detached signatures. In the detached signature case, the header contains the Signed Data
+     * object.
      */
-    public void setSignedDataHeaderBase64(Boolean signedDataHeaderBase64) {
+    public void setSignedDataHeaderBase64(boolean signedDataHeaderBase64) {
         this.signedDataHeaderBase64 = signedDataHeaderBase64;
     }
 
     @Override
-    public Boolean isSignedDataHeaderBase64(Exchange exchange) throws CryptoCmsException {
+    public boolean isSignedDataHeaderBase64() {
         return signedDataHeaderBase64;
     }
 
     /**
-     * If <code>true</code> then the signatures of all signers contained in the
-     * Signed Data object are verified. If <code>false</code> then only one
-     * signature whose signer info matches with one of the specified
-     * certificates is verified. Default value is <code>true</code>.
+     * If <code>true</code> then the signatures of all signers contained in the Signed Data object are verified. If
+     * <code>false</code> then only one signature whose signer info matches with one of the specified certificates is
+     * verified. Default value is <code>true</code>.
      */
-    public void setVerifySignaturesOfAllSigners(Boolean verifySignaturesOfAllSigners) {
+    public void setVerifySignaturesOfAllSigners(boolean verifySignaturesOfAllSigners) {
         this.verifySignaturesOfAllSigners = verifySignaturesOfAllSigners;
     }
 
     @Override
-    public Boolean isVerifySignaturesOfAllSigners(Exchange exchange) throws CryptoCmsException {
+    public boolean isVerifySignaturesOfAllSigners() {
         return verifySignaturesOfAllSigners;
     }
 
@@ -85,7 +84,7 @@ public class DefaultSignedDataVerifierConfiguration extends DefaultCryptoCmsUnMa
                 String alias = aliases.nextElement();
                 Certificate cert = keystore.getCertificate(alias);
                 if (cert instanceof X509Certificate) {
-                    certs.add((X509Certificate)cert);
+                    certs.add((X509Certificate) cert);
                 }
             }
             return certs;
@@ -94,9 +93,10 @@ public class DefaultSignedDataVerifierConfiguration extends DefaultCryptoCmsUnMa
         }
     }
 
+    @Override
     public DefaultSignedDataVerifierConfiguration copy() {
         try {
-            return (DefaultSignedDataVerifierConfiguration)clone();
+            return (DefaultSignedDataVerifierConfiguration) clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeCamelException(e); // should never happen
         }

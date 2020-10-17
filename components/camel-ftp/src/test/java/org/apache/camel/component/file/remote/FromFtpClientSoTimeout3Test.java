@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,12 +20,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.commons.net.ftp.FTPFile;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test re-creating operations
+ * 
  * @see {org.apache.camel.component.file.remote.RemoteFileConsumer#recoverableConnectIfNecessary}
  */
 public class FromFtpClientSoTimeout3Test extends CamelTestSupport {
@@ -44,17 +47,18 @@ public class FromFtpClientSoTimeout3Test extends CamelTestSupport {
         FtpEndpoint<FTPFile> ftpEndpoint = context.getEndpoint(getFtpUrl(), FtpEndpoint.class);
 
         // set "ftp://admin@localhost:21/timeout/?ftpClient.soTimeout=10"
-        Map<String, Object> ftpClientParameters = new HashMap<String, Object>();
+        Map<String, Object> ftpClientParameters = new HashMap<>();
         ftpClientParameters.put("soTimeout", "10");
         ftpEndpoint.setFtpClientParameters(ftpClientParameters);
 
         // test RemoteFileConsumer#buildConsumer
-        assertEquals(ftpClientParameters.get("soTimeout"), "10");
+        assertEquals("10", ftpClientParameters.get("soTimeout"));
         ftpEndpoint.createRemoteFileOperations();
 
         // test RemoteFileConsumer#recoverableConnectIfNecessary
-        // recover by re-creating operations which should most likely be able to recover
-        assertEquals(ftpClientParameters.get("soTimeout"), "10");
+        // recover by re-creating operations which should most likely be able to
+        // recover
+        assertEquals("10", ftpClientParameters.get("soTimeout"));
         ftpEndpoint.createRemoteFileOperations();
     }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,8 +25,8 @@ import org.apache.camel.SuspendableService;
 import org.apache.camel.api.management.ManagedAttribute;
 import org.apache.camel.api.management.ManagedOperation;
 import org.apache.camel.api.management.ManagedResource;
-import org.apache.camel.impl.DefaultConsumer;
-import org.apache.camel.util.ServiceHelper;
+import org.apache.camel.support.DefaultConsumer;
+import org.apache.camel.support.service.ServiceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,9 +64,9 @@ public class MasterConsumer extends DefaultConsumer {
     public String slaves() {
         try {
             return new ObjectMapper()
-                .enable(SerializationFeature.INDENT_OUTPUT)
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .writeValueAsString(groupListener.getGroup().slaves());
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .writeValueAsString(groupListener.getGroup().slaves());
         } catch (Exception e) {
             return null;
         }
@@ -96,7 +96,8 @@ public class MasterConsumer extends DefaultConsumer {
         this.groupListener.setMaximumConnectionTimeout(endpoint.getComponent().getMaximumConnectionTimeout());
         ServiceHelper.startService(groupListener);
 
-        LOG.info("Attempting to become master for endpoint: " + endpoint + " in " + endpoint.getCamelContext() + " with singletonID: " + endpoint.getGroupName());
+        LOG.info("Attempting to become master for endpoint: " + endpoint + " in " + endpoint.getCamelContext()
+                 + " with singletonID: " + endpoint.getGroupName());
         thisNodeState = createNodeState();
         groupListener.updateState(thisNodeState);
     }
@@ -163,7 +164,7 @@ public class MasterConsumer extends DefaultConsumer {
 
                     ServiceHelper.startService(delegate);
                 } catch (Exception e) {
-                    LOG.error("Failed to start master consumer for: " + endpoint, e);
+                    LOG.error("Failed to start master consumer for: {}", endpoint, e);
                 }
 
                 LOG.info("Elected as master. Consumer started: {}", endpoint.getConsumerEndpoint());
@@ -176,7 +177,7 @@ public class MasterConsumer extends DefaultConsumer {
             try {
                 stopConsumer();
             } catch (Exception e) {
-                LOG.warn("Failed to stop master consumer for: " + endpoint, e);
+                LOG.warn("Failed to stop master consumer for: {}", endpoint, e);
             }
         };
     }

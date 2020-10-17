@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -41,12 +41,9 @@ import org.jsmpp.util.DefaultDecomposer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
- * A Strategy used to convert between a Camel {@link Exchange} and
- * {@link SmppMessage} to and from a SMPP {@link Command}
- * 
- * @version 
+ * A Strategy used to convert between a Camel {@link Exchange} and {@link SmppMessage} to and from a SMPP
+ * {@link Command}
  */
 public class SmppBinding {
 
@@ -70,7 +67,7 @@ public class SmppBinding {
     public SmppCommand createSmppCommand(SMPPSession session, Exchange exchange) {
         SmppCommandType commandType = SmppCommandType.fromExchange(exchange);
         SmppCommand command = commandType.createCommand(session, configuration);
-        
+
         return command;
     }
 
@@ -78,8 +75,7 @@ public class SmppBinding {
      * Create a new SmppMessage from the inbound alert notification
      */
     public SmppMessage createSmppMessage(CamelContext camelContext, AlertNotification alertNotification) {
-        SmppMessage smppMessage = new SmppMessage(alertNotification, configuration);
-        smppMessage.setCamelContext(camelContext);
+        SmppMessage smppMessage = new SmppMessage(camelContext, alertNotification, configuration);
 
         smppMessage.setHeader(SmppConstants.MESSAGE_TYPE, SmppMessageType.AlertNotification.toString());
         smppMessage.setHeader(SmppConstants.SEQUENCE_NUMBER, alertNotification.getSequenceNumber());
@@ -99,8 +95,7 @@ public class SmppBinding {
      * Create a new SmppMessage from the inbound deliver sm or deliver receipt
      */
     public SmppMessage createSmppMessage(CamelContext camelContext, DeliverSm deliverSm) throws Exception {
-        SmppMessage smppMessage = new SmppMessage(deliverSm, configuration);
-        smppMessage.setCamelContext(camelContext);
+        SmppMessage smppMessage = new SmppMessage(camelContext, deliverSm, configuration);
 
         String messagePayload = null;
 
@@ -109,7 +104,7 @@ public class SmppBinding {
 
             for (OptionalParameter optPara : oplist) {
                 if (OptionalParameter.Tag.MESSAGE_PAYLOAD.code() == optPara.tag && OctetString.class
-                    .isInstance(optPara)) {
+                        .isInstance(optPara)) {
                     messagePayload = ((OctetString) optPara).getValueAsString();
                     break;
                 }
@@ -158,7 +153,7 @@ public class SmppBinding {
                 if (SmppUtils.is8Bit(alphabet)) {
                     smppMessage.setBody(deliverSm.getShortMessage());
                 } else {
-                    smppMessage.setBody(String.valueOf(new String(deliverSm.getShortMessage(), configuration.getEncoding())));
+                    smppMessage.setBody(new String(deliverSm.getShortMessage(), configuration.getEncoding()));
                 }
             } else if (messagePayload != null) {
                 smppMessage.setBody(messagePayload);
@@ -184,7 +179,7 @@ public class SmppBinding {
     private Map<String, Object> createOptionalParameterByName(DeliverSm deliverSm) {
         List<OptionalParameter> oplist = Arrays.asList(deliverSm.getOptionalParameters());
 
-        Map<String, Object> optParams = new HashMap<String, Object>();
+        Map<String, Object> optParams = new HashMap<>();
         for (OptionalParameter optPara : oplist) {
             try {
                 Tag valueOfTag = OptionalParameter.Tag.valueOf(optPara.tag);
@@ -194,19 +189,22 @@ public class SmppBinding {
                     } else if (org.jsmpp.bean.OptionalParameter.OctetString.class.isInstance(optPara)) {
                         optParams.put(valueOfTag.toString(), ((OctetString) optPara).getValueAsString());
                     } else if (org.jsmpp.bean.OptionalParameter.Byte.class.isInstance(optPara)) {
-                        optParams.put(valueOfTag.toString(), Byte.valueOf(((org.jsmpp.bean.OptionalParameter.Byte) optPara).getValue()));
+                        optParams.put(valueOfTag.toString(),
+                                Byte.valueOf(((org.jsmpp.bean.OptionalParameter.Byte) optPara).getValue()));
                     } else if (org.jsmpp.bean.OptionalParameter.Short.class.isInstance(optPara)) {
-                        optParams.put(valueOfTag.toString(), Short.valueOf(((org.jsmpp.bean.OptionalParameter.Short) optPara).getValue()));
+                        optParams.put(valueOfTag.toString(),
+                                Short.valueOf(((org.jsmpp.bean.OptionalParameter.Short) optPara).getValue()));
                     } else if (org.jsmpp.bean.OptionalParameter.Int.class.isInstance(optPara)) {
-                        optParams.put(valueOfTag.toString(), Integer.valueOf(((org.jsmpp.bean.OptionalParameter.Int) optPara).getValue()));
+                        optParams.put(valueOfTag.toString(),
+                                Integer.valueOf(((org.jsmpp.bean.OptionalParameter.Int) optPara).getValue()));
                     } else if (Null.class.isInstance(optPara)) {
                         optParams.put(valueOfTag.toString(), null);
                     }
                 } else {
-                    LOG.debug("Skipping optional parameter with tag {} because it was not recogized", optPara.tag);
+                    LOG.debug("Skipping optional parameter with tag {} because it was not recognized", optPara.tag);
                 }
             } catch (IllegalArgumentException e) {
-                LOG.debug("Skipping optional parameter with tag {} due " + e.getMessage(), optPara.tag);
+                LOG.debug("Skipping optional parameter with tag {} due to {}", optPara.tag, e.getMessage());
             }
         }
 
@@ -216,18 +214,21 @@ public class SmppBinding {
     private Map<Short, Object> createOptionalParameterByCode(DeliverSm deliverSm) {
         List<OptionalParameter> oplist = Arrays.asList(deliverSm.getOptionalParameters());
 
-        Map<Short, Object> optParams = new HashMap<Short, Object>();
+        Map<Short, Object> optParams = new HashMap<>();
         for (OptionalParameter optPara : oplist) {
             if (COctetString.class.isInstance(optPara)) {
                 optParams.put(Short.valueOf(optPara.tag), ((COctetString) optPara).getValueAsString());
             } else if (org.jsmpp.bean.OptionalParameter.OctetString.class.isInstance(optPara)) {
                 optParams.put(Short.valueOf(optPara.tag), ((OctetString) optPara).getValue());
             } else if (org.jsmpp.bean.OptionalParameter.Byte.class.isInstance(optPara)) {
-                optParams.put(Short.valueOf(optPara.tag), Byte.valueOf(((org.jsmpp.bean.OptionalParameter.Byte) optPara).getValue()));
+                optParams.put(Short.valueOf(optPara.tag),
+                        Byte.valueOf(((org.jsmpp.bean.OptionalParameter.Byte) optPara).getValue()));
             } else if (org.jsmpp.bean.OptionalParameter.Short.class.isInstance(optPara)) {
-                optParams.put(Short.valueOf(optPara.tag), Short.valueOf(((org.jsmpp.bean.OptionalParameter.Short) optPara).getValue()));
+                optParams.put(Short.valueOf(optPara.tag),
+                        Short.valueOf(((org.jsmpp.bean.OptionalParameter.Short) optPara).getValue()));
             } else if (org.jsmpp.bean.OptionalParameter.Int.class.isInstance(optPara)) {
-                optParams.put(Short.valueOf(optPara.tag), Integer.valueOf(((org.jsmpp.bean.OptionalParameter.Int) optPara).getValue()));
+                optParams.put(Short.valueOf(optPara.tag),
+                        Integer.valueOf(((org.jsmpp.bean.OptionalParameter.Int) optPara).getValue()));
             } else if (Null.class.isInstance(optPara)) {
                 optParams.put(Short.valueOf(optPara.tag), null);
             }
@@ -237,8 +238,7 @@ public class SmppBinding {
     }
 
     public SmppMessage createSmppMessage(CamelContext camelContext, DataSm dataSm, String smppMessageId) {
-        SmppMessage smppMessage = new SmppMessage(dataSm, configuration);
-        smppMessage.setCamelContext(camelContext);
+        SmppMessage smppMessage = new SmppMessage(camelContext, dataSm, configuration);
 
         smppMessage.setHeader(SmppConstants.MESSAGE_TYPE, SmppMessageType.DataSm.toString());
         smppMessage.setHeader(SmppConstants.ID, smppMessageId);
@@ -257,7 +257,7 @@ public class SmppBinding {
 
         return smppMessage;
     }
-    
+
     /**
      * Returns the current date. Externalized for better test support.
      * 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@
 package org.apache.camel.component.rabbitmq.reply;
 
 import com.rabbitmq.client.AMQP;
-
 import org.apache.camel.AsyncCallback;
 import org.apache.camel.Exchange;
 import org.slf4j.Logger;
@@ -25,8 +24,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * {@link ReplyHandler} to handle processing replies when using temporary queues.
- *
- * @version 
  */
 public class TemporaryQueueReplyHandler implements ReplyHandler {
 
@@ -36,7 +33,8 @@ public class TemporaryQueueReplyHandler implements ReplyHandler {
     protected final ReplyManager replyManager;
     protected final Exchange exchange;
     protected final AsyncCallback callback;
-    // remember the original correlation id, in case the server returns back a reply with a messed up correlation id
+    // remember the original correlation id, in case the server returns back a
+    // reply with a messed up correlation id
     protected final String originalCorrelationId;
     protected final String correlationId;
     protected final long timeout;
@@ -51,14 +49,16 @@ public class TemporaryQueueReplyHandler implements ReplyHandler {
         this.timeout = timeout;
     }
 
+    @Override
     public void onReply(String correlationId, AMQP.BasicProperties properties, byte[] reply) {
-        // create holder object with the the reply
+        // create holder object with the reply
         log.debug("onReply with correlationId: {}", correlationId);
         ReplyHolder holder = new ReplyHolder(exchange, callback, originalCorrelationId, correlationId, properties, reply);
         // process the reply
         replyManager.processReply(holder);
     }
 
+    @Override
     public void onTimeout(String correlationId) {
         // create holder object without the reply which means a timeout occurred
         log.debug("onTimeout with correlationId: {}", correlationId);

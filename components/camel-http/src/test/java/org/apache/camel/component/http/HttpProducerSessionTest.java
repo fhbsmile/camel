@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,27 +18,36 @@ package org.apache.camel.component.http;
 
 import java.net.InetSocketAddress;
 
+import org.apache.camel.BindToRegistry;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.http.handler.SessionReflectionHandler;
-import org.apache.camel.http.common.cookie.ExchangeCookieHandler;
-import org.apache.camel.http.common.cookie.InstanceCookieHandler;
-import org.apache.camel.impl.JndiRegistry;
+import org.apache.camel.http.base.cookie.ExchangeCookieHandler;
+import org.apache.camel.http.base.cookie.InstanceCookieHandler;
 import org.apache.camel.test.AvailablePortFinder;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class HttpProducerSessionTest extends CamelTestSupport {
     private static volatile int port;
     private static Server localServer;
 
-    @BeforeClass
+    @BindToRegistry("instanceCookieHandler")
+    private InstanceCookieHandler instanceHandler = new InstanceCookieHandler();
+
+    @BindToRegistry("exchangeCookieHandler")
+    private ExchangeCookieHandler exchangeHandler = new ExchangeCookieHandler();
+
+    @BindToRegistry("noopCookieStore")
+    private NoopCookieStore cookieStore = new NoopCookieStore();
+
+    @BeforeAll
     public static void initServer() throws Exception {
-        port = AvailablePortFinder.getNextAvailable(24000);
+        port = AvailablePortFinder.getNextAvailable();
         localServer = new Server(new InetSocketAddress("127.0.0.1", port));
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/session");
@@ -49,15 +58,14 @@ public class HttpProducerSessionTest extends CamelTestSupport {
         localServer.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void shutdownServer() throws Exception {
         localServer.stop();
     }
-    
+
     @Test
     public void testNoSession() throws Exception {
-        // the camel-http component will handle cookies at endpoint level
-        getMockEndpoint("mock:result").expectedBodiesReceived("New New World", "Old Old World");
+        getMockEndpoint("mock:result").expectedBodiesReceived("New New World", "New New World");
         template.sendBody("direct:start", "World");
         template.sendBody("direct:start", "World");
         assertMockEndpointsSatisfied();
@@ -79,14 +87,6 @@ public class HttpProducerSessionTest extends CamelTestSupport {
         assertMockEndpointsSatisfied();
     }
 
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndiRegistry = super.createRegistry();
-        jndiRegistry.bind("instanceCookieHandler", new InstanceCookieHandler());
-        jndiRegistry.bind("exchangeCookieHandler", new ExchangeCookieHandler());
-        return jndiRegistry;
-    }
-
     private String getTestServerEndpointSessionUrl() {
         // session handling will not work for localhost
         return "http://127.0.0.1:" + port + "/session/";
@@ -98,19 +98,19 @@ public class HttpProducerSessionTest extends CamelTestSupport {
             @Override
             public void configure() throws Exception {
                 from("direct:start")
-                    .to(getTestServerEndpointSessionUrl())
-                    .to(getTestServerEndpointSessionUrl())
-                    .to("mock:result");
+                        .to(getTestServerEndpointSessionUrl() + "?cookieStore=#noopCookieStore")
+                        .to(getTestServerEndpointSessionUrl() + "?cookieStore=#noopCookieStore")
+                        .to("mock:result");
 
                 from("direct:instance")
-                    .to(getTestServerEndpointSessionUrl() + "?cookieHandler=#instanceCookieHandler")
-                    .to(getTestServerEndpointSessionUrl() + "?cookieHandler=#instanceCookieHandler")
-                    .to("mock:result");
+                        .to(getTestServerEndpointSessionUrl() + "?cookieHandler=#instanceCookieHandler")
+                        .to(getTestServerEndpointSessionUrl() + "?cookieHandler=#instanceCookieHandler")
+                        .to("mock:result");
 
                 from("direct:exchange")
-                    .to(getTestServerEndpointSessionUrl() + "?cookieHandler=#exchangeCookieHandler")
-                    .to(getTestServerEndpointSessionUrl() + "?cookieHandler=#exchangeCookieHandler")
-                    .to("mock:result");
+                        .to(getTestServerEndpointSessionUrl() + "?cookieHandler=#exchangeCookieHandler")
+                        .to(getTestServerEndpointSessionUrl() + "?cookieHandler=#exchangeCookieHandler")
+                        .to("mock:result");
             }
         };
     }

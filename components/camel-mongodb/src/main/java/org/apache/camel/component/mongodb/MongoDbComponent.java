@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,38 +21,60 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.mongodb.client.MongoClient;
+import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.camel.component.mongodb.meta.MongoDBMetaExtension;
+import org.apache.camel.component.mongodb.verifier.MongoComponentVerifierExtension;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 
-/**
- * Represents the component that manages {@link MongoDbEndpoint}.
- */
-public class MongoDbComponent extends UriEndpointComponent {
-    
-    public static final Set<MongoDbOperation> WRITE_OPERATIONS = 
-            new HashSet<MongoDbOperation>(Arrays.asList(MongoDbOperation.insert, MongoDbOperation.save, 
-                    MongoDbOperation.update, MongoDbOperation.remove, MongoDbOperation.bulkWrite));
-    
-    private static final Logger LOG = LoggerFactory.getLogger(MongoDbComponent.class);
+@Component("mongodb")
+public class MongoDbComponent extends DefaultComponent {
+
+    public static final Set<MongoDbOperation> WRITE_OPERATIONS = new HashSet<>(
+            Arrays.asList(
+                    MongoDbOperation.insert,
+                    MongoDbOperation.save,
+                    MongoDbOperation.update,
+                    MongoDbOperation.remove));
+
+    @Metadata
+    private MongoClient mongoConnection;
 
     public MongoDbComponent() {
-        super(MongoDbEndpoint.class);
+        this(null);
     }
 
-    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-
-        MongoDbEndpoint endpoint = new MongoDbEndpoint(uri, this);
-        endpoint.setConnectionBean(remaining);
-        setProperties(endpoint, parameters);
-        
-        return endpoint;
+    public MongoDbComponent(CamelContext context) {
+        super(context);
+        registerExtension(MongoComponentVerifierExtension::new);
+        registerExtension(MongoDBMetaExtension::new);
     }
 
     @Override
-    protected void doShutdown() throws Exception {
-        super.doShutdown();
+    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
+        MongoDbEndpoint endpoint = new MongoDbEndpoint(uri, this);
+        endpoint.setConnectionBean(remaining);
+        endpoint.setMongoConnection(mongoConnection);
+        setProperties(endpoint, parameters);
+
+        return endpoint;
+    }
+
+    /**
+     * Get the connection bean client used for connection.
+     */
+    public MongoClient getMongoConnection() {
+        return mongoConnection;
+    }
+
+    /**
+     * Shared client used for connection. All endpoints generated from the component will share this connection client.
+     */
+    public void setMongoConnection(MongoClient mongoConnection) {
+        this.mongoConnection = mongoConnection;
     }
 
     public static CamelMongoDbException wrapInCamelMongoDbException(Throwable t) {
@@ -62,5 +84,4 @@ public class MongoDbComponent extends UriEndpointComponent {
             return new CamelMongoDbException(t);
         }
     }
-
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,22 +21,23 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.jms.ConnectionFactory;
 
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jms.CamelJmsTestHelper;
 import org.apache.camel.component.mock.AssertionClause;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.camel.component.jms.JmsComponent.jmsComponentAutoAcknowledge;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ActiveMQPropagateSerializableHeadersTest extends CamelTestSupport {
 
@@ -47,10 +48,10 @@ public class ActiveMQPropagateSerializableHeadersTest extends CamelTestSupport {
     private Calendar calValue;
     private Map<String, Object> mapValue;
 
-    @Before
+    @BeforeEach
     public void setup() {
         calValue = Calendar.getInstance();
-        mapValue = new LinkedHashMap<String, Object>();
+        mapValue = new LinkedHashMap<>();
         mapValue.put("myStringEntry", "stringValue");
         mapValue.put("myCalEntry", Calendar.getInstance());
         mapValue.put("myIntEntry", 123);
@@ -73,15 +74,15 @@ public class ActiveMQPropagateSerializableHeadersTest extends CamelTestSupport {
         Exchange exchange = list.get(0);
         {
             String headerValue = exchange.getIn().getHeader("myString", String.class);
-            assertEquals("myString", "stringValue", headerValue);
+            assertEquals("stringValue", headerValue, "myString");
         }
         {
             Calendar headerValue = exchange.getIn().getHeader("myCal", Calendar.class);
-            assertEquals("myCal", calValue, headerValue);
+            assertEquals(calValue, headerValue, "myCal");
         }
         {
             Map<String, Object> headerValue = exchange.getIn().getHeader("myMap", Map.class);
-            assertEquals("myMap", mapValue, headerValue);
+            assertEquals(mapValue, headerValue, "myMap");
         }
     }
 
@@ -94,7 +95,7 @@ public class ActiveMQPropagateSerializableHeadersTest extends CamelTestSupport {
         camelContext.addComponent("activemq", jmsComponentAutoAcknowledge(connectionFactory));
         // END SNIPPET: example
 
-        // prevent java.io.NotSerializableException: org.apache.camel.impl.DefaultMessageHistory
+        // prevent java.io.NotSerializableException: org.apache.camel.support.DefaultMessageHistory
         camelContext.setMessageHistory(false);
 
         return camelContext;
@@ -104,14 +105,12 @@ public class ActiveMQPropagateSerializableHeadersTest extends CamelTestSupport {
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {
-                from("activemq:test.a").process(new Processor() {
-                    public void process(Exchange exchange) throws Exception {
-                        // set the JMS headers
-                        Message in = exchange.getIn();
-                        in.setHeader("myString", "stringValue");
-                        in.setHeader("myMap", mapValue);
-                        in.setHeader("myCal", calValue);
-                    }
+                from("activemq:test.a").process(exchange -> {
+                    // set the JMS headers
+                    Message in = exchange.getIn();
+                    in.setHeader("myString", "stringValue");
+                    in.setHeader("myMap", mapValue);
+                    in.setHeader("myCal", calValue);
                 }).to("activemq:test.b?transferExchange=true&allowSerializedHeaders=true");
 
                 from("activemq:test.b").to("mock:result");

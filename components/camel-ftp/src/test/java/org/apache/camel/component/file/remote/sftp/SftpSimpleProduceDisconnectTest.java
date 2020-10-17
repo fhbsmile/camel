@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,17 +19,12 @@ package org.apache.camel.component.file.remote.sftp;
 import java.io.File;
 
 import org.apache.camel.Exchange;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class SftpSimpleProduceDisconnectTest extends SftpServerTestSupport {
-
-    @Override
-    public boolean isUseRouteBuilder() {
-        return false;
-    }
 
     @Test
     public void testSftpSimpleProduce() throws Exception {
@@ -37,20 +32,22 @@ public class SftpSimpleProduceDisconnectTest extends SftpServerTestSupport {
             return;
         }
 
-        template.sendBodyAndHeader("sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR + "?username=admin&password=admin", "Hello World", Exchange.FILE_NAME, "hello.txt");
+        template.sendBodyAndHeader("sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR + "?username=admin&password=admin",
+                "Hello World", Exchange.FILE_NAME, "hello.txt");
 
         File file = new File(FTP_ROOT_DIR + "/hello.txt");
-        assertTrue("File should exist: " + file, file.exists());
+        assertTrue(file.exists(), "File should exist: " + file);
         assertEquals("Hello World", context.getTypeConverter().convertTo(String.class, file));
-        
+
         // restart the SFTP server now
         tearDownServer();
         setUpServer();
 
-        template.sendBodyAndHeader("sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR + "?username=admin&password=admin", "Hello World", Exchange.FILE_NAME, "hello1.txt");
+        template.sendBodyAndHeader("sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR + "?username=admin&password=admin",
+                "Hello World", Exchange.FILE_NAME, "hello1.txt");
 
         file = new File(FTP_ROOT_DIR + "/hello1.txt");
-        assertTrue("File should exist: " + file, file.exists());
+        assertTrue(file.exists(), "File should exist: " + file);
         assertEquals("Hello World", context.getTypeConverter().convertTo(String.class, file));
     }
 }

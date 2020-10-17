@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import org.apache.camel.support.jsse.KeyStoreParameters;
 import org.apache.camel.util.ObjectHelper;
-import org.apache.camel.util.jsse.KeyStoreParameters;
 
 import static org.apache.camel.util.ObjectHelper.isNotEmpty;
 
@@ -42,15 +42,15 @@ public final class LoginConfigHelper {
         }
 
         System.getenv().keySet().stream()//
-            .filter(k -> k.startsWith("SALESFORCE_") && isNotEmpty(System.getenv(k)))
-            .forEach(k -> configuration.put(fromEnvName(k), System.getenv(k)));
+                .filter(k -> k.startsWith("SALESFORCE_") && isNotEmpty(System.getenv(k)))
+                .forEach(k -> configuration.put(fromEnvName(k), System.getenv(k)));
         System.getProperties().keySet().stream().map(String.class::cast)
-            .filter(k -> k.startsWith("salesforce.") && isNotEmpty(System.getProperty(k)))
-            .forEach(k -> configuration.put(k, System.getProperty(k)));
+                .filter(k -> k.startsWith("salesforce.") && isNotEmpty(System.getProperty(k)))
+                .forEach(k -> configuration.put(k, System.getProperty(k)));
     }
 
     private String fromEnvName(final String envVariable) {
-        return envVariable.replaceAll("_", ".").toLowerCase();
+        return envVariable.replace('_', '.').toLowerCase();
     }
 
     SalesforceLoginConfig createLoginConfig() {
@@ -59,6 +59,10 @@ public final class LoginConfigHelper {
         final String explicitType = configuration.get("salesforce.auth.type");
         if (ObjectHelper.isNotEmpty(explicitType)) {
             loginConfig.setType(AuthenticationType.valueOf(explicitType));
+        }
+        final String loginUrl = configuration.get("salesforce.login.url");
+        if (ObjectHelper.isNotEmpty(loginUrl)) {
+            loginConfig.setLoginUrl(loginUrl);
         }
         loginConfig.setClientId(configuration.get("salesforce.client.id"));
         loginConfig.setClientSecret(configuration.get("salesforce.client.secret"));
@@ -112,7 +116,7 @@ public final class LoginConfigHelper {
             System.out.println("| salesforce.keystore.password | SALESFORCE_KEYSTORE_PASSWORD | JWT    |");
             System.out.println("| salesforce.login.url         | SALESFORCE_LOGIN_URL         | ALL    |");
             System.out.println();
-            System.out.println("* ALL - required allways");
+            System.out.println("* ALL - required always");
             System.out.println("* UP  - when using username and password authentication");
             System.out.println("* RT  - when using refresh token flow");
             System.out.println("* JWT - when using JWT flow");

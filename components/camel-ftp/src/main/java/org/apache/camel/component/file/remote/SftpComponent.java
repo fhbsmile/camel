@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,29 +21,33 @@ import java.util.Map;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.file.GenericFileEndpoint;
+import org.apache.camel.spi.annotations.Component;
 
 /**
  * Secure FTP Component
  */
+@Component("sftp")
 public class SftpComponent extends RemoteFileComponent<SftpRemoteFile> {
 
     public SftpComponent() {
-        setEndpointClass(SftpEndpoint.class);
     }
 
     public SftpComponent(CamelContext context) {
         super(context);
-        setEndpointClass(SftpEndpoint.class);
     }
 
     @Override
-    protected GenericFileEndpoint<SftpRemoteFile> buildFileEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        // get the base uri part before the options as they can be non URI valid such as the expression using $ chars
-        // and the URI constructor will regard $ as an illegal character and we dont want to enforce end users to
+    protected GenericFileEndpoint<SftpRemoteFile> buildFileEndpoint(
+            String uri, String remaining, Map<String, Object> parameters)
+            throws Exception {
+        // get the base uri part before the options as they can be non URI valid
+        // such as the expression using $ chars
+        // and the URI constructor will regard $ as an illegal character and we
+        // dont want to enforce end users to
         // to escape the $ for the expression (file language)
         String baseUri = uri;
         if (uri.contains("?")) {
-            baseUri = uri.substring(0, uri.indexOf("?"));
+            baseUri = uri.substring(0, uri.indexOf('?'));
         }
 
         // lets make sure we create a new configuration as each endpoint can
@@ -55,9 +59,9 @@ public class SftpComponent extends RemoteFileComponent<SftpRemoteFile> {
         return new SftpEndpoint(uri, this, config);
     }
 
+    @Override
     protected void afterPropertiesSet(GenericFileEndpoint<SftpRemoteFile> endpoint) throws Exception {
         // noop
     }
 
 }
-

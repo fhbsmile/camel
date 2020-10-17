@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,11 +23,13 @@ import org.apache.camel.Endpoint;
 import org.apache.camel.component.twitter.AbstractTwitterComponent;
 import org.apache.camel.component.twitter.TwitterConfiguration;
 import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
 
 /**
  * Twitter Timeline component.
  */
 @Metadata(label = "verifiers", enums = "parameters,connectivity")
+@Component("twitter-timeline")
 public class TwitterTimelineComponent extends AbstractTwitterComponent {
 
     public TwitterTimelineComponent() {
@@ -39,7 +41,9 @@ public class TwitterTimelineComponent extends AbstractTwitterComponent {
     }
 
     @Override
-    protected Endpoint doCreateEndpoint(TwitterConfiguration properties, String uri, String remaining, Map<String, Object> parameters) throws Exception {
+    protected Endpoint doCreateEndpoint(
+            TwitterConfiguration properties, String uri, String remaining, Map<String, Object> parameters)
+            throws Exception {
         String user = getAndRemoveParameter(parameters, "user", String.class);
         return new TwitterTimelineEndpoint(uri, remaining, user, this, properties);
     }

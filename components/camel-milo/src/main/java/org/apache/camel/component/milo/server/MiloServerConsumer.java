@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,8 +23,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.component.milo.Messages;
 import org.apache.camel.component.milo.server.internal.CamelServerItem;
-import org.apache.camel.impl.DefaultConsumer;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultConsumer;
+import org.apache.camel.support.DefaultMessage;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 
 public class MiloServerConsumer extends DefaultConsumer {

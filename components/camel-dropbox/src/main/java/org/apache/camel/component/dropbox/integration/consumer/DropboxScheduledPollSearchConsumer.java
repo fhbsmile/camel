@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,13 +27,15 @@ import org.apache.camel.component.dropbox.util.DropboxResultHeader;
 
 public class DropboxScheduledPollSearchConsumer extends DropboxScheduledPollConsumer {
 
-    public DropboxScheduledPollSearchConsumer(DropboxEndpoint endpoint, Processor processor, DropboxConfiguration configuration) {
+    public DropboxScheduledPollSearchConsumer(DropboxEndpoint endpoint, Processor processor,
+                                              DropboxConfiguration configuration) {
         super(endpoint, processor, configuration);
     }
 
     /**
      * Poll from a dropbox remote path and put the result in the message exchange
-     * @return number of messages polled
+     * 
+     * @return           number of messages polled
      * @throws Exception
      */
     @Override
@@ -44,14 +46,15 @@ public class DropboxScheduledPollSearchConsumer extends DropboxScheduledPollCons
 
         StringBuilder fileExtracted = new StringBuilder();
         for (SearchMatch entry : result.getFound()) {
-            fileExtracted.append(entry.getMetadata().getName()).append("-").append(entry.getMetadata().getPathDisplay()).append("\n");
+            fileExtracted.append(entry.getMetadata().getName()).append("-").append(entry.getMetadata().getPathDisplay())
+                    .append("\n");
         }
 
         exchange.getIn().setHeader(DropboxResultHeader.FOUND_FILES.name(), fileExtracted.toString());
         exchange.getIn().setBody(result.getFound());
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Downloaded: {}", result.toString());
+            LOG.debug("Downloaded: {}", result);
         }
 
         try {

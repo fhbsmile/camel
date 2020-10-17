@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -75,10 +75,10 @@ public class SignedDataCreator extends CryptoCmsMarshallerAbstract {
 
         CMSSignedDataStreamGenerator gen = new CMSSignedDataStreamGenerator();
 
-        if (config.getSigner().isEmpty()) {
+        if (config.getSignerList().isEmpty()) {
             throw new CryptoCmsException("No signer information configured");
         }
-        for (SignerInfo signer : config.getSigner()) {
+        for (SignerInfo signer : config.getSignerList()) {
             // these certificates are sent within the signature
             LOG.debug("Signer info: {}", signer);
             X509Certificate signerCert = signer.getCertificate(exchange);
@@ -93,19 +93,25 @@ public class SignedDataCreator extends CryptoCmsMarshallerAbstract {
 
             ContentSigner contentSigner;
             try {
-                contentSigner = new JcaContentSignerBuilder(signer.getSignatureAlgorithm(exchange)).setProvider(BouncyCastleProvider.PROVIDER_NAME).build(key);
+                contentSigner = new JcaContentSignerBuilder(signer.getSignatureAlgorithm(exchange))
+                        .setProvider(BouncyCastleProvider.PROVIDER_NAME).build(key);
             } catch (OperatorCreationException e) {
-                throw new CryptoCmsInvalidKeyException("The private key of the signer information  '" + signer + "' does not fit to the specified signature algorithm '"
-                                                       + signer.getSignatureAlgorithm(exchange) + "': " + e.getMessage(), e);
+                throw new CryptoCmsInvalidKeyException(
+                        "The private key of the signer information  '" + signer
+                                                       + "' does not fit to the specified signature algorithm '"
+                                                       + signer.getSignatureAlgorithm(exchange) + "': " + e.getMessage(),
+                        e);
             }
 
-            JcaSignerInfoGeneratorBuilder signerBuilder = new JcaSignerInfoGeneratorBuilder(new JcaDigestCalculatorProviderBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME)
-                .build());
-            signerBuilder.setSignedAttributeGenerator(signer.getSignedAttributeGenerator(exchange)).setUnsignedAttributeGenerator(signer.getUnsignedAttributeGenerator(exchange));
+            JcaSignerInfoGeneratorBuilder signerBuilder = new JcaSignerInfoGeneratorBuilder(
+                    new JcaDigestCalculatorProviderBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME)
+                            .build());
+            signerBuilder.setSignedAttributeGenerator(signer.getSignedAttributeGenerator(exchange))
+                    .setUnsignedAttributeGenerator(signer.getUnsignedAttributeGenerator(exchange));
 
             gen.addSignerInfoGenerator(signerBuilder.build(contentSigner, signerCert));
 
-            List<Certificate> certificateList = new ArrayList<Certificate>();
+            List<Certificate> certificateList = new ArrayList<>();
             for (Certificate cert : signer.getCertificateChain(exchange)) {
                 if (!certificateList.contains(cert)) {
                     certificateList.add(cert);

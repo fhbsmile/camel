@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.test.tcp;
 
 import java.io.BufferedReader;
@@ -26,26 +25,25 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.fail;
-
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Various tests used to validate the behaviour of Java Sockets.
  *
- * The tests were for experimentation and don't have any assertions in them - JUnit provided a convenient framework to explore this behaviour.  These tests shouldn't be run with a normal build since
- * they don't have any assertions and don't validate any results.
+ * The tests were for experimentation and don't have any assertions in them - JUnit provided a convenient framework to
+ * explore this behaviour. These tests shouldn't be run with a normal build since they don't have any assertions and
+ * don't validate any results.
  *
- * NOTE:  This class may be deleted in the future
+ * NOTE: This class may be deleted in the future
  */
-@Ignore(value = "Tests validating Java Socket behaviours")
+@Disabled(value = "Tests validating Java Socket behaviours")
 public class JavaSocketTests {
     Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -54,12 +52,12 @@ public class JavaSocketTests {
 
     int messageCount = 10;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         serverSocket = new ServerSocket(0);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (null != clientSocket) {
             clientSocket.close();
@@ -77,7 +75,6 @@ public class JavaSocketTests {
 
             @Override
             public void run() {
-                boolean running = true;
                 try {
                     Socket echoSocket = serverSocket.accept();
 
@@ -99,27 +96,29 @@ public class JavaSocketTests {
                                 readByte = reader.read();
                                 log.trace("Processing byte: {}", readByte);
                                 switch (readByte) {
-                                case -1:
-                                    if (echoSocket.isConnected() && !echoSocket.isClosed()) {
-                                        log.info("Available returned {}", reader.available());
-                                        log.warn("Socket claims to still be open, but END_OF_STREAM received - closing echoSocket");
-                                        try {
-                                            echoSocket.close();
-                                        } catch (Exception ex) {
-                                            log.warn("Exception encountered closing echoSocket after END_OF_STREAM received", ex);
+                                    case -1:
+                                        if (echoSocket.isConnected() && !echoSocket.isClosed()) {
+                                            log.info("Available returned {}", reader.available());
+                                            log.warn(
+                                                    "Socket claims to still be open, but END_OF_STREAM received - closing echoSocket");
+                                            try {
+                                                echoSocket.close();
+                                            } catch (Exception ex) {
+                                                log.warn(
+                                                        "Exception encountered closing echoSocket after END_OF_STREAM received",
+                                                        ex);
+                                            }
                                         }
-                                    }
-                                    running = false;
-                                    break;
-                                case 10:
-                                    log.info("Complete Message - Sending Response");
-                                    byte[] response = responseBuilder.toString().getBytes();
-                                    responseBuilder.setLength(0);
-                                    writer.write(response, 0, response.length);
-                                    writer.write('\n');
-                                    break;
-                                default:
-                                    responseBuilder.append((char) readByte);
+                                        break;
+                                    case 10:
+                                        log.info("Complete Message - Sending Response");
+                                        byte[] response = responseBuilder.toString().getBytes();
+                                        responseBuilder.setLength(0);
+                                        writer.write(response, 0, response.length);
+                                        writer.write('\n');
+                                        break;
+                                    default:
+                                        responseBuilder.append((char) readByte);
                                 }
                             } catch (SocketTimeoutException timeoutEx) {
                                 log.info("Timeout reading data - available returned {}", available);
@@ -136,7 +135,6 @@ public class JavaSocketTests {
                         log.error("Exception encountered closing server socket", ioEx);
                     }
                 }
-
 
                 log.info("Finished processing connection");
             }
@@ -184,7 +182,6 @@ public class JavaSocketTests {
 
             @Override
             public void run() {
-                boolean running = true;
                 try {
                     Socket echoSocket = serverSocket.accept();
 
@@ -206,31 +203,33 @@ public class JavaSocketTests {
                                 readByte = reader.read();
                                 log.trace("Processing byte: {}", readByte);
                                 switch (readByte) {
-                                case -1:
-                                    if (echoSocket.isConnected() && !echoSocket.isClosed()) {
-                                        log.info("Available returned {}", reader.available());
-                                        log.warn("Socket claims to still be open, but END_OF_STREAM received - closing echoSocket");
-                                        try {
-                                            echoSocket.close();
-                                        } catch (Exception ex) {
-                                            log.warn("Exception encountered closing echoSocket after END_OF_STREAM received", ex);
+                                    case -1:
+                                        if (echoSocket.isConnected() && !echoSocket.isClosed()) {
+                                            log.info("Available returned {}", reader.available());
+                                            log.warn(
+                                                    "Socket claims to still be open, but END_OF_STREAM received - closing echoSocket");
+                                            try {
+                                                echoSocket.close();
+                                            } catch (Exception ex) {
+                                                log.warn(
+                                                        "Exception encountered closing echoSocket after END_OF_STREAM received",
+                                                        ex);
+                                            }
                                         }
-                                    }
-                                    running = false;
-                                    break;
-                                case 27: // Escape
-                                    log.info("Received Escape - closing connection");
-                                    echoSocket.close();
-                                    break;
-                                case 10:
-                                    log.info("Complete Message - Sending Response");
-                                    byte[] response = responseBuilder.toString().getBytes();
-                                    responseBuilder.setLength(0);
-                                    writer.write(response, 0, response.length);
-                                    writer.write('\n');
-                                    break;
-                                default:
-                                    responseBuilder.append((char) readByte);
+                                        break;
+                                    case 27: // Escape
+                                        log.info("Received Escape - closing connection");
+                                        echoSocket.close();
+                                        break;
+                                    case 10:
+                                        log.info("Complete Message - Sending Response");
+                                        byte[] response = responseBuilder.toString().getBytes();
+                                        responseBuilder.setLength(0);
+                                        writer.write(response, 0, response.length);
+                                        writer.write('\n');
+                                        break;
+                                    default:
+                                        responseBuilder.append((char) readByte);
                                 }
                             } catch (SocketTimeoutException timeoutEx) {
                                 log.info("Timeout reading data - available returned {}", available);
@@ -247,7 +246,6 @@ public class JavaSocketTests {
                         log.error("Exception encountered closing server socket", ioEx);
                     }
                 }
-
 
                 log.info("Finished processing connection");
             }
@@ -278,7 +276,6 @@ public class JavaSocketTests {
 
         log.info("Message send loop complete - closing connection");
         log.info("Client Socket available() returned {} before close", clientSocket.getInputStream().available());
-        byte[] buffer = new byte[0];
         try {
             clientSocket.getInputStream().read();
             fail("read should have timed-out");
@@ -288,7 +285,6 @@ public class JavaSocketTests {
         clientSocket.getOutputStream().write(27);
         Thread.sleep(1000);
         log.info("Client Socket available() returned {} after close", clientSocket.getInputStream().available());
-        buffer = new byte[0];
         log.info("Client Socket read() returned {} after close", clientSocket.getInputStream().read());
         // Javadoc for Socket says closing the InputStream will close the connection
         clientSocket.getInputStream().close();

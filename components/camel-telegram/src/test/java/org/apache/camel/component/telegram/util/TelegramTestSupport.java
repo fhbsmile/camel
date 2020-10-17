@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,74 +18,107 @@ package org.apache.camel.component.telegram.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.apache.camel.component.telegram.TelegramService;
-import org.apache.camel.component.telegram.TelegramServiceProvider;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.After;
-import org.mockito.Mockito;
+import org.apache.camel.CamelContext;
+import org.apache.camel.component.telegram.TelegramComponent;
+import org.apache.camel.component.telegram.model.InlineKeyboardButton;
+import org.apache.camel.component.telegram.model.OutgoingTextMessage;
+import org.apache.camel.component.telegram.model.ReplyKeyboardMarkup;
+import org.apache.camel.test.AvailablePortFinder;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
  * A support test class for Telegram tests.
  */
 public class TelegramTestSupport extends CamelTestSupport {
 
-    /**
-     * Indicates whether the {@code TelegramService} has been mocked during last test.
-     */
-    private boolean telegramServiceMocked;
+    protected static volatile int port;
 
-    /**
-     * Restores the status of {@code TelegramServiceProvider} if it has been mocked.
-     */
-    @After
-    public void tearDown() {
-        if (telegramServiceMocked) {
-            TelegramServiceProvider.get().restoreDefaultService();
-            this.telegramServiceMocked = false;
-        }
+    protected String chatId;
+    private TelegramMockRoutes mockRoutes;
+
+    @BeforeAll
+    public static void initPort() throws Exception {
+        port = AvailablePortFinder.getNextAvailable();
     }
 
     /**
-     * Setup an alternative mock {@code TelegramService} in the {@code TelegramServiceProvider} and return it.
+     * Construct an inline keyboard sample to be used with an OutgoingTextMessage.
      *
-     * @return the mock service
+     * @param  message OutgoingTextMessage previously created
+     * @return         OutgoingTextMessage set with an inline keyboard
      */
-    public TelegramService mockTelegramService() {
-        TelegramService mockService = Mockito.mock(TelegramService.class);
-        TelegramServiceProvider.get().setAlternativeService(mockService);
-        this.telegramServiceMocked = true;
+    public OutgoingTextMessage withInlineKeyboardContainingTwoRows(OutgoingTextMessage message) {
 
-        return mockService;
-    }
+        InlineKeyboardButton buttonOptionOneI = InlineKeyboardButton.builder()
+                .text("Option One - I").build();
 
-    /**
-     * Retrieves the currently mocked {@code TelegramService}.
-     *
-     * @return the current mock of the telegram service
-     */
-    public TelegramService currentMockService() {
-        return TelegramServiceProvider.get().getAlternativeService();
+        InlineKeyboardButton buttonOptionOneII = InlineKeyboardButton.builder()
+                .text("Option One - II").build();
+
+        InlineKeyboardButton buttonOptionTwoI = InlineKeyboardButton.builder()
+                .text("Option Two - I").build();
+
+        ReplyKeyboardMarkup replyMarkup = ReplyKeyboardMarkup.builder()
+                .keyboard()
+                .addRow(Arrays.asList(buttonOptionOneI, buttonOptionOneII))
+                .addRow(Arrays.asList(buttonOptionTwoI))
+                .close()
+                .oneTimeKeyboard(true)
+                .build();
+        message.setReplyMarkup(replyMarkup);
+
+        return message;
     }
 
     /**
      * Retrieves a response from a JSON file on classpath.
      *
-     * @param fileName the filename in the classpath
-     * @param clazz the target class
-     * @param <T> the type of the returned object
-     * @return the object representation of the JSON file
+     * @param  fileName the filename in the classpath
+     * @param  clazz    the target class
+     * @param  <T>      the type of the returned object
+     * @return          the object representation of the JSON file
      */
-    public <T> T getJSONResource(String fileName, Class<T> clazz) {
+    public static <T> T getJSONResource(String fileName, Class<T> clazz) {
         ObjectMapper mapper = new ObjectMapper();
-        try (InputStream stream = getClass().getClassLoader().getResourceAsStream(fileName)) {
+        try (InputStream stream = TelegramTestSupport.class.getClassLoader().getResourceAsStream(fileName)) {
             T value = mapper.readValue(stream, clazz);
             return value;
         } catch (IOException e) {
             throw new IllegalArgumentException("Unable to load file " + fileName, e);
         }
+    }
+
+    @Override
+    protected CamelContext createCamelContext() throws Exception {
+        final CamelContext context = super.createCamelContext();
+        final TelegramComponent component = new TelegramComponent();
+
+        TelegramApiConfig apiConfig = getTelegramApiConfig();
+        component.setBaseUri(apiConfig.getBaseUri());
+        component.setAuthorizationToken(apiConfig.getAuthorizationToken());
+        this.chatId = apiConfig.getChatId();
+
+        context.addComponent("telegram", component);
+        return context;
+    }
+
+    protected TelegramApiConfig getTelegramApiConfig() {
+        return TelegramApiConfig.mock(port);
+    }
+
+    protected TelegramMockRoutes getMockRoutes() {
+        if (mockRoutes == null) {
+            mockRoutes = createMockRoutes();
+        }
+        return mockRoutes;
+    }
+
+    protected TelegramMockRoutes createMockRoutes() {
+        throw new UnsupportedOperationException();
     }
 
 }

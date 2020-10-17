@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,8 +21,7 @@ import java.util.Map;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SshComponentProducerTest extends SshComponentTestSupport {
 
@@ -82,7 +81,7 @@ public class SshComponentProducerTest extends SshComponentTestSupport {
 
         assertMockEndpointsSatisfied();
     }
-    
+
     @Test
     public void testCredentialsAsHeaders() throws Exception {
         final String msg = "test";
@@ -92,8 +91,8 @@ public class SshComponentProducerTest extends SshComponentTestSupport {
         mock.expectedBodiesReceived(msg);
         mock.expectedHeaderReceived(SshResult.EXIT_VALUE, 0);
         mock.expectedHeaderReceived(SshResult.STDERR, "Error:test");
-        
-        Map<String, Object> headers = new HashMap<String, Object>();
+
+        Map<String, Object> headers = new HashMap<>();
         headers.put(SshConstants.USERNAME_HEADER, "smx");
         headers.put(SshConstants.PASSWORD_HEADER, "smx");
 
@@ -114,7 +113,7 @@ public class SshComponentProducerTest extends SshComponentTestSupport {
                 from("direct:ssh")
                         .to("ssh://smx:smx@localhost:" + port + "?timeout=3000")
                         .to("mock:password");
-                
+
                 from("direct:sshCredentialsWithHeaders")
                         .to("ssh://localhost:" + port + "?timeout=3000")
                         .to("mock:password");

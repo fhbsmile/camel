@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,23 +18,21 @@ package org.apache.camel.zipkin;
 
 import java.util.Stack;
 
-import com.github.kristofa.brave.ServerSpan;
-import com.twitter.zipkin.gen.Span;
+import brave.Span;
 import org.apache.camel.Exchange;
 
 /**
  * The state of the zipkin trace which we store on the {@link Exchange}
  * <p/>
- * This is needed to keep track of of correlating when an existing span
- * is calling downstream service(s) and therefore must be able to correlate
- * those service calls with the parent span.
+ * This is needed to keep track of of correlating when an existing span is calling downstream service(s) and therefore
+ * must be able to correlate those service calls with the parent span.
  */
 public final class ZipkinState {
 
     public static final String KEY = "CamelZipkinState";
 
     private final Stack<Span> clientSpans = new Stack<>();
-    private final Stack<ServerSpan> serverSpans = new Stack<>();
+    private final Stack<Span> serverSpans = new Stack<>();
 
     public void pushClientSpan(Span span) {
         clientSpans.push(span);
@@ -48,11 +46,11 @@ public final class ZipkinState {
         }
     }
 
-    public void pushServerSpan(ServerSpan span) {
+    public void pushServerSpan(Span span) {
         serverSpans.push(span);
     }
 
-    public ServerSpan popServerSpan() {
+    public Span popServerSpan() {
         if (!serverSpans.empty()) {
             return serverSpans.pop();
         } else {
@@ -60,7 +58,7 @@ public final class ZipkinState {
         }
     }
 
-    public ServerSpan peekServerSpan() {
+    public Span peekServerSpan() {
         if (!serverSpans.empty()) {
             return serverSpans.peek();
         } else {

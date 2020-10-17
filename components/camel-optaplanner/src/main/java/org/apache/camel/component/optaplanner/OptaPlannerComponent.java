@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,20 +19,22 @@ package org.apache.camel.component.optaplanner;
 import java.util.Map;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.DefaultComponent;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 import org.apache.camel.util.ObjectHelper;
 import org.kie.api.KieServices;
 
 /**
  * OptaPlanner component for Camel
  */
+@Component("optaplanner")
 public class OptaPlannerComponent extends DefaultComponent {
 
+    @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         OptaPlannerConfiguration configuration = new OptaPlannerConfiguration();
         configuration.setConfigFile(remaining);
-        setProperties(configuration, parameters);
-        
+
         // [CAMEL-11889] Kie assumes that the TCCL can load its services
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         try {
@@ -42,8 +44,10 @@ public class OptaPlannerComponent extends DefaultComponent {
         } finally {
             Thread.currentThread().setContextClassLoader(tccl);
         }
-        
-        return new OptaPlannerEndpoint(uri, this, configuration);
+
+        OptaPlannerEndpoint answer = new OptaPlannerEndpoint(uri, this, configuration);
+        setProperties(answer, parameters);
+        return answer;
     }
 
 }

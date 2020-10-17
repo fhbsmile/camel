@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,21 +16,17 @@
  */
 package org.apache.camel.component.salesforce.api.dto.composite;
 
-import java.util.regex.Pattern;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.converters.reflection.FieldDictionary;
-import com.thoughtworks.xstream.converters.reflection.PureJavaReflectionProvider;
-
-import org.apache.camel.component.salesforce.api.dto.AnnotationFieldKeySorter;
 import org.apache.camel.component.salesforce.api.dto.composite.SObjectBatch.Method;
+import org.apache.camel.component.salesforce.api.utils.JsonUtils;
+import org.apache.camel.component.salesforce.api.utils.XStreamUtils;
 import org.apache.camel.component.salesforce.dto.generated.Account;
 import org.apache.camel.component.salesforce.dto.generated.Account_IndustryEnum;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SObjectBatchTest {
 
@@ -54,16 +50,16 @@ public class SObjectBatchTest {
 
         batch.addLimits();
 
-        Account updates1 = new Account();
+        final Account updates1 = new Account();
         updates1.setName("NewName");
         updates1.setAccountNumber("AC12345");
         batch.addUpdate("Account", "001D000000K0fXOIAZ", updates1);
 
-        Account updates2 = new Account();
+        final Account updates2 = new Account();
         updates2.setName("NewName");
         batch.addUpdateByExternalId("Account", "EPK", "12345", updates2);
 
-        Account updates3 = new Account();
+        final Account updates3 = new Account();
         updates3.setName("NewName");
         batch.addUpsertByExternalId("Account", "EPK", "12345", updates3);
 
@@ -78,152 +74,127 @@ public class SObjectBatchTest {
 
     @Test
     public void shouldSerializeToJson() throws JsonProcessingException {
-        final String json = Pattern.compile("\\s+(?=([^\"]*\"[^\"]*\")*[^\"]*$)", Pattern.DOTALL)
-            .matcher("{"//
-                + "\"batchRequests\" : ["//
-                + "    {"//
-                + "        \"method\" : \"POST\","//
-                + "        \"url\" : \"v37.0/sobjects/Account/\","//
-                + "        \"richInput\" : {\"Industry\" : \"Environmental\" , \"Name\" : \"NewAccountName\"}"//
-                + "    },{"//
-                + "        \"method\" : \"DELETE\","//
-                + "        \"url\" : \"v37.0/sobjects/Account/001D000000K0fXOIAZ\""//
-                + "    },{"//
-                + "        \"method\" : \"GET\","//
-                + "        \"url\" : \"v37.0/sobjects/Account/001D000000K0fXOIAZ?fields=Name,BillingPostalCode\""//
-                + "    },{"//
-                + "        \"method\" : \"GET\","//
-                + "        \"url\" : \"v37.0/sobjects/Account/EPK/12345\""//
-                + "    },{"//
-                + "        \"method\" : \"GET\","//
-                + "        \"url\" : \"v37.0/sobjects/Account/001D000000K0fXOIAZ/CreatedBy?fields=Name\"},{"//
-                + "        \"method\" : \"GET\","//
-                + "        \"url\" : \"v37.0/limits/\""//
-                + "    },{"//
-                + "        \"method\" : \"PATCH\","//
-                + "        \"url\" : \"v37.0/sobjects/Account/001D000000K0fXOIAZ\","//
-                + "        \"richInput\" : {\"AccountNumber\" : \"AC12345\", \"Name\" : \"NewName\"}"//
-                + "    },{"//
-                + "        \"method\" : \"PATCH\","//
-                + "        \"url\" : \"v37.0/sobjects/Account/EPK/12345\","//
-                + "        \"richInput\" : {\"Name\" : \"NewName\"}"//
-                + "    },{"//
-                + "        \"method\" : \"PATCH\","//
-                + "        \"url\" : \"v37.0/sobjects/Account/EPK/12345\","//
-                + "        \"richInput\" : {\"Name\" : \"NewName\"}"//
-                + "    },{"//
-                + "        \"method\" : \"PATCH\","//
-                + "        \"url\" : \"v37.0/some/url\""//
-                + "    },{"//
-                + "        \"method\" : \"GET\","//
-                + "        \"url\" : \"v37.0/query/?q=SELECT Name FROM Account\""//
-                + "    },{"//
-                + "        \"method\" : \"GET\","//
-                + "        \"url\" : \"v37.0/queryAll/?q=SELECT Name FROM Account\""//
-                + "    },{"//
-                + "        \"method\" : \"GET\","//
-                + "        \"url\" : \"v37.0/search/?q=FIND {joe}\""//
-                + "    }]"//
-                + "}")
-            .replaceAll("");
-
-        final ObjectMapper mapper = new ObjectMapper();
-
+        final String json = "{" + "\"batchRequests\":[" + "{" + "\"method\":\"POST\"," + "\"url\":\"v37.0/sobjects/Account/\","
+                            + "\"richInput\":{" + "\"attributes\":{"
+                            + "\"referenceId\":null," + "\"type\":\"Account\"," + "\"url\":null" + "},"
+                            + "\"Industry\":\"Environmental\"," + "\"Name\":\"NewAccountName\"" + "}"
+                            + "}," + "{" + "\"method\":\"DELETE\"," + "\"url\":\"v37.0/sobjects/Account/001D000000K0fXOIAZ\""
+                            + "}," + "{" + "\"method\":\"GET\","
+                            + "\"url\":\"v37.0/sobjects/Account/001D000000K0fXOIAZ?fields=Name,BillingPostalCode\"" + "}," + "{"
+                            + "\"method\":\"GET\","
+                            + "\"url\":\"v37.0/sobjects/Account/EPK/12345\"" + "}," + "{" + "\"method\":\"GET\","
+                            + "\"url\":\"v37.0/sobjects/Account/001D000000K0fXOIAZ/CreatedBy?fields=Name\"" + "}," + "{"
+                            + "\"method\":\"GET\"," + "\"url\":\"v37.0/limits/\""
+                            + "}," + "{" + "\"method\":\"PATCH\"," + "\"url\":\"v37.0/sobjects/Account/001D000000K0fXOIAZ\","
+                            + "\"richInput\":{" + "\"attributes\":{"
+                            + "\"referenceId\":null," + "\"type\":\"Account\"," + "\"url\":null" + "},"
+                            + "\"AccountNumber\":\"AC12345\"," + "\"Name\":\"NewName\"" + "}" + "},"
+                            + "{" + "\"method\":\"PATCH\"," + "\"url\":\"v37.0/sobjects/Account/EPK/12345\","
+                            + "\"richInput\":{" + "\"attributes\":{" + "\"referenceId\":null,"
+                            + "\"type\":\"Account\"," + "\"url\":null" + "}," + "\"Name\":\"NewName\"" + "}" + "}," + "{"
+                            + "\"method\":\"PATCH\","
+                            + "\"url\":\"v37.0/sobjects/Account/EPK/12345\"," + "\"richInput\":{" + "\"attributes\":{"
+                            + "\"referenceId\":null," + "\"type\":\"Account\","
+                            + "\"url\":null" + "}," + "\"Name\":\"NewName\"" + "}" + "}," + "{" + "\"method\":\"PATCH\","
+                            + "\"url\":\"v37.0/some/url\"" + "}," + "{"
+                            + "\"method\":\"GET\"," + "\"url\":\"v37.0/query/?q=SELECT Name FROM Account\"" + "}," + "{"
+                            + "\"method\":\"GET\","
+                            + "\"url\":\"v37.0/queryAll/?q=SELECT Name FROM Account\"" + "}," + "{" + "\"method\":\"GET\","
+                            + "\"url\":\"v37.0/search/?q=FIND {joe}\"" + "}" + "]"
+                            + "}";
+        final ObjectMapper mapper = JsonUtils.createObjectMapper();
         final String serialized = mapper.writerFor(SObjectBatch.class).writeValueAsString(batch);
-
-        assertEquals("Should serialize as expected by Salesforce", json, serialized);
+        assertEquals(json, serialized, "Should serialize as expected by Salesforce");
     }
 
     @Test
     public void shouldSerializeToXml() {
-        final String xml = "<batch>\n"//
-            + "  <batchRequests>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>POST</method>\n"//
-            + "      <url>v37.0/sobjects/Account/</url>\n"//
-            + "      <richInput>\n"//
-            + "        <Account>\n"//
-            + "          <Name>NewAccountName</Name>\n"//
-            + "          <Industry>Environmental</Industry>\n"//
-            + "        </Account>\n"//
-            + "      </richInput>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>DELETE</method>\n"//
-            + "      <url>v37.0/sobjects/Account/001D000000K0fXOIAZ</url>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>GET</method>\n"//
-            + "      <url>v37.0/sobjects/Account/001D000000K0fXOIAZ?fields=Name,BillingPostalCode</url>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>GET</method>\n"//
-            + "      <url>v37.0/sobjects/Account/EPK/12345</url>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>GET</method>\n"//
-            + "      <url>v37.0/sobjects/Account/001D000000K0fXOIAZ/CreatedBy?fields=Name</url>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>GET</method>\n"//
-            + "      <url>v37.0/limits/</url>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>PATCH</method>\n"//
-            + "      <url>v37.0/sobjects/Account/001D000000K0fXOIAZ</url>\n"//
-            + "      <richInput>\n"//
-            + "        <Account>\n"//
-            + "          <Name>NewName</Name>\n"//
-            + "          <AccountNumber>AC12345</AccountNumber>\n"//
-            + "        </Account>\n"//
-            + "      </richInput>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>PATCH</method>\n"//
-            + "      <url>v37.0/sobjects/Account/EPK/12345</url>\n"//
-            + "      <richInput>\n"//
-            + "        <Account>\n"//
-            + "          <Name>NewName</Name>\n"//
-            + "        </Account>\n"//
-            + "      </richInput>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>PATCH</method>\n"//
-            + "      <url>v37.0/sobjects/Account/EPK/12345</url>\n"//
-            + "      <richInput>\n"//
-            + "        <Account>\n"//
-            + "          <Name>NewName</Name>\n"//
-            + "        </Account>\n"//
-            + "      </richInput>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>PATCH</method>\n"//
-            + "      <url>v37.0/some/url</url>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>GET</method>\n"//
-            + "      <url>v37.0/query/?q=SELECT Name FROM Account</url>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>GET</method>\n"//
-            + "      <url>v37.0/queryAll/?q=SELECT Name FROM Account</url>\n"//
-            + "    </batchRequest>\n"//
-            + "    <batchRequest>\n"//
-            + "      <method>GET</method>\n"//
-            + "      <url>v37.0/search/?q=FIND {joe}</url>\n"//
-            + "    </batchRequest>\n"//
-            + "  </batchRequests>\n"//
-            + "</batch>";
+        final String xml = "<batch>"//
+                           + "<batchRequests>"//
+                           + "<batchRequest>"//
+                           + "<method>POST</method>"//
+                           + "<url>v37.0/sobjects/Account/</url>"//
+                           + "<richInput>"//
+                           + "<Account>"//
+                           + "<Name>NewAccountName</Name>"//
+                           + "<Industry>Environmental</Industry>"//
+                           + "</Account>"//
+                           + "</richInput>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>DELETE</method>"//
+                           + "<url>v37.0/sobjects/Account/001D000000K0fXOIAZ</url>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>GET</method>"//
+                           + "<url>v37.0/sobjects/Account/001D000000K0fXOIAZ?fields=Name,BillingPostalCode</url>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>GET</method>"//
+                           + "<url>v37.0/sobjects/Account/EPK/12345</url>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>GET</method>"//
+                           + "<url>v37.0/sobjects/Account/001D000000K0fXOIAZ/CreatedBy?fields=Name</url>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>GET</method>"//
+                           + "<url>v37.0/limits/</url>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>PATCH</method>"//
+                           + "<url>v37.0/sobjects/Account/001D000000K0fXOIAZ</url>"//
+                           + "<richInput>"//
+                           + "<Account>"//
+                           + "<Name>NewName</Name>"//
+                           + "<AccountNumber>AC12345</AccountNumber>"//
+                           + "</Account>"//
+                           + "</richInput>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>PATCH</method>"//
+                           + "<url>v37.0/sobjects/Account/EPK/12345</url>"//
+                           + "<richInput>"//
+                           + "<Account>"//
+                           + "<Name>NewName</Name>"//
+                           + "</Account>"//
+                           + "</richInput>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>PATCH</method>"//
+                           + "<url>v37.0/sobjects/Account/EPK/12345</url>"//
+                           + "<richInput>"//
+                           + "<Account>"//
+                           + "<Name>NewName</Name>"//
+                           + "</Account>"//
+                           + "</richInput>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>PATCH</method>"//
+                           + "<url>v37.0/some/url</url>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>GET</method>"//
+                           + "<url>v37.0/query/?q=SELECT Name FROM Account</url>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>GET</method>"//
+                           + "<url>v37.0/queryAll/?q=SELECT Name FROM Account</url>"//
+                           + "</batchRequest>"//
+                           + "<batchRequest>"//
+                           + "<method>GET</method>"//
+                           + "<url>v37.0/search/?q=FIND {joe}</url>"//
+                           + "</batchRequest>"//
+                           + "</batchRequests>"//
+                           + "</batch>";
 
-        final PureJavaReflectionProvider reflectionProvider = new PureJavaReflectionProvider(
-            new FieldDictionary(new AnnotationFieldKeySorter()));
-        final XStream xStream = new XStream(reflectionProvider);
-        xStream.aliasSystemAttribute(null, "class");
-        xStream.processAnnotations(SObjectBatch.class);
-        xStream.processAnnotations(batch.objectTypes());
+        final Class<?>[] classes = new Class[batch.objectTypes().length + 1];
+        classes[0] = SObjectBatch.class;
+        System.arraycopy(batch.objectTypes(), 0, classes, 1, batch.objectTypes().length);
+        final XStream xStream = XStreamUtils.createXStream(classes);
 
         final String serialized = xStream.toXML(batch);
 
-        assertEquals("Should serialize as expected by Salesforce", xml, serialized);
+        assertEquals(xml, serialized, "Should serialize as expected by Salesforce");
     }
 }

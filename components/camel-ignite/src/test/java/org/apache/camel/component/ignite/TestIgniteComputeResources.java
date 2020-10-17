@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -143,8 +142,8 @@ public final class TestIgniteComputeResources {
             return answer;
         }
     };
-    
+
     private TestIgniteComputeResources() {
-        
+
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,19 +20,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.spring.CamelSpringTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.spring.junit5.CamelSpringTestSupport;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-/**
- * @version 
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class SpringJohnzonJsonDataFormatTest extends CamelSpringTestSupport {
 
     @Test
     public void testMarshalAndUnmarshalMap() throws Exception {
-        Map<String, Object> in = new HashMap<String, Object>();
+        Map<String, Object> in = new HashMap<>();
         in.put("name", "Camel");
 
         MockEndpoint mock = getMockEndpoint("mock:reverse");

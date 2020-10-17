@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,22 +23,25 @@ import javax.jms.Session;
 
 import org.apache.camel.Endpoint;
 
-/**
- * @version
- */
 public interface JmsObjectFactory {
     MessageConsumer createMessageConsumer(Session session, Endpoint endpoint) throws Exception;
 
-    MessageConsumer createMessageConsumer(Session session, Destination destination,
+    MessageConsumer createMessageConsumer(
+            Session session, Destination destination,
             String messageSelector, boolean topic, String subscriptionId, boolean durable,
-            boolean shared) throws Exception;
+            boolean shared)
+            throws Exception;
 
-    MessageConsumer createMessageConsumer(Session session, Destination destination,
+    MessageConsumer createMessageConsumer(
+            Session session, Destination destination,
             String messageSelector, boolean topic, String subscriptionId, boolean durable,
-            boolean shared, boolean noLocal) throws Exception;
+            boolean shared, boolean noLocal)
+            throws Exception;
 
     MessageProducer createMessageProducer(Session session, Endpoint endpoint) throws Exception;
 
-    MessageProducer createMessageProducer(Session session, Destination destination,
-            boolean persistent, long ttl) throws Exception;
+    MessageProducer createMessageProducer(
+            Session session, Destination destination,
+            boolean persistent, long ttl)
+            throws Exception;
 }

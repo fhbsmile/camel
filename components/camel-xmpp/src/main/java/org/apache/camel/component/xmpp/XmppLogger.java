@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -30,9 +30,10 @@ public class XmppLogger implements StanzaListener {
         this.direction = direction;
     }
 
+    @Override
     public void processStanza(Stanza stanza) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("{} : {}", direction, stanza.toXML());
+            LOG.debug("{} : {}", direction, stanza.toXML(null));
         }
     }
 }

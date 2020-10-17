@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -74,12 +74,13 @@ public class OsgiManagedGroupFactory implements ManagedGroupFactory {
         delegate.close();
     }
 
-    static class OsgiTrackingManagedGroupFactory implements ManagedGroupFactory, ServiceTrackerCustomizer<CuratorFramework, CuratorFramework> {
+    static class OsgiTrackingManagedGroupFactory
+            implements ManagedGroupFactory, ServiceTrackerCustomizer<CuratorFramework, CuratorFramework> {
 
         private final BundleContext bundleContext;
         private final ServiceTracker<CuratorFramework, CuratorFramework> tracker;
         private CuratorFramework curator;
-        private final List<DelegateZooKeeperGroup<?>> groups = new ArrayList<DelegateZooKeeperGroup<?>>();
+        private final List<DelegateZooKeeperGroup<?>> groups = new ArrayList<>();
 
         OsgiTrackingManagedGroupFactory(ClassLoader loader) {
             this(getBundleContext(loader));
@@ -87,8 +88,8 @@ public class OsgiManagedGroupFactory implements ManagedGroupFactory {
 
         OsgiTrackingManagedGroupFactory(BundleContext bundleContext) {
             this.bundleContext = bundleContext;
-            this.tracker = new ServiceTracker<CuratorFramework, CuratorFramework>(
-                bundleContext, CuratorFramework.class, this);
+            this.tracker = new ServiceTracker<>(
+                    bundleContext, CuratorFramework.class, this);
             this.tracker.open();
         }
 

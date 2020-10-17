@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,10 +22,8 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.camel.builder.DeadLetterChannelBuilder;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.builder.ErrorHandlerBuilder;
-import org.apache.camel.builder.LoggingErrorHandlerBuilder;
 import org.apache.camel.builder.NoErrorHandlerBuilder;
-
-import org.apache.camel.cdi.transaction.JtaTransactionErrorHandlerBuilder;
+import org.apache.camel.jta.JtaTransactionErrorHandlerBuilder;
 
 /**
  * Used to configure the errorHandler type
@@ -36,7 +34,6 @@ public enum ErrorHandlerType {
 
     DefaultErrorHandler,
     DeadLetterChannel,
-    LoggingErrorHandler,
     NoErrorHandler,
     TransactionErrorHandler;
 
@@ -47,18 +44,16 @@ public enum ErrorHandlerType {
      */
     public Class<? extends ErrorHandlerBuilder> getTypeAsClass() {
         switch (this) {
-        case DefaultErrorHandler:
-            return DefaultErrorHandlerBuilder.class;
-        case DeadLetterChannel:
-            return DeadLetterChannelBuilder.class;
-        case LoggingErrorHandler:
-            return LoggingErrorHandlerBuilder.class;
-        case NoErrorHandler:
-            return NoErrorHandlerBuilder.class;
-        case TransactionErrorHandler:
-            return JtaTransactionErrorHandlerBuilder.class;
-        default:
-            throw new IllegalArgumentException("Unknown error handler: " + this);
+            case DefaultErrorHandler:
+                return DefaultErrorHandlerBuilder.class;
+            case DeadLetterChannel:
+                return DeadLetterChannelBuilder.class;
+            case NoErrorHandler:
+                return NoErrorHandlerBuilder.class;
+            case TransactionErrorHandler:
+                return JtaTransactionErrorHandlerBuilder.class;
+            default:
+                throw new IllegalArgumentException("Unknown error handler: " + this);
         }
     }
 }

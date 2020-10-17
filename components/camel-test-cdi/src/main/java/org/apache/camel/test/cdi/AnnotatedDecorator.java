@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.enterprise.inject.spi.Annotated;
 
 class AnnotatedDecorator implements Annotated {
@@ -74,5 +75,10 @@ class AnnotatedDecorator implements Annotated {
             }
         }
         return null;
+    }
+
+    @Override
+    public <T extends Annotation> Set<T> getAnnotations(Class<T> annotationType) {
+        return decorated.getAnnotations(annotationType);
     }
 }

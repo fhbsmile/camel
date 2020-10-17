@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,25 +20,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.camel.BindToRegistry;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 public class JacksonNotUseDefaultObjectMapperTest extends CamelTestSupport {
 
     private JacksonDataFormat df = new JacksonDataFormat();
+
+    @BindToRegistry("myMapper")
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndi = super.createRegistry();
-        jndi.bind("myMapper", objectMapper);
-        return jndi;
-    }
-
-    @Override
+    @BeforeEach
     public void setUp() throws Exception {
         df.setUseDefaultObjectMapper(false);
         super.setUp();
@@ -46,7 +46,7 @@ public class JacksonNotUseDefaultObjectMapperTest extends CamelTestSupport {
 
     @Test
     public void testMarshalAndUnmarshalMap() throws Exception {
-        Map<String, Object> in = new HashMap<String, Object>();
+        Map<String, Object> in = new HashMap<>();
         in.put("name", "Camel");
 
         MockEndpoint mock = getMockEndpoint("mock:reverse");

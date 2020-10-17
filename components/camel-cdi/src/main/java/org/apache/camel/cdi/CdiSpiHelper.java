@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,7 +31,20 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import javax.enterprise.inject.spi.Annotated;
+import javax.enterprise.inject.spi.AnnotatedConstructor;
+import javax.enterprise.inject.spi.AnnotatedField;
+import javax.enterprise.inject.spi.AnnotatedMember;
+import javax.enterprise.inject.spi.AnnotatedMethod;
+import javax.enterprise.inject.spi.AnnotatedType;
+import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.util.Nonbinding;
+
+import org.apache.camel.CamelContext;
 
 import static java.security.AccessController.doPrivileged;
 import static java.util.Comparator.comparing;
@@ -39,16 +52,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
-
-import javax.enterprise.inject.spi.Annotated;
-import javax.enterprise.inject.spi.AnnotatedConstructor;
-import javax.enterprise.inject.spi.AnnotatedField;
-import javax.enterprise.inject.spi.AnnotatedMethod;
-import javax.enterprise.inject.spi.AnnotatedType;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.util.Nonbinding;
-
 import static org.apache.camel.cdi.AnyLiteral.ANY;
 import static org.apache.camel.cdi.DefaultLiteral.DEFAULT;
 
@@ -97,7 +100,7 @@ final class CdiSpiHelper {
     @SafeVarargs
     static boolean hasAnnotation(AnnotatedType<?> type, Class<? extends Annotation>... annotations) {
         return Stream.of(annotations)
-            .anyMatch(annotation -> hasAnnotation(type, annotation));
+                .anyMatch(annotation -> hasAnnotation(type, annotation));
     }
 
     static boolean hasAnnotation(AnnotatedType<?> type, Class<? extends Annotation> annotation) {
@@ -124,16 +127,15 @@ final class CdiSpiHelper {
 
     static Set<Annotation> getQualifiers(Annotated annotated, BeanManager manager) {
         return annotated.getAnnotations().stream()
-            .filter(annotation -> manager.isQualifier(annotation.annotationType()))
-            .collect(collectingAndThen(toSet(),
-                qualifiers -> {
-                    if (qualifiers.isEmpty()) {
-                        qualifiers.add(DEFAULT);
-                    }
-                    qualifiers.add(ANY);
-                    return qualifiers;
-                })
-            );
+                .filter(annotation -> manager.isQualifier(annotation.annotationType()))
+                .collect(collectingAndThen(toSet(),
+                        qualifiers -> {
+                            if (qualifiers.isEmpty()) {
+                                qualifiers.add(DEFAULT);
+                            }
+                            qualifiers.add(ANY);
+                            return qualifiers;
+                        }));
     }
 
     /**
@@ -141,11 +143,11 @@ final class CdiSpiHelper {
      */
     static String createBeanId(Bean<?> bean) {
         return Stream.of(bean.getName(),
-            bean.getScope().getName(),
-            createAnnotationCollectionId(bean.getQualifiers()),
-            createTypeCollectionId(bean.getTypes()))
-            .filter(Objects::nonNull)
-            .collect(joining(","));
+                bean.getScope().getName(),
+                createAnnotationCollectionId(bean.getQualifiers()),
+                createTypeCollectionId(bean.getTypes()))
+                .filter(Objects::nonNull)
+                .collect(joining(","));
     }
 
     /**
@@ -153,9 +155,9 @@ final class CdiSpiHelper {
      */
     private static String createTypeCollectionId(Collection<Type> types) {
         return types.stream()
-            .sorted(comparing(CdiSpiHelper::createTypeId))
-            .map(CdiSpiHelper::createTypeId)
-            .collect(joining(",", "[", "]"));
+                .sorted(comparing(CdiSpiHelper::createTypeId))
+                .map(CdiSpiHelper::createTypeId)
+                .collect(joining(",", "[", "]"));
     }
 
     /**
@@ -168,9 +170,9 @@ final class CdiSpiHelper {
 
         if (type instanceof ParameterizedType) {
             return createTypeId(((ParameterizedType) type).getRawType())
-                + Stream.of(((ParameterizedType) type).getActualTypeArguments())
-                .map(CdiSpiHelper::createTypeId)
-                .collect(joining(",", "<", ">"));
+                   + Stream.of(((ParameterizedType) type).getActualTypeArguments())
+                           .map(CdiSpiHelper::createTypeId)
+                           .collect(joining(",", "<", ">"));
         }
 
         if (type instanceof TypeVariable<?>) {
@@ -193,9 +195,9 @@ final class CdiSpiHelper {
         }
 
         return annotations.stream()
-            .sorted(comparing(a -> a.annotationType().getName()))
-            .map(CdiSpiHelper::createAnnotationId)
-            .collect(joining(",", "[", "]"));
+                .sorted(comparing(a -> a.annotationType().getName()))
+                .map(CdiSpiHelper::createAnnotationId)
+                .collect(joining(",", "[", "]"));
     }
 
     /**
@@ -203,22 +205,71 @@ final class CdiSpiHelper {
      */
     static String createAnnotationId(Annotation annotation) {
         Method[] methods = doPrivileged(
-            (PrivilegedAction<Method[]>) () -> annotation.annotationType().getDeclaredMethods());
+                (PrivilegedAction<Method[]>) () -> annotation.annotationType().getDeclaredMethods());
 
         return Stream.of(methods)
-            .filter(method -> !method.isAnnotationPresent(Nonbinding.class))
-            .sorted(comparing(Method::getName))
-            .collect(() -> new StringJoiner(",", "@" + annotation.annotationType().getCanonicalName() + "(", ")"),
-                (joiner, method) -> {
-                    try {
-                        joiner.add(method.getName() + "=" + method.invoke(annotation).toString());
-                    } catch (NullPointerException | IllegalArgumentException | IllegalAccessException | InvocationTargetException cause) {
-                        throw new RuntimeException(
-                            "Error while accessing member [" + method.getName() + "]"
-                                + " of annotation [" + annotation.annotationType().getName() + "]", cause);
-                    }
-                },
-                StringJoiner::merge)
-            .toString();
+                .filter(method -> !method.isAnnotationPresent(Nonbinding.class))
+                .sorted(comparing(Method::getName))
+                .collect(() -> new StringJoiner(",", "@" + annotation.annotationType().getCanonicalName() + "(", ")"),
+                        (joiner, method) -> {
+                            try {
+                                joiner.add(method.getName() + "=" + method.invoke(annotation).toString());
+                            } catch (NullPointerException | IllegalArgumentException | IllegalAccessException
+                                     | InvocationTargetException cause) {
+                                throw new RuntimeException(
+                                        "Error while accessing member [" + method.getName() + "]"
+                                                           + " of annotation [" + annotation.annotationType().getName() + "]",
+                                        cause);
+                            }
+                        },
+                        StringJoiner::merge)
+                .toString();
+    }
+
+    /**
+     * Wraps creation of a {@link CamelContext} with the current thread context ClassLoader set with the ClassLoader
+     * associated to the {@link Annotated} java class.
+     */
+    static <T extends CamelContext> T createCamelContextWithTCCL(Supplier<T> supplier, Annotated annotated) {
+        ClassLoader oldTccl = Thread.currentThread().getContextClassLoader();
+        try {
+            ClassLoader classLoader = getClassLoader(annotated);
+            Thread.currentThread().setContextClassLoader(classLoader);
+            return supplier.get();
+        } finally {
+            Thread.currentThread().setContextClassLoader(oldTccl);
+        }
+    }
+
+    private static ClassLoader getClassLoader(Annotated annotated) {
+        // Try to find a ClassLoader associated with the class containing AnnotatedMember
+        if (annotated instanceof AnnotatedMember) {
+            AnnotatedMember annotatedMember = (AnnotatedMember) annotated;
+            AnnotatedType type = annotatedMember.getDeclaringType();
+            return type.getJavaClass().getClassLoader();
+        }
+
+        // Try to find a ClassLoader associated with the annotated class
+        if (annotated instanceof AnnotatedType) {
+            AnnotatedType type = (AnnotatedType) annotated;
+            return type.getJavaClass().getClassLoader();
+        }
+
+        if (annotated instanceof SyntheticAnnotated) {
+            SyntheticAnnotated syntheticAnnotated = (SyntheticAnnotated) annotated;
+            Class<?> javaClass = syntheticAnnotated.getJavaClass();
+            if (javaClass != null) {
+                return javaClass.getClassLoader();
+            }
+        }
+
+        // Fallback to TCCL if available
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        if (tccl != null) {
+            return tccl;
+        }
+
+        // If no TCCL is available, use the ClassLoader of this class
+        return CdiSpiHelper.class.getClassLoader();
     }
 }

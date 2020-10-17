@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,6 @@ import java.io.IOException;
 import ca.uhn.hl7v2.DefaultHapiContext;
 import ca.uhn.hl7v2.HL7Exception;
 import ca.uhn.hl7v2.HapiContext;
-
 import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.model.v26.message.ACK;
 import ca.uhn.hl7v2.model.v26.message.ADR_A19;
@@ -239,13 +238,10 @@ import ca.uhn.hl7v2.model.v26.message.VXQ_V01;
 import ca.uhn.hl7v2.model.v26.message.VXR_V03;
 import ca.uhn.hl7v2.model.v26.message.VXU_V04;
 import ca.uhn.hl7v2.model.v26.message.VXX_V02;
-
 import ca.uhn.hl7v2.parser.DefaultModelClassFactory;
 import ca.uhn.hl7v2.parser.ParserConfiguration;
 import ca.uhn.hl7v2.parser.UnexpectedSegmentBehaviourEnum;
-import ca.uhn.hl7v2.validation.ValidationContext;
 import ca.uhn.hl7v2.validation.impl.ValidationContextFactory;
-
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.TypeConversionException;
@@ -254,7 +250,7 @@ import org.apache.camel.converter.IOConverter;
 /**
  * HL7 converters.
  */
-@Converter
+@Converter(generateLoader = true, ignoreOnLoadError = true)
 public final class HL726Converter {
 
     private static final HapiContext DEFAULT_CONTEXT;
@@ -265,7 +261,8 @@ public final class HL726Converter {
         parserConfiguration.setInvalidObx2Type("ST");
         parserConfiguration.setUnexpectedSegmentBehaviour(UnexpectedSegmentBehaviourEnum.ADD_INLINE);
 
-        DEFAULT_CONTEXT = new DefaultHapiContext(parserConfiguration, (ValidationContext) ValidationContextFactory.noValidation(), new DefaultModelClassFactory());
+        DEFAULT_CONTEXT = new DefaultHapiContext(
+                parserConfiguration, ValidationContextFactory.noValidation(), new DefaultModelClassFactory());
     }
 
     private HL726Converter() {
@@ -391,6 +388,7 @@ public final class HL726Converter {
     public static ADT_A17 toAdtA17(byte[] body, Exchange exchange) throws HL7Exception, IOException {
         return toMessage(ADT_A17.class, body, exchange);
     }
+
     @Converter
     public static ADT_A18 toAdtA18(String body) throws HL7Exception {
         return toMessage(ADT_A18.class, body);
@@ -2370,7 +2368,7 @@ public final class HL726Converter {
     public static SUR_P09 toSurP09(byte[] body, Exchange exchange) throws HL7Exception, IOException {
         return toMessage(SUR_P09.class, body, exchange);
     }
-    
+
     @Converter
     public static TCU_U10 toTcuU10(String body) throws HL7Exception {
         return toMessage(TCU_U10.class, body);
@@ -2431,7 +2429,6 @@ public final class HL726Converter {
         return toMessage(VXX_V02.class, body, exchange);
     }
 
-    
     static <T extends Message> T toMessage(Class<T> messageClass, String hl7String) {
         try {
             T genericMessage = DEFAULT_CONTEXT.newMessage(messageClass);
@@ -2444,7 +2441,6 @@ public final class HL726Converter {
 
         }
     }
-
 
     static <T extends Message> T toMessage(Class<T> messageClass, byte[] hl7Bytes, Exchange exchange) {
         try {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,12 +23,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that the annotated method returns a {@link java.util.Properties} for use in the test, and that
- * those properties override any existing properties configured on the {@link org.apache.camel.component.properties.PropertiesComponent}.
+ * Indicates that the annotated method returns a {@link java.util.Properties} for use in the test, and that those
+ * properties override any existing properties configured on the
+ * {@link org.apache.camel.component.properties.PropertiesComponent}.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
+@Target({ ElementType.METHOD })
 public @interface UseOverridePropertiesWithPropertiesComponent {
 
 }

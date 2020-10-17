@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,19 +17,25 @@
 package org.apache.camel.component.jms;
 
 import java.io.File;
+
 import javax.jms.ConnectionFactory;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.camel.util.FileUtil;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.camel.component.jms.JmsComponent.jmsComponentAutoAcknowledge;
+import static org.apache.camel.test.junit5.TestSupport.assertIsInstanceOf;
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class JmsStreamMessageTypeTest extends CamelTestSupport {
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
         deleteDirectory("target/stream");
         super.setUp();
@@ -41,7 +47,7 @@ public class JmsStreamMessageTypeTest extends CamelTestSupport {
 
         ConnectionFactory connectionFactory = CamelJmsTestHelper.createConnectionFactory();
         JmsComponent jms = jmsComponentAutoAcknowledge(connectionFactory);
-        jms.setStreamMessageTypeEnabled(true); // turn on streaming
+        jms.getConfiguration().setStreamMessageTypeEnabled(true); // turn on streaming
         camelContext.addComponent("jms", jms);
         return camelContext;
     }
@@ -55,16 +61,17 @@ public class JmsStreamMessageTypeTest extends CamelTestSupport {
 
         assertMockEndpointsSatisfied();
 
-        StreamMessageInputStream is = getMockEndpoint("mock:result").getReceivedExchanges().get(0).getIn().getBody(StreamMessageInputStream.class);
-        assertNotNull(is);
+        Object body = getMockEndpoint("mock:result").getReceivedExchanges().get(0).getIn().getBody();
+        StreamMessageInputStream is = assertIsInstanceOf(StreamMessageInputStream.class, body);
 
         // no more bytes should be available on the inputstream
         assertEquals(0, is.available());
 
         // assert on the content of input versus output file
         String srcContent = context.getTypeConverter().mandatoryConvertTo(String.class, new File("src/test/data/message1.xml"));
-        String dstContent = context.getTypeConverter().mandatoryConvertTo(String.class, new File("target/stream/out/message1.xml"));
-        assertEquals("both the source and destination files should have the same content", srcContent, dstContent);
+        String dstContent
+                = context.getTypeConverter().mandatoryConvertTo(String.class, new File("target/stream/out/message1.xml"));
+        assertEquals(srcContent, dstContent, "both the source and destination files should have the same content");
     }
 
     @Override

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,17 +25,20 @@ import org.apache.camel.builder.RouteBuilder;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.apache.camel.test.junit5.TestSupport.assertCollectionSize;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ElasticsearchBulkTest extends ElasticsearchBaseTest {
 
     @Test
     public void testBulkIndex() throws Exception {
-        List<Map<String, String>> documents = new ArrayList<Map<String, String>>();
+        List<Map<String, String>> documents = new ArrayList<>();
         Map<String, String> document1 = createIndexedData("1");
         Map<String, String> document2 = createIndexedData("2");
 
@@ -43,7 +46,7 @@ public class ElasticsearchBulkTest extends ElasticsearchBaseTest {
         documents.add(document2);
 
         List<?> indexIds = template.requestBody("direct:bulk_index", documents, List.class);
-        assertNotNull("indexIds should be set", indexIds);
+        assertNotNull(indexIds, "indexIds should be set");
         assertCollectionSize("Indexed documents should match the size of documents", indexIds, documents.size());
     }
 
@@ -72,16 +75,18 @@ public class ElasticsearchBulkTest extends ElasticsearchBaseTest {
 
         // given
         BulkRequest request = new BulkRequest();
-        request.add(new IndexRequest(prefix + "foo", prefix + "bar", prefix + "baz").source(prefix + "content", prefix + "hello"));
+        request.add(
+                new IndexRequest(prefix + "foo", prefix + "bar", prefix + "baz").source(prefix + "content", prefix + "hello"));
 
         // when
         @SuppressWarnings("unchecked")
-        List<String> indexedDocumentIds = template.requestBody("direct:bulk_index", request, List.class);
+        BulkItemResponse[] response = template.requestBody("direct:bulk_index", request, BulkItemResponse[].class);
 
         // then
-        assertThat(indexedDocumentIds, notNullValue());
-        assertThat(indexedDocumentIds.size(), equalTo(1));
-        assertThat(indexedDocumentIds, hasItem(prefix + "baz"));
+        assertThat(response, notNullValue());
+        assertThat(response.length, equalTo(1));
+        assertThat(response[0].isFailed(), equalTo(false));
+        assertThat(response[0].getId(), equalTo(prefix + "baz"));
     }
 
     @Test
@@ -90,7 +95,8 @@ public class ElasticsearchBulkTest extends ElasticsearchBaseTest {
 
         // given
         BulkRequest request = new BulkRequest();
-        request.add(new IndexRequest(prefix + "foo", prefix + "bar", prefix + "baz").source(prefix + "content", prefix + "hello"));
+        request.add(
+                new IndexRequest(prefix + "foo", prefix + "bar", prefix + "baz").source(prefix + "content", prefix + "hello"));
 
         // when
         BulkItemResponse[] response = (BulkItemResponse[]) template.requestBody("direct:bulk", request);
@@ -105,8 +111,10 @@ public class ElasticsearchBulkTest extends ElasticsearchBaseTest {
         return new RouteBuilder() {
             @Override
             public void configure() {
-                from("direct:bulk_index").to("elasticsearch-rest://elasticsearch?operation=BulkIndex&indexName=twitter&indexType=tweet");
-                from("direct:bulk").to("elasticsearch-rest://elasticsearch?operation=Bulk&indexName=twitter&indexType=tweet&hostAddresses=localhost:" + ES_BASE_HTTP_PORT);
+                from("direct:bulk_index")
+                        .to("elasticsearch-rest://elasticsearch?operation=BulkIndex&indexName=twitter");
+                from("direct:bulk")
+                        .to("elasticsearch-rest://elasticsearch?operation=Bulk&indexName=twitter");
             }
         };
     }

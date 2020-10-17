@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,16 +21,19 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.SSLContextParametersAware;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.util.jsse.ClientAuthentication;
-import org.apache.camel.util.jsse.KeyManagersParameters;
-import org.apache.camel.util.jsse.KeyStoreParameters;
-import org.apache.camel.util.jsse.SSLContextParameters;
-import org.apache.camel.util.jsse.SSLContextServerParameters;
-import org.apache.camel.util.jsse.TrustManagersParameters;
-import org.junit.Test;
+import org.apache.camel.support.jsse.ClientAuthentication;
+import org.apache.camel.support.jsse.KeyManagersParameters;
+import org.apache.camel.support.jsse.KeyStoreParameters;
+import org.apache.camel.support.jsse.SSLContextParameters;
+import org.apache.camel.support.jsse.SSLContextServerParameters;
+import org.apache.camel.support.jsse.TrustManagersParameters;
+import org.junit.jupiter.api.Test;
+
+import static org.apache.camel.test.junit5.TestSupport.isJavaVendor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public class NettyGlobalSSLContextParametersTest extends BaseNettyTest {
-
 
     @Override
     protected CamelContext createCamelContext() throws Exception {
@@ -55,13 +58,12 @@ public class NettyGlobalSSLContextParametersTest extends BaseNettyTest {
         sslContextParameters.setKeyManagers(kmp);
         sslContextParameters.setTrustManagers(tmp);
         sslContextParameters.setServerParameters(scsp);
-
         context.setSSLContextParameters(sslContextParameters);
 
         ((SSLContextParametersAware) context.getComponent("netty")).setUseGlobalSslContextParameters(true);
         return context;
     }
-    
+
     @Override
     public boolean isUseRouteBuilder() {
         return false;
@@ -70,25 +72,25 @@ public class NettyGlobalSSLContextParametersTest extends BaseNettyTest {
     @Test
     public void testSSLInOutWithNettyConsumer() throws Exception {
         // ibm jdks dont have sun security algorithms
-        if (isJavaVendor("ibm")) {
-            return;
-        }
+        assumeFalse(isJavaVendor("ibm"));
 
         context.addRoutes(new RouteBuilder() {
             public void configure() {
                 from("netty:tcp://localhost:{{port}}?sync=true&ssl=true")
-                    .process(new Processor() {
-                        public void process(Exchange exchange) throws Exception {
-                            exchange.getOut().setBody("When You Go Home, Tell Them Of Us And Say, For Your Tomorrow, We Gave Our Today.");                           
-                        }
-                    });
+                        .process(new Processor() {
+                            public void process(Exchange exchange) throws Exception {
+                                exchange.getOut().setBody(
+                                        "When You Go Home, Tell Them Of Us And Say, For Your Tomorrow, We Gave Our Today.");
+                            }
+                        });
             }
         });
         context.start();
 
         String response = template.requestBody(
                 "netty:tcp://localhost:{{port}}?sync=true&ssl=true",
-                "Epitaph in Kohima, India marking the WWII Battle of Kohima and Imphal, Burma Campaign - Attributed to John Maxwell Edmonds", String.class);
+                "Epitaph in Kohima, India marking the WWII Battle of Kohima and Imphal, Burma Campaign - Attributed to John Maxwell Edmonds",
+                String.class);
         assertEquals("When You Go Home, Tell Them Of Us And Say, For Your Tomorrow, We Gave Our Today.", response);
     }
 

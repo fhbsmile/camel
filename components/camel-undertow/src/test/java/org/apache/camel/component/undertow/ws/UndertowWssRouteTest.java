@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,17 +28,16 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.SSLContextParametersAware;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.undertow.BaseUndertowTest;
 import org.apache.camel.component.undertow.UndertowHttpsSpringTest;
-import org.apache.camel.util.jsse.KeyManagersParameters;
-import org.apache.camel.util.jsse.KeyStoreParameters;
-import org.apache.camel.util.jsse.SSLContextParameters;
-import org.apache.camel.util.jsse.SSLContextServerParameters;
-import org.apache.camel.util.jsse.TrustManagersParameters;
+import org.apache.camel.support.jsse.KeyManagersParameters;
+import org.apache.camel.support.jsse.KeyStoreParameters;
+import org.apache.camel.support.jsse.SSLContextParameters;
+import org.apache.camel.support.jsse.SSLContextServerParameters;
+import org.apache.camel.support.jsse.TrustManagersParameters;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.AsyncHttpClientConfig;
 import org.asynchttpclient.DefaultAsyncHttpClient;
@@ -46,19 +45,26 @@ import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.ws.WebSocket;
 import org.asynchttpclient.ws.WebSocketListener;
 import org.asynchttpclient.ws.WebSocketUpgradeHandler;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UndertowWssRouteTest extends BaseUndertowTest {
 
-    @BeforeClass
+    private static final Logger LOG = LoggerFactory.getLogger(UndertowWssRouteTest.class);
+
+    @BeforeAll
     public static void setUpJaas() throws Exception {
         URL trustStoreUrl = UndertowHttpsSpringTest.class.getClassLoader().getResource("ssl/keystore.jks");
         System.setProperty("javax.net.ssl.trustStore", trustStoreUrl.toURI().getPath());
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownJaas() throws Exception {
         System.clearProperty("java.security.auth.login.config");
     }
@@ -96,8 +102,7 @@ public class UndertowWssRouteTest extends BaseUndertowTest {
         AsyncHttpClient c;
         AsyncHttpClientConfig config;
 
-        DefaultAsyncHttpClientConfig.Builder builder =
-                new DefaultAsyncHttpClientConfig.Builder();
+        DefaultAsyncHttpClientConfig.Builder builder = new DefaultAsyncHttpClientConfig.Builder();
 
         SslContext sslContext = SslContextBuilder
                 .forClient()
@@ -114,7 +119,7 @@ public class UndertowWssRouteTest extends BaseUndertowTest {
 
     @Test
     public void testWSHttpCall() throws Exception {
-        final List<String> received = new ArrayList<String>();
+        final List<String> received = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(10);
 
         AsyncHttpClient c = createAsyncHttpSSLClient();
@@ -124,7 +129,7 @@ public class UndertowWssRouteTest extends BaseUndertowTest {
                             @Override
                             public void onTextFrame(String message, boolean finalFragment, int rsv) {
                                 received.add(message);
-                                log.info("received --> " + message);
+                                LOG.info("received --> " + message);
                                 latch.countDown();
                             }
 
@@ -138,9 +143,10 @@ public class UndertowWssRouteTest extends BaseUndertowTest {
 
                             @Override
                             public void onError(Throwable t) {
-                                t.printStackTrace();
+                                LOG.warn("Unhandled exception: {}", t.getMessage(), t);
                             }
-                        }).build()).get();
+                        }).build())
+                .get();
 
         getMockEndpoint("mock:client").expectedBodiesReceived("Hello from WS client");
 
@@ -163,11 +169,11 @@ public class UndertowWssRouteTest extends BaseUndertowTest {
         return new RouteBuilder() {
             public void configure() {
                 from("undertow:ws://localhost:" + getPort() + "/test")
-                     .log(">>> Message received from WebSocket Client : ${body}")
-                     .to("mock:client")
-                     .loop(10)
-                         .setBody().constant(">> Welcome on board!")
-                         .to("undertow:ws://localhost:" + getPort() + "/test");
+                        .log(">>> Message received from WebSocket Client : ${body}")
+                        .to("mock:client")
+                        .loop(10)
+                        .setBody().constant(">> Welcome on board!")
+                        .to("undertow:ws://localhost:" + getPort() + "/test");
             }
         };
     }

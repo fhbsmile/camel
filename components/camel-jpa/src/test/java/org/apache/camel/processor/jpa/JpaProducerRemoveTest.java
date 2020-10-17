@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,20 +24,19 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jpa.JpaEndpoint;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.examples.SendEmail;
-import org.apache.camel.spring.SpringRouteBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 public class JpaProducerRemoveTest extends AbstractJpaTest {
     protected static final String SELECT_ALL_STRING = "select x from " + SendEmail.class.getName() + " x";
 
     @Test
     public void testRouteJpa() throws Exception {
         MockEndpoint mock = getMockEndpoint("mock:result");
-        context.startRoute("foo");
-        context.startRoute("foo1");
+        context.getRouteController().startRoute("foo");
+        context.getRouteController().startRoute("foo1");
         JpaEndpoint jpa = context.getEndpoint("jpa://" + SendEmail.class.getName(), JpaEndpoint.class);
         EntityManagerFactory emf = jpa.getEntityManagerFactory();
 
@@ -61,16 +60,16 @@ public class JpaProducerRemoveTest extends AbstractJpaTest {
 
     @Override
     protected RouteBuilder createRouteBuilder() {
-        return new SpringRouteBuilder() {
+        return new RouteBuilder() {
             public void configure() {
                 from("direct:start")
-                    .id("foo")
-                    .to("jpa://" + SendEmail.class.getName() + "?usePassedInEntityManager=true")
-                    .to("mock:result");
+                        .id("foo")
+                        .to("jpa://" + SendEmail.class.getName() + "?usePassedInEntityManager=true")
+                        .to("mock:result");
                 from("direct:remove")
-                    .id("foo1")
-                    .to("jpa://" + SendEmail.class.getName() + "?remove=true&usePassedInEntityManager=true")
-                    .to("mock:result");
+                        .id("foo1")
+                        .to("jpa://" + SendEmail.class.getName() + "?remove=true&usePassedInEntityManager=true")
+                        .to("mock:result");
             }
         };
     }

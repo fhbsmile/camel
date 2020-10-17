@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,43 +16,48 @@
  */
 package org.apache.camel.component.mongodb;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.Updates;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.camel.component.mongodb.MongoDbConstants.MONGO_ID;
 
 public class MongoDbTailTrackingManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(MongoDbTailTrackingManager.class);
+
     public Object lastVal;
+
     private final MongoClient connection;
     private final MongoDbTailTrackingConfig config;
-    private MongoCollection<BasicDBObject> dbCol;
-    private BasicDBObject trackingObj;
+    private MongoCollection<Document> dbCol;
+    private Document trackingObj;
 
     public MongoDbTailTrackingManager(MongoClient connection, MongoDbTailTrackingConfig config) {
         this.connection = connection;
         this.config = config;
     }
 
-    public void initialize() throws Exception {
+    public void initialize() {
         if (!config.persistent) {
             return;
         }
 
-        dbCol = connection.getDatabase(config.db).getCollection(config.collection, BasicDBObject.class);
-        BasicDBObject filter = new BasicDBObject("persistentId", config.persistentId);
+        dbCol = connection.getDatabase(config.db).getCollection(config.collection, Document.class);
+        Document filter = new Document("persistentId", config.persistentId);
         trackingObj = dbCol.find(filter).first();
         if (trackingObj == null) {
             dbCol.insertOne(filter);
             trackingObj = dbCol.find(filter).first();
         }
         // keep only the _id, the rest is useless and causes more overhead during update
-        trackingObj = new BasicDBObject("_id", trackingObj.get("_id"));
+        trackingObj = new Document(MONGO_ID, trackingObj.get(MONGO_ID));
     }
 
     public synchronized void persistToStore() {
@@ -64,9 +69,8 @@ public class MongoDbTailTrackingManager {
             LOG.debug("Persisting lastVal={} to store, collection: {}", lastVal, config.collection);
         }
 
-        BasicDBObject updateObj = new BasicDBObject().append("$set", new BasicDBObject(config.field, lastVal));
-        FindOneAndUpdateOptions options = new FindOneAndUpdateOptions()
-            .returnDocument(ReturnDocument.AFTER);
+        Bson updateObj = Updates.set(config.field, lastVal);
+        FindOneAndUpdateOptions options = new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER);
         trackingObj = dbCol.findOneAndUpdate(trackingObj, updateObj, options);
     }
 
@@ -84,11 +88,12 @@ public class MongoDbTailTrackingManager {
         return lastVal;
     }
 
-    public void setLastVal(DBObject o) {
+    public void setLastVal(Document dbObj) {
         if (config.increasingField == null) {
             return;
         }
-        lastVal = config.mongoDBTailTrackingStrategy.extractLastVal(o, config.increasingField);
+
+        lastVal = dbObj.get(config.increasingField);
     }
 
     public String getIncreasingFieldName() {

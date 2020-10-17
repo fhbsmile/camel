@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,17 +20,23 @@ import javax.net.ssl.SSLContext;
 
 import org.apache.activemq.broker.BrokerService;
 import org.apache.activemq.broker.SslContext;
-import org.apache.camel.impl.JndiRegistry;
+import org.apache.camel.spi.Registry;
+import org.apache.camel.support.SimpleRegistry;
+import org.apache.camel.support.jsse.KeyManagersParameters;
+import org.apache.camel.support.jsse.KeyStoreParameters;
+import org.apache.camel.support.jsse.SSLContextParameters;
+import org.apache.camel.support.jsse.TrustManagersParameters;
 import org.apache.camel.test.AvailablePortFinder;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.apache.camel.util.jsse.KeyManagersParameters;
-import org.apache.camel.util.jsse.KeyStoreParameters;
-import org.apache.camel.util.jsse.SSLContextParameters;
-import org.apache.camel.util.jsse.TrustManagersParameters;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.fusesource.stomp.client.Stomp;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class StompBaseTest extends CamelTestSupport {
 
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected BrokerService brokerService;
     protected int numberOfMessages = 100;
     protected int port;
@@ -61,8 +67,8 @@ public abstract class StompBaseTest extends CamelTestSupport {
     }
 
     @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry registry = super.createRegistry();
+    protected Registry createCamelRegistry() throws Exception {
+        SimpleRegistry registry = new SimpleRegistry();
         if (isUseSsl()) {
             registry.bind("sslContextParameters", getClientSSLContextParameters());
         }
@@ -71,8 +77,9 @@ public abstract class StompBaseTest extends CamelTestSupport {
     }
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
-        port = AvailablePortFinder.getNextAvailable(61613);
+        port = AvailablePortFinder.getNextAvailable();
 
         try {
             brokerService = new BrokerService();
@@ -101,6 +108,7 @@ public abstract class StompBaseTest extends CamelTestSupport {
     }
 
     @Override
+    @AfterEach
     public void tearDown() throws Exception {
         super.tearDown();
         if (brokerService != null) {
@@ -121,7 +129,7 @@ public abstract class StompBaseTest extends CamelTestSupport {
         return stomp;
     }
 
-    protected SSLContextParameters getServerSSLContextParameters()  {
+    protected SSLContextParameters getServerSSLContextParameters() {
         if (serverSslContextParameters == null) {
             serverSslContextParameters = getSSLContextParameters("jsse/server.keystore", "password");
         }
@@ -137,7 +145,7 @@ public abstract class StompBaseTest extends CamelTestSupport {
         return serverSslContext;
     }
 
-    protected SSLContextParameters getClientSSLContextParameters()  {
+    protected SSLContextParameters getClientSSLContextParameters() {
         if (clientSslContextParameters == null) {
             clientSslContextParameters = getSSLContextParameters("jsse/client.keystore", "password");
         }
@@ -153,7 +161,7 @@ public abstract class StompBaseTest extends CamelTestSupport {
         return clientSslContext;
     }
 
-    private SSLContextParameters getSSLContextParameters(String path, String password)  {
+    private SSLContextParameters getSSLContextParameters(String path, String password) {
         KeyStoreParameters ksp = new KeyStoreParameters();
         ksp.setResource(path);
         ksp.setPassword(password);

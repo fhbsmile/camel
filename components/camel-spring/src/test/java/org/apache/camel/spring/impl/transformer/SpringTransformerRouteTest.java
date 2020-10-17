@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,17 +22,20 @@ import org.apache.camel.Processor;
 import org.apache.camel.impl.transformer.TransformerRouteTest;
 
 import static org.apache.camel.spring.processor.SpringTestHelper.createSpringCamelContext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * A TransformerTest demonstrates contract based declarative transformation via Spring DSL.
  */
 public class SpringTransformerRouteTest extends TransformerRouteTest {
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
         return createSpringCamelContext(this, "org/apache/camel/spring/impl/transformer/SpringTransformerRouteTest.xml");
     }
 
     public static class MyXmlProcessor implements Processor {
+        @Override
         public void process(Exchange exchange) {
             Object input = exchange.getIn().getBody();
             if (input instanceof XOrderResponse) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,9 +17,7 @@
 package org.apache.camel.component.crypto.cms.exception;
 
 /**
- * Exception thrown during singing if the key type does not fit to the signature
- * algorithm.
- * 
+ * Exception thrown during singing if the key type does not fit to the signature algorithm.
  * 
  */
 public class CryptoCmsInvalidKeyException extends CryptoCmsException {

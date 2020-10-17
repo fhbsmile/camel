@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,8 +19,8 @@ package org.apache.camel.component.infinispan;
 import java.util.Set;
 
 /**
- * This class is supposed to be extended by users and annotated with @Listener or @ClientListener
- * and passed to the consumer endpoint through the 'customListener' parameter.
+ * This class is supposed to be extended by users and annotated with @Listener or @ClientListener and passed to the
+ * consumer endpoint through the 'customListener' parameter.
  */
 public abstract class InfinispanCustomListener extends InfinispanEventListener {
 
@@ -32,6 +32,7 @@ public abstract class InfinispanCustomListener extends InfinispanEventListener {
         return infinispanConsumer;
     }
 
+    @Override
     public void setInfinispanConsumer(InfinispanConsumer infinispanConsumer) {
         this.infinispanConsumer = infinispanConsumer;
     }

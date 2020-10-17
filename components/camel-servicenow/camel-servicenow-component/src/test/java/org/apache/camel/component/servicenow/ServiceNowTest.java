@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,8 +28,13 @@ import org.apache.camel.CamelExecutionException;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.servicenow.model.Incident;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ServiceNowTest extends ServiceNowTestSupport {
 
@@ -38,19 +43,18 @@ public class ServiceNowTest extends ServiceNowTestSupport {
         // 404
         try {
             template().sendBodyAndHeaders(
-                "direct:servicenow",
-                null,
-                kvBuilder()
-                    .put(ServiceNowConstants.RESOURCE, "table")
-                    .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_RETRIEVE)
-                    .put(ServiceNowParams.SYSPARM_QUERY, "number=" + UUID.randomUUID().toString())
-                    .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
-                    .build()
-            );
+                    "direct:servicenow",
+                    null,
+                    kvBuilder()
+                            .put(ServiceNowConstants.RESOURCE, "table")
+                            .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_RETRIEVE)
+                            .put(ServiceNowParams.SYSPARM_QUERY, "number=" + UUID.randomUUID().toString())
+                            .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
+                            .build());
         } catch (CamelExecutionException e) {
             assertTrue(e.getCause() instanceof ServiceNowException);
 
-            ServiceNowException sne = (ServiceNowException)e.getCause();
+            ServiceNowException sne = (ServiceNowException) e.getCause();
             assertEquals("failure", sne.getStatus());
             assertTrue(sne.getMessage().contains("No Record found"));
             assertTrue(sne.getDetail().contains("Records matching query not found"));
@@ -59,19 +63,18 @@ public class ServiceNowTest extends ServiceNowTestSupport {
         // 400
         try {
             template().sendBodyAndHeaders(
-                "direct:servicenow",
-                null,
-                kvBuilder()
-                    .put(ServiceNowConstants.RESOURCE, "table")
-                    .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_RETRIEVE)
-                    .put(ServiceNowParams.SYSPARM_QUERY, "number=" + UUID.randomUUID().toString())
-                    .put(ServiceNowParams.PARAM_TABLE_NAME, "notExistingTable")
-                    .build()
-            );
+                    "direct:servicenow",
+                    null,
+                    kvBuilder()
+                            .put(ServiceNowConstants.RESOURCE, "table")
+                            .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_RETRIEVE)
+                            .put(ServiceNowParams.SYSPARM_QUERY, "number=" + UUID.randomUUID().toString())
+                            .put(ServiceNowParams.PARAM_TABLE_NAME, "notExistingTable")
+                            .build());
         } catch (CamelExecutionException e) {
             assertTrue(e.getCause() instanceof ServiceNowException);
 
-            ServiceNowException sne = (ServiceNowException)e.getCause();
+            ServiceNowException sne = (ServiceNowException) e.getCause();
             assertEquals("failure", sne.getStatus());
             assertTrue(sne.getMessage().contains("Invalid table notExistingTable"));
             assertNull(sne.getDetail());
@@ -82,14 +85,13 @@ public class ServiceNowTest extends ServiceNowTestSupport {
     public void testBodyMismatch() throws Exception {
         try {
             template().sendBodyAndHeaders(
-                "direct:servicenow",
-                "NotAnIncidentObject",
-                kvBuilder()
-                    .put(ServiceNowConstants.RESOURCE, "table")
-                    .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_CREATE)
-                    .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
-                    .build()
-            );
+                    "direct:servicenow",
+                    "NotAnIncidentObject",
+                    kvBuilder()
+                            .put(ServiceNowConstants.RESOURCE, "table")
+                            .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_CREATE)
+                            .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
+                            .build());
 
             fail("Should fail as body is not compatible with model defined in route for table incident");
         } catch (CamelExecutionException e) {
@@ -111,22 +113,52 @@ public class ServiceNowTest extends ServiceNowTestSupport {
         incident.setImpact(1);
 
         template().sendBodyAndHeaders(
-            "direct:servicenow",
-            incident,
-            kvBuilder()
-                .put(ServiceNowConstants.RESOURCE, ServiceNowConstants.RESOURCE_TABLE)
-                .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_CREATE)
-                .put(ServiceNowConstants.REQUEST_MODEL, Incident.class)
-                .put(ServiceNowConstants.RESPONSE_MODEL, JsonNode.class)
-                .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
-                .build()
-        );
+                "direct:servicenow",
+                incident,
+                kvBuilder()
+                        .put(ServiceNowConstants.RESOURCE, ServiceNowConstants.RESOURCE_TABLE)
+                        .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_CREATE)
+                        .put(ServiceNowConstants.REQUEST_MODEL, Incident.class)
+                        .put(ServiceNowConstants.RESPONSE_MODEL, JsonNode.class)
+                        .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
+                        .build());
 
         mock.assertIsSatisfied();
 
         Object body = mock.getExchanges().get(0).getIn().getBody();
         assertNotNull(body);
         assertTrue(body instanceof JsonNode);
+    }
+
+    @Test
+    public void testRequestResponseAsString() throws Exception {
+        MockEndpoint mock = getMockEndpoint("mock:servicenow");
+
+        mock.reset();
+        mock.expectedMessageCount(1);
+
+        Incident incident = new Incident();
+        incident.setDescription("my incident");
+        incident.setShortDescription("An incident");
+        incident.setSeverity(1);
+        incident.setImpact(1);
+
+        template().sendBodyAndHeaders(
+                "direct:servicenow",
+                incident,
+                kvBuilder()
+                        .put(ServiceNowConstants.RESOURCE, ServiceNowConstants.RESOURCE_TABLE)
+                        .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_CREATE)
+                        .put(ServiceNowConstants.REQUEST_MODEL, Incident.class)
+                        .put(ServiceNowConstants.RESPONSE_MODEL, String.class)
+                        .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
+                        .build());
+
+        mock.assertIsSatisfied();
+
+        Object body = mock.getExchanges().get(0).getIn().getBody();
+        assertNotNull(body);
+        assertTrue(body instanceof String);
     }
 
     @Test
@@ -143,17 +175,16 @@ public class ServiceNowTest extends ServiceNowTestSupport {
         incident.setImpact(1);
 
         template().sendBodyAndHeaders(
-            "direct:servicenow",
-            incident,
-            kvBuilder()
-                .put(ServiceNowConstants.RESOURCE, ServiceNowConstants.RESOURCE_TABLE)
-                .put(ServiceNowConstants.API_VERSION, "v1")
-                .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_CREATE)
-                .put(ServiceNowConstants.REQUEST_MODEL, Incident.class)
-                .put(ServiceNowConstants.RESPONSE_MODEL, JsonNode.class)
-                .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
-                .build()
-        );
+                "direct:servicenow",
+                incident,
+                kvBuilder()
+                        .put(ServiceNowConstants.RESOURCE, ServiceNowConstants.RESOURCE_TABLE)
+                        .put(ServiceNowConstants.API_VERSION, "v1")
+                        .put(ServiceNowConstants.ACTION, ServiceNowConstants.ACTION_CREATE)
+                        .put(ServiceNowConstants.REQUEST_MODEL, Incident.class)
+                        .put(ServiceNowConstants.RESPONSE_MODEL, JsonNode.class)
+                        .put(ServiceNowParams.PARAM_TABLE_NAME, "incident")
+                        .build());
 
         mock.assertIsSatisfied();
 
@@ -178,9 +209,9 @@ public class ServiceNowTest extends ServiceNowTestSupport {
 
         DateTimeBean deserialized = mapper.readValue(serialized, DateTimeBean.class);
 
-        Assert.assertEquals(bean.dateTime, deserialized.dateTime);
-        Assert.assertEquals(bean.date, deserialized.date);
-        Assert.assertEquals(bean.time, deserialized.time);
+        assertEquals(bean.dateTime, deserialized.dateTime);
+        assertEquals(bean.date, deserialized.date);
+        assertEquals(bean.time, deserialized.time);
     }
 
     @Test
@@ -197,9 +228,9 @@ public class ServiceNowTest extends ServiceNowTestSupport {
 
         DateTimeBean deserialized = mapper.readValue(serialized, DateTimeBean.class);
 
-        Assert.assertEquals(bean.dateTime, deserialized.dateTime);
-        Assert.assertEquals(bean.date, deserialized.date);
-        Assert.assertEquals(bean.time, deserialized.time);
+        assertEquals(bean.dateTime, deserialized.dateTime);
+        assertEquals(bean.date, deserialized.date);
+        assertEquals(bean.time, deserialized.time);
     }
 
     public static class DateTimeBean {
@@ -247,9 +278,9 @@ public class ServiceNowTest extends ServiceNowTestSupport {
         return new RouteBuilder() {
             public void configure() {
                 from("direct:servicenow")
-                    .to("servicenow:{{env:SERVICENOW_INSTANCE}}")
-                    .to("log:org.apache.camel.component.servicenow?level=INFO&showAll=true")
-                    .to("mock:servicenow");
+                        .to("servicenow:{{env:SERVICENOW_INSTANCE}}")
+                        .to("log:org.apache.camel.component.servicenow?level=INFO&showAll=true")
+                        .to("mock:servicenow");
             }
         };
     }

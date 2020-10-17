@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,55 +16,67 @@
  */
 package org.apache.camel.component.nats;
 
-import java.util.Properties;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 
+import io.nats.client.Connection;
+import io.nats.client.Options;
+import io.nats.client.Options.Builder;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
 import org.apache.camel.spi.UriPath;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.support.jsse.SSLContextParameters;
+import org.apache.camel.util.ObjectHelper;
 
 @UriParams
 public class NatsConfiguration {
 
     @UriPath
-    @Metadata(required = "true")
-    private String servers;
-    @UriParam
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String topic;
-    @UriParam(defaultValue = "true")
+    @UriParam(label = "common")
+    private String servers;
+    @UriParam(label = "advanced")
+    private Connection connection;
+    @UriParam(label = "common", defaultValue = "true")
     private boolean reconnect = true;
-    @UriParam
+    @UriParam(label = "common", defaultValue = "2000")
+    private int reconnectTimeWait = 2000;
+    @UriParam(label = "common")
     private boolean pedantic;
     @UriParam
     private boolean verbose;
-    @UriParam(label = "security")
-    private boolean ssl;
-    @UriParam(defaultValue = "2000")
-    private int reconnectTimeWait = 2000;
-    @UriParam(defaultValue = "3")
-    private int maxReconnectAttempts = 3;
-    @UriParam(defaultValue = "4000")
-    private int pingInterval = 4000;
+    @UriParam(defaultValue = "60")
+    private int maxReconnectAttempts = Options.DEFAULT_MAX_RECONNECT;
+    @UriParam(defaultValue = "120000")
+    private int pingInterval = 120000;
+    @UriParam(label = "common", defaultValue = "2000")
+    private int connectionTimeout = 2000;
+    @UriParam(label = "common", defaultValue = "2")
+    private int maxPingsOut = Options.DEFAULT_MAX_PINGS_OUT;
+    @UriParam(label = "common", defaultValue = "5000")
+    private int requestCleanupInterval = 5000;
     @UriParam(label = "producer")
     private String replySubject;
     @UriParam
     private boolean noRandomizeServers;
+    @UriParam
+    private boolean noEcho;
     @UriParam(label = "consumer")
     private String queueName;
+    @UriParam(label = "consumer")
+    private boolean replyToDisabled;
     @UriParam(label = "consumer")
     private String maxMessages;
     @UriParam(label = "consumer", defaultValue = "10")
     private int poolSize = 10;
-    @UriParam(label = "common", defaultValue = "false")
-    private boolean flushConnection;
+    @UriParam(label = "common", defaultValue = "true")
+    private boolean flushConnection = true;
     @UriParam(label = "common", defaultValue = "1000")
     private int flushTimeout = 1000;
     @UriParam(label = "security")
     private boolean secure;
-    @UriParam(label = "security")
-    private boolean tlsDebug;
     @UriParam(label = "security")
     private SSLContextParameters sslContextParameters;
 
@@ -91,9 +103,20 @@ public class NatsConfiguration {
     }
 
     /**
+     * Reference an already instantiated connection to Nats server
+     */
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+    }
+
+    /**
      * Whether or not using reconnection feature
      */
-    public boolean getReconnect() {
+    public boolean isReconnect() {
         return reconnect;
     }
 
@@ -102,9 +125,9 @@ public class NatsConfiguration {
     }
 
     /**
-     * Whether or not running in pedantic mode (this affects performace)
+     * Whether or not running in pedantic mode (this affects performance)
      */
-    public boolean getPedantic() {
+    public boolean isPedantic() {
         return pedantic;
     }
 
@@ -115,23 +138,12 @@ public class NatsConfiguration {
     /**
      * Whether or not running in verbose mode
      */
-    public boolean getVerbose() {
+    public boolean isVerbose() {
         return verbose;
     }
 
     public void setVerbose(boolean verbose) {
         this.verbose = verbose;
-    }
-
-    /**
-     * Whether or not using SSL
-     */
-    public boolean getSsl() {
-        return ssl;
-    }
-
-    public void setSsl(boolean ssl) {
-        this.ssl = ssl;
     }
 
     /**
@@ -157,6 +169,28 @@ public class NatsConfiguration {
     }
 
     /**
+     * maximum number of pings have not received a response allowed by the client
+     */
+    public int getMaxPingsOut() {
+        return maxPingsOut;
+    }
+
+    public void setMaxPingsOut(int maxPingsOut) {
+        this.maxPingsOut = maxPingsOut;
+    }
+
+    /**
+     * Interval to clean up cancelled/timed out requests.
+     */
+    public int getRequestCleanupInterval() {
+        return requestCleanupInterval;
+    }
+
+    public void setRequestCleanupInterval(int requestCleanupInterval) {
+        this.requestCleanupInterval = requestCleanupInterval;
+    }
+
+    /**
      * Ping interval to be aware if connection is still alive (in milliseconds)
      */
     public int getPingInterval() {
@@ -166,7 +200,17 @@ public class NatsConfiguration {
     public void setPingInterval(int pingInterval) {
         this.pingInterval = pingInterval;
     }
-    
+
+    /**
+     * Timeout for connection attempts. (in milliseconds)
+     */
+    public int getConnectionTimeout() {
+        return connectionTimeout;
+    }
+
+    public void setConnectionTimeout(int connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
+    }
 
     /**
      * the subject to which subscribers should send response
@@ -182,12 +226,24 @@ public class NatsConfiguration {
     /**
      * Whether or not randomizing the order of servers for the connection attempts
      */
-    public boolean getNoRandomizeServers() {
+    public boolean isNoRandomizeServers() {
         return noRandomizeServers;
     }
 
     public void setNoRandomizeServers(boolean noRandomizeServers) {
         this.noRandomizeServers = noRandomizeServers;
+    }
+
+    /**
+     * Turn off echo. If supported by the gnatsd version you are connecting to this flag will prevent the server from
+     * echoing messages back to the connection if it has subscriptions on the subject being published to.
+     */
+    public boolean isNoEcho() {
+        return noEcho;
+    }
+
+    public void setNoEcho(boolean noEcho) {
+        this.noEcho = noEcho;
     }
 
     /**
@@ -201,8 +257,19 @@ public class NatsConfiguration {
         this.queueName = queueName;
     }
 
+    public boolean isReplyToDisabled() {
+        return replyToDisabled;
+    }
+
     /**
-     * Stop receiving messages from a topic we are subscribing to after maxMessages 
+     * Can be used to turn off sending back reply message in the consumer.
+     */
+    public void setReplyToDisabled(boolean replyToDisabled) {
+        this.replyToDisabled = replyToDisabled;
+    }
+
+    /**
+     * Stop receiving messages from a topic we are subscribing to after maxMessages
      */
     public String getMaxMessages() {
         return maxMessages;
@@ -213,7 +280,7 @@ public class NatsConfiguration {
     }
 
     /**
-     * Consumer pool size
+     * Consumer thread pool size (default is 10)
      */
     public int getPoolSize() {
         return poolSize;
@@ -228,7 +295,7 @@ public class NatsConfiguration {
     }
 
     /**
-     * Define if we want to flush connection or not
+     * Define if we want to flush connection when stopping or not
      */
     public void setFlushConnection(boolean flushConnection) {
         this.flushConnection = flushConnection;
@@ -239,7 +306,7 @@ public class NatsConfiguration {
     }
 
     /**
-     * Set the flush timeout
+     * Set the flush timeout (in milliseconds)
      */
     public void setFlushTimeout(int flushTimeout) {
         this.flushTimeout = flushTimeout;
@@ -257,17 +324,6 @@ public class NatsConfiguration {
     }
 
     /**
-     * TLS Debug, it will add additional console output
-     */
-    public boolean isTlsDebug() {
-        return tlsDebug;
-    }
-
-    public void setTlsDebug(boolean tlsDebug) {
-        this.tlsDebug = tlsDebug;
-    }
-
-    /**
      * To configure security using SSLContextParameters
      */
     public SSLContextParameters getSslContextParameters() {
@@ -278,31 +334,45 @@ public class NatsConfiguration {
         this.sslContextParameters = sslContextParameters;
     }
 
-    private static <T> void addPropertyIfNotNull(Properties props, String key, T value) {
-        if (value != null) {
-            props.put(key, value);
+    public Builder createOptions() throws NoSuchAlgorithmException, IllegalArgumentException {
+        Builder builder = new Options.Builder();
+        builder.server(splitServers());
+        if (isVerbose()) {
+            builder.verbose();
         }
-    }
-
-    public Properties createProperties() {
-        Properties props = new Properties();
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_URL, splitServers());
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_VERBOSE, getVerbose());
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_PEDANTIC, getPedantic());
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_SSL, getSsl());
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_RECONNECT, getReconnect());
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_MAX_RECONNECT_ATTEMPTS, getMaxReconnectAttempts());
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_RECONNECT_TIME_WAIT, getReconnectTimeWait());
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_PING_INTERVAL, getPingInterval());
-        addPropertyIfNotNull(props, NatsPropertiesConstants.NATS_PROPERTY_DONT_RANDOMIZE_SERVERS, getNoRandomizeServers());
-        return props;
+        if (isPedantic()) {
+            builder.pedantic();
+        }
+        if (isSecure()) {
+            builder.secure();
+        }
+        if (!isReconnect()) {
+            builder.noReconnect();
+        } else {
+            builder.maxReconnects(getMaxReconnectAttempts());
+            builder.reconnectWait(Duration.ofMillis(getReconnectTimeWait()));
+        }
+        builder.pingInterval(Duration.ofMillis(getPingInterval()));
+        builder.connectionTimeout(Duration.ofMillis(getConnectionTimeout()));
+        builder.maxPingsOut(getMaxPingsOut());
+        builder.requestCleanupInterval(Duration.ofMillis(getRequestCleanupInterval()));
+        if (isNoRandomizeServers()) {
+            builder.noRandomize();
+        }
+        if (isNoEcho()) {
+            builder.noEcho();
+        }
+        return builder;
     }
 
     private String splitServers() {
         StringBuilder servers = new StringBuilder();
         String prefix = "nats://";
 
-        String[] pieces = getServers().split(",");
+        String srvspec = getServers();
+        ObjectHelper.notNull(srvspec, "No servers configured");
+
+        String[] pieces = srvspec.split(",");
         for (int i = 0; i < pieces.length; i++) {
             if (i < pieces.length - 1) {
                 servers.append(prefix + pieces[i] + ",");

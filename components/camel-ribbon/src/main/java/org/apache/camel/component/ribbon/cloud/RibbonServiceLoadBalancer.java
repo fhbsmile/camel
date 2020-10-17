@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.component.ribbon.cloud;
 
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
 
+import com.netflix.client.config.CommonClientConfigKey;
 import com.netflix.client.config.IClientConfig;
 import com.netflix.client.config.IClientConfigKey;
 import com.netflix.loadbalancer.DummyPing;
@@ -43,9 +43,9 @@ import org.apache.camel.cloud.ServiceFilterAware;
 import org.apache.camel.cloud.ServiceLoadBalancer;
 import org.apache.camel.cloud.ServiceLoadBalancerFunction;
 import org.apache.camel.component.ribbon.RibbonConfiguration;
-import org.apache.camel.support.ServiceSupport;
+import org.apache.camel.support.service.ServiceHelper;
+import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.ObjectHelper;
-import org.apache.camel.util.ServiceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,8 +107,7 @@ public class RibbonServiceLoadBalancer
 
         if (serviceDiscovery != null) {
             LOGGER.info("ServiceCall is using ribbon load balancer with service discovery type: {} and service filter: {}",
-                serviceDiscovery.getClass(),
-                serviceDiscovery != null ? serviceFilter.getClass() : "none");
+                    serviceDiscovery.getClass(), serviceFilter.getClass());
         } else {
             LOGGER.info("ServiceCall is using ribbon load balancer");
         }
@@ -142,16 +141,15 @@ public class RibbonServiceLoadBalancer
         if (server instanceof ServiceDefinition) {
             // If the service discovery is one of camel provides, the definition
             // is already of the expected type.
-            definition = (ServiceDefinition)server;
+            definition = (ServiceDefinition) server;
         } else {
             // If ribbon server list is configured through client config properties
             // i.e. with listOfServers property the instance provided by the load
             // balancer is of type Server so a conversion is needed
             definition = new RibbonServiceDefinition(
-                serviceName,
-                server.getHost(),
-                server.getPort()
-            );
+                    serviceName,
+                    server.getHost(),
+                    server.getPort());
 
             String zone = server.getZone();
             if (zone != null) {
@@ -169,12 +167,12 @@ public class RibbonServiceLoadBalancer
     private ZoneAwareLoadBalancer<RibbonServiceDefinition> createLoadBalancer(String serviceName) {
         // setup client config
         IClientConfig config = configuration.getClientName() != null
-            ? IClientConfig.Builder.newBuilder(configuration.getClientName()).build()
-            : IClientConfig.Builder.newBuilder().build();
+                ? IClientConfig.Builder.newBuilder(configuration.getClientName()).build()
+                : IClientConfig.Builder.newBuilder().build();
 
         if (configuration.getProperties() != null) {
             for (Map.Entry<String, String> entry : configuration.getProperties().entrySet()) {
-                IClientConfigKey key = IClientConfigKey.Keys.valueOf(entry.getKey());
+                IClientConfigKey key = CommonClientConfigKey.valueOf(entry.getKey());
                 String value = entry.getValue();
 
                 LOGGER.debug("RibbonClientConfig: {}={}", key.key(), value);
@@ -186,12 +184,12 @@ public class RibbonServiceLoadBalancer
 
         if (serviceDiscovery != null) {
             loadBalancer = new ZoneAwareLoadBalancer<>(
-                config,
-                configuration.getRuleOrDefault(RoundRobinRule::new),
-                configuration.getPingOrDefault(DummyPing::new),
-                new RibbonServerList(serviceName, serviceDiscovery, serviceFilter),
-                null,
-                new PollingServerListUpdater(config));
+                    config,
+                    configuration.getRuleOrDefault(RoundRobinRule::new),
+                    configuration.getPingOrDefault(DummyPing::new),
+                    new RibbonServerList(serviceName, serviceDiscovery, serviceFilter),
+                    null,
+                    new PollingServerListUpdater(config));
         } else {
             loadBalancer = new ZoneAwareLoadBalancer<>(config);
         }
@@ -199,7 +197,7 @@ public class RibbonServiceLoadBalancer
         return loadBalancer;
     }
 
-    static final class RibbonServerList implements ServerList<RibbonServiceDefinition>  {
+    static final class RibbonServerList implements ServerList<RibbonServiceDefinition> {
         private final String serviceName;
         private final ServiceDiscovery serviceDiscovery;
         private final ServiceFilter serviceFilter;
@@ -235,15 +233,14 @@ public class RibbonServiceLoadBalancer
 
             for (ServiceDefinition service : services) {
                 if (service instanceof RibbonServiceDefinition) {
-                    ribbonServers.add((RibbonServiceDefinition)service);
+                    ribbonServers.add((RibbonServiceDefinition) service);
                 } else {
                     RibbonServiceDefinition serviceDef = new RibbonServiceDefinition(
-                        serviceName,
-                        service.getHost(),
-                        service.getPort(),
-                        service.getMetadata(),
-                        service.getHealth()
-                    );
+                            serviceName,
+                            service.getHost(),
+                            service.getPort(),
+                            service.getMetadata(),
+                            service.getHealth());
 
                     String zone = serviceDef.getMetadata().get("zone");
                     if (zone != null) {

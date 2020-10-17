@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,37 +16,22 @@
  */
 package org.apache.camel.component.cassandra;
 
-import com.datastax.driver.core.Cluster;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.impl.JndiRegistry;
-import org.cassandraunit.CassandraCQLUnit;
-import org.junit.Rule;
-import org.junit.Test;
+import org.apache.camel.spi.Registry;
+import org.apache.camel.support.SimpleRegistry;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CassandraComponentBeanRefTest extends BaseCassandraTest {
+
     public static final String CQL = "insert into camel_user(login, first_name, last_name) values (?, ?, ?)";
-    public static final String SESSION_URI = "cql:bean:cassandraSession?cql=#insertCql";
-    public static final String CLUSTER_URI = "cql:bean:cassandraCluster/camel_ks?cql=#insertCql";
-
-    @Produce(uri = "direct:input")
-    public ProducerTemplate producerTemplate;
-
-    @Rule
-    public CassandraCQLUnit cassandra = CassandraUnitUtils.cassandraCQLUnit();
+    public static final String SESSION_URI = "cql:bean:cassandraSession?cql=" + CQL;
 
     @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry registry = super.createRegistry();
-        if (canTest()) {
-            Cluster cluster = Cluster.builder()
-                    .addContactPoint("localhost")
-                    .build();
-            registry.bind("cassandraCluster", cluster);
-            registry.bind("cassandraSession", cluster.connect("camel_ks"));
-            registry.bind("insertCql", CQL);
-        }
+    protected Registry createCamelRegistry() throws Exception {
+        SimpleRegistry registry = new SimpleRegistry();
+        registry.bind("cassandraSession", getSession());
         return registry;
     }
 
@@ -54,34 +39,16 @@ public class CassandraComponentBeanRefTest extends BaseCassandraTest {
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() {
-                from("direct:inputSession")
-                        .to(SESSION_URI);
-                from("direct:inputCluster")
-                        .to(CLUSTER_URI);
+                from("direct:inputSession").to(SESSION_URI);
             }
         };
     }
 
     @Test
     public void testSession() throws Exception {
-        if (!canTest()) {
-            return;
-        }
         CassandraEndpoint endpoint = getMandatoryEndpoint(SESSION_URI, CassandraEndpoint.class);
 
-        assertEquals("camel_ks", endpoint.getKeyspace());
+        assertEquals(KEYSPACE_NAME, endpoint.getKeyspace());
         assertEquals(CQL, endpoint.getCql());
     }
-
-    @Test
-    public void testCluster() throws Exception {
-        if (!canTest()) {
-            return;
-        }
-        CassandraEndpoint endpoint = getMandatoryEndpoint(CLUSTER_URI, CassandraEndpoint.class);
-
-        assertEquals("camel_ks", endpoint.getKeyspace());
-        assertEquals(CQL, endpoint.getCql());
-    }
-
 }

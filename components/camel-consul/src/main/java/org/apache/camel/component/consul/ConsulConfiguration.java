@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +16,7 @@
  */
 package org.apache.camel.component.consul;
 
+import com.orbitz.consul.Consul;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
@@ -24,6 +25,8 @@ import org.apache.camel.spi.UriParams;
 public class ConsulConfiguration extends ConsulClientConfiguration {
     @UriParam
     private String key;
+    @UriParam(label = "common")
+    private Consul consulClient;
     @UriParam(label = "producer")
     private String action;
     @UriParam(label = "producer", defaultValue = "false")
@@ -48,8 +51,7 @@ public class ConsulConfiguration extends ConsulClientConfiguration {
     }
 
     /**
-     * Default to transform values retrieved from Consul i.e. on KV endpoint to
-     * string.
+     * Default to transform values retrieved from Consul i.e. on KV endpoint to string.
      */
     public void setValueAsString(boolean valueAsString) {
         this.valueAsString = valueAsString;
@@ -66,6 +68,17 @@ public class ConsulConfiguration extends ConsulClientConfiguration {
         this.key = key;
     }
 
+    public Consul getConsulClient() {
+        return consulClient;
+    }
+
+    /**
+     * Reference to a `com.orbitz.consul.Consul` in the registry.
+     */
+    public void setConsulClient(Consul consulClient) {
+        this.consulClient = consulClient;
+    }
+
     // ****************************************
     // Copy
     // ****************************************
@@ -73,7 +86,7 @@ public class ConsulConfiguration extends ConsulClientConfiguration {
     @Override
     public ConsulConfiguration copy() {
         try {
-            return (ConsulConfiguration)super.clone();
+            return (ConsulConfiguration) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeCamelException(e);
         }

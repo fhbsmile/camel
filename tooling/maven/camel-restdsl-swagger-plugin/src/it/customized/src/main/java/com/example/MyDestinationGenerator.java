@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@
 package com.example;
 
 import io.swagger.models.Operation;
-
 import org.apache.camel.generator.swagger.DestinationGenerator;
 
 public class MyDestinationGenerator implements DestinationGenerator {

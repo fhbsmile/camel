@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,23 +16,32 @@
  */
 package org.apache.camel.component.http.handler;
 
-import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import org.apache.http.HttpRequest;
 
 /**
  * Similar to {@link BasicValidationHandler} but validates the raw query instead.
  */
 public class BasicRawQueryValidationHandler extends BasicValidationHandler {
 
-    public BasicRawQueryValidationHandler(String expectedMethod, String expectedQuery, Object expectedContent, String responseContent) {
+    public BasicRawQueryValidationHandler(String expectedMethod, String expectedQuery, Object expectedContent,
+                                          String responseContent) {
         super(expectedMethod, expectedQuery, expectedContent, responseContent);
     }
 
-    protected boolean validateQuery(HttpServletRequest request) {
-        String query = request.getQueryString();
-        if (expectedQuery != null && !expectedQuery.equals(query)) {
-            return false;
+    @Override
+    protected boolean validateQuery(HttpRequest request) throws IOException {
+        try {
+            String query = new URI(request.getRequestLine().getUri()).getRawQuery();
+            if (expectedQuery != null && !expectedQuery.equals(query)) {
+                return false;
+            }
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
         }
         return true;
     }
-
 }

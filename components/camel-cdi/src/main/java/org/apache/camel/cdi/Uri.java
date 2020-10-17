@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,15 +20,18 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import javax.enterprise.util.AnnotationLiteral;
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Qualifier;
 
 /**
- * A CDI qualifier to define the <a href="http://camel.apache.org/uris.html">Camel URI</a> associated to
- * the annotated resource. This annotation can be used to annotate an {@code @Inject} injection point for
- * values of type {@link org.apache.camel.Endpoint} or {@link org.apache.camel.ProducerTemplate}. For example:
- * <pre><code>
+ * A CDI qualifier to define the <a href="http://camel.apache.org/uris.html">Camel URI</a> associated to the annotated
+ * resource. This annotation can be used to annotate an {@code @Inject} injection point for values of type
+ * {@link org.apache.camel.Endpoint} or {@link org.apache.camel.ProducerTemplate}. For example:
+ * 
+ * <pre>
+ * <code>
  * {@literal @}Inject
  * {@literal @}Uri("mock:foo")
  * Endpoint endpoint;
@@ -36,31 +39,19 @@ import javax.inject.Qualifier;
  * {@literal @}Inject
  * {@literal @}Uri("seda:bar")
  * ProducerTemplate producer;
- * </code></pre>
+ * </code>
+ * </pre>
  */
 @Qualifier
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
+@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER })
 public @interface Uri {
 
     /**
      * Returns the <a href="http://camel.apache.org/uris.html">Camel URI</a> of the resource.
      */
-    @Nonbinding String value();
-
-    /**
-     * Returns the name of the {@code CamelContext} to use to resolve the Camel resource for this URI.
-     *
-     * @deprecated Use the {@link ContextName} qualifier to specify the name of the {@code CamelContext} instead:
-     * <pre><code>
-     * {@literal @}Inject
-     * {@literal @}ContextName("foo")
-     * {@literal @}Uri("seda:bar")
-     * Endpoint endpoint;
-     * </code></pre>
-     */
-    @Deprecated
-    @Nonbinding String context() default "";
+    @Nonbinding
+    String value();
 
     final class Literal extends AnnotationLiteral<Uri> implements Uri {
 
@@ -81,9 +72,5 @@ public @interface Uri {
             return uri;
         }
 
-        @Override
-        public String context() {
-            return "";
-        }
     }
 }

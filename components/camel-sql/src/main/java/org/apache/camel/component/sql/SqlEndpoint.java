@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +16,7 @@
  */
 package org.apache.camel.component.sql;
 
+import org.apache.camel.Category;
 import org.apache.camel.Component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
@@ -27,13 +28,14 @@ import org.apache.camel.util.UnsafeUriCharactersEncoder;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * The sql component allows you to work with databases using JDBC SQL queries.
+ * Perform SQL queries using Spring JDBC.
  */
-@UriEndpoint(firstVersion = "1.4.0", scheme = "sql", title = "SQL", syntax = "sql:query", consumerClass = SqlConsumer.class, label = "database,sql")
+@UriEndpoint(firstVersion = "1.4.0", scheme = "sql", title = "SQL", syntax = "sql:query",
+             category = { Category.DATABASE, Category.SQL })
 public class SqlEndpoint extends DefaultSqlEndpoint {
 
     @UriPath(description = "Sets the SQL query to perform. You can externalize the query by using file: or classpath: as prefix and specify the location of the file.")
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String query;
 
     public SqlEndpoint() {
@@ -44,9 +46,12 @@ public class SqlEndpoint extends DefaultSqlEndpoint {
         this.query = query;
     }
 
+    @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        SqlPrepareStatementStrategy prepareStrategy = getPrepareStatementStrategy() != null ? getPrepareStatementStrategy() : new DefaultSqlPrepareStatementStrategy(getSeparator());
-        SqlProcessingStrategy proStrategy = getProcessingStrategy() != null ? getProcessingStrategy() : new DefaultSqlProcessingStrategy(prepareStrategy);
+        SqlPrepareStatementStrategy prepareStrategy = getPrepareStatementStrategy() != null
+                ? getPrepareStatementStrategy() : new DefaultSqlPrepareStatementStrategy(getSeparator());
+        SqlProcessingStrategy proStrategy
+                = getProcessingStrategy() != null ? getProcessingStrategy() : new DefaultSqlProcessingStrategy(prepareStrategy);
         SqlConsumer consumer = new SqlConsumer(this, processor, getJdbcTemplate(), query, prepareStrategy, proStrategy);
         consumer.setMaxMessagesPerPoll(getMaxMessagesPerPoll());
         consumer.setOnConsume(getOnConsume());
@@ -56,13 +61,18 @@ public class SqlEndpoint extends DefaultSqlEndpoint {
         consumer.setExpectedUpdateCount(getExpectedUpdateCount());
         consumer.setUseIterator(isUseIterator());
         consumer.setRouteEmptyResultSet(isRouteEmptyResultSet());
+        consumer.setParametersCount(getParametersCount());
+        consumer.setAlwaysPopulateStatement(isAlwaysPopulateStatement());
         configureConsumer(consumer);
         return consumer;
     }
 
+    @Override
     public Producer createProducer() throws Exception {
-        SqlPrepareStatementStrategy prepareStrategy = getPrepareStatementStrategy() != null ? getPrepareStatementStrategy() : new DefaultSqlPrepareStatementStrategy(getSeparator());
-        SqlProducer result = new SqlProducer(this, query, getJdbcTemplate(), prepareStrategy, isBatch(),
+        SqlPrepareStatementStrategy prepareStrategy = getPrepareStatementStrategy() != null
+                ? getPrepareStatementStrategy() : new DefaultSqlPrepareStatementStrategy(getSeparator());
+        SqlProducer result = new SqlProducer(
+                this, query, getJdbcTemplate(), prepareStrategy, isBatch(),
                 isAlwaysPopulateStatement(), isUseMessageBodyForSql());
         result.setParametersCount(getParametersCount());
         return result;
@@ -79,7 +89,8 @@ public class SqlEndpoint extends DefaultSqlEndpoint {
     }
 
     /**
-     * Sets the SQL query to perform. You can externalize the query by using file: or classpath: as prefix and specify the location of the file.
+     * Sets the SQL query to perform. You can externalize the query by using file: or classpath: as prefix and specify
+     * the location of the file.
      */
     public void setQuery(String query) {
         this.query = query;

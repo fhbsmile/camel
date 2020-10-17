@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,20 +18,20 @@ package org.apache.camel.component.pubnub;
 
 import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
-
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.support.DefaultEndpoint;
 import org.apache.camel.util.ObjectHelper;
 
 /**
- * To send and receive messages to PubNub data stream network for connected devices.
+ * Send and receive messages to/from PubNub data stream network for connected devices.
  */
 @UriEndpoint(firstVersion = "2.19.0", scheme = "pubnub", title = "PubNub", syntax = "pubnub:channel",
-    consumerClass = PubNubConsumer.class, label = "cloud,iot,messaging")
+             category = { Category.CLOUD, Category.IOT, Category.MESSAGING })
 public class PubNubEndpoint extends DefaultEndpoint {
 
     @UriParam(label = "advanced")
@@ -53,11 +53,6 @@ public class PubNubEndpoint extends DefaultEndpoint {
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
         return new PubNubConsumer(this, processor, configuration);
-    }
-
-    @Override
-    public boolean isSingleton() {
-        return true;
     }
 
     public PubNubConfiguration getConfiguration() {

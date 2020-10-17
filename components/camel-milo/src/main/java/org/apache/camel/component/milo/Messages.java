@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,7 +16,7 @@
  */
 package org.apache.camel.component.milo;
 
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultMessage;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 
 public final class Messages {
@@ -26,11 +26,10 @@ public final class Messages {
     /**
      * Fill a Message from a DataValue
      *
-     * @param value the value to feed from
+     * @param value  the value to feed from
      * @param result the result to feed to
      */
     public static void fillFromDataValue(final DataValue value, final DefaultMessage result) {
         result.setBody(value);
-        result.setFault(value.getStatusCode().isBad());
     }
 }

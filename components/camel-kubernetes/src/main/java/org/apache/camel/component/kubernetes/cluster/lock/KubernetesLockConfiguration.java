@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -74,8 +74,8 @@ public class KubernetesLockConfiguration implements Cloneable {
     private long renewDeadlineMillis = DEFAULT_RENEW_DEADLINE_MILLIS;
 
     /**
-     * The time between two subsequent attempts to check and acquire the leadership.
-     * It is randomized using the jitter factor.
+     * The time between two subsequent attempts to check and acquire the leadership. It is randomized using the jitter
+     * factor.
      */
     private long retryPeriodMillis = DEFAULT_RETRY_PERIOD_MILLIS;
 

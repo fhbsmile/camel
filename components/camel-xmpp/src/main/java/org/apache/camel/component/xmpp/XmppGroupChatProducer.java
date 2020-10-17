@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeExchangeException;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
@@ -34,9 +34,6 @@ import org.jxmpp.stringprep.XmppStringprepException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @version
- */
 public class XmppGroupChatProducer extends DefaultProducer {
     private static final Logger LOG = LoggerFactory.getLogger(XmppGroupChatProducer.class);
     private final XmppEndpoint endpoint;
@@ -49,8 +46,8 @@ public class XmppGroupChatProducer extends DefaultProducer {
         this.endpoint = endpoint;
     }
 
+    @Override
     public void process(Exchange exchange) {
-
         if (connection == null) {
             try {
                 connection = endpoint.createConnection();
@@ -109,7 +106,8 @@ public class XmppGroupChatProducer extends DefaultProducer {
                 if (endpoint.isTestConnectionOnStartup()) {
                     throw new RuntimeException("Could not connect to XMPP server:  " + endpoint.getConnectionDescription(), e);
                 } else {
-                    LOG.warn("Could not connect to XMPP server. {}  Producer will attempt lazy connection when needed.", e.getMessage());
+                    LOG.warn("Could not connect to XMPP server. {}  Producer will attempt lazy connection when needed.",
+                            e.getMessage());
                 }
             }
         }
@@ -121,15 +119,19 @@ public class XmppGroupChatProducer extends DefaultProducer {
         super.doStart();
     }
 
-    protected synchronized void initializeChat() throws InterruptedException, SmackException, XMPPException, XmppStringprepException {
+    protected synchronized void initializeChat()
+            throws InterruptedException, SmackException, XMPPException, XmppStringprepException {
         if (chat == null) {
             room = endpoint.resolveRoom(connection);
+            String roomPassword = endpoint.getRoomPassword();
             MultiUserChatManager chatManager = MultiUserChatManager.getInstanceFor(connection);
             chat = chatManager.getMultiUserChat(JidCreate.entityBareFrom(room));
-            MucEnterConfiguration mucc = chat.getEnterConfigurationBuilder(Resourcepart.from(endpoint.getNickname()))
-                    .requestNoHistory()
-                    .build();
-            chat.join(mucc);
+            MucEnterConfiguration.Builder mucc = chat.getEnterConfigurationBuilder(Resourcepart.from(endpoint.getNickname()))
+                    .requestNoHistory();
+            if (roomPassword != null) {
+                mucc.withPassword(roomPassword);
+            }
+            chat.join(mucc.build());
             LOG.info("Joined room: {} as: {}", room, endpoint.getNickname());
         }
     }

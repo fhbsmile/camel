@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,12 +21,30 @@ import java.util.stream.IntStream;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class InfinispanIdempotentRepositoryIT extends CamelTestSupport {
+
+    private RemoteCacheManager manager = new RemoteCacheManager();
+
+    @BeforeEach
+    public void setupCache() {
+        RemoteCache<Object, Object> cache = manager.administration().getOrCreateCache("idempotent", (String) null);
+        assertNotNull(cache);
+    }
+
+    @AfterEach
+    public void cleanupCache() {
+        manager.close();
+    }
 
     @Test
     public void producerQueryOperationWithoutQueryBuilder() throws Exception {
@@ -35,8 +53,7 @@ public class InfinispanIdempotentRepositoryIT extends CamelTestSupport {
 
         final String messageId = UUID.randomUUID().toString();
         IntStream.range(0, 10).forEach(
-            i -> template().sendBodyAndHeader("direct:start", "message-" + i, "MessageID", messageId)
-        );
+                i -> template().sendBodyAndHeader("direct:start", "message-" + i, "MessageID", messageId));
 
         mock.assertIsSatisfied();
     }
@@ -47,21 +64,18 @@ public class InfinispanIdempotentRepositoryIT extends CamelTestSupport {
             @Override
             public void configure() {
                 from("direct:start")
-                    .idempotentConsumer(
-                        header("MessageID"),
-                        new InfinispanIdempotentRepository(
-                            new RemoteCacheManager(
-                                new ConfigurationBuilder()
-                                    .addServers("localhost")
-                                    .build(),
-                                true
-                            ),
-                            "idempotent"
-                        )
-                    )
-                    .skipDuplicate(true)
-                    .to("log:org.apache.camel.component.infinispan.processor.idempotent?level=INFO&showAll=true&multiline=true")
-                    .to("mock:result");
+                        .idempotentConsumer(
+                                header("MessageID"),
+                                new InfinispanIdempotentRepository(
+                                        new RemoteCacheManager(
+                                                new ConfigurationBuilder()
+                                                        .addServers("localhost")
+                                                        .build(),
+                                                true),
+                                        "idempotent"))
+                        .skipDuplicate(true)
+                        .to("log:org.apache.camel.component.infinispan.processor.idempotent?level=INFO&showAll=true&multiline=true")
+                        .to("mock:result");
             }
         };
     }

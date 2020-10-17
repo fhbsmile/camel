@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,16 +16,21 @@
  */
 package org.apache.camel.component.leveldb;
 
+import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LevelDBAggregateTimeoutCompletionRestartTest extends CamelTestSupport {
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
         deleteDirectory("target/data");
         super.setUp();
@@ -64,7 +69,7 @@ public class LevelDBAggregateTimeoutCompletionRestartTest extends CamelTestSuppo
 
                 // here is the Camel route where we aggregate
                 from("direct:start")
-                    .aggregate(header("id"), new MyAggregationStrategy())
+                        .aggregate(header("id"), new MyAggregationStrategy())
                         // use our created leveldb repo as aggregation repository
                         .completionTimeout(3000).aggregationRepository(repo)
                         .to("mock:aggregated");
@@ -74,6 +79,7 @@ public class LevelDBAggregateTimeoutCompletionRestartTest extends CamelTestSuppo
 
     public static class MyAggregationStrategy implements AggregationStrategy {
 
+        @Override
         public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
             if (oldExchange == null) {
                 return newExchange;

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,36 +26,37 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.PubsubTestSupport;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GroupedExchangeRoundtripTest extends PubsubTestSupport {
 
     private static final String TOPIC_NAME = "groupTopic";
     private static final String SUBSCRIPTION_NAME = "groupSubscription";
 
-    @EndpointInject(uri = "direct:aggregator")
+    @EndpointInject("direct:aggregator")
     private Endpoint aggregator;
 
-    @EndpointInject(uri = "google-pubsub:{{project.id}}:" + TOPIC_NAME)
+    @EndpointInject("google-pubsub:{{project.id}}:" + TOPIC_NAME)
     private Endpoint topic;
 
-    @EndpointInject(uri = "mock:sendResult")
+    @EndpointInject("mock:sendResult")
     private MockEndpoint sendResult;
 
-    @EndpointInject(uri = "google-pubsub:{{project.id}}:" + SUBSCRIPTION_NAME)
+    @EndpointInject("google-pubsub:{{project.id}}:" + SUBSCRIPTION_NAME + "?synchronousPull=true")
     private Endpoint pubsubSubscription;
 
-    @EndpointInject(uri = "mock:receiveResult")
+    @EndpointInject("mock:receiveResult")
     private MockEndpoint receiveResult;
 
-    @Produce(uri = "direct:aggregator")
+    @Produce("direct:aggregator")
     private ProducerTemplate producer;
 
-    @BeforeClass
-    public static void createTopicSubscription() throws Exception {
+    @Override
+    public void createTopicSubscription() {
         createTopicSubscriptionPair(TOPIC_NAME, SUBSCRIPTION_NAME);
     }
 
@@ -64,25 +65,18 @@ public class GroupedExchangeRoundtripTest extends PubsubTestSupport {
         return new RouteBuilder() {
             public void configure() {
 
-                from(aggregator)
-                        .routeId("Group_Send")
-                        .aggregate(new GroupedExchangeAggregationStrategy())
-                        .constant(true)
-                        .completionSize(2)
-                        .completionTimeout(5000L)
-                        .to(topic)
+                from(aggregator).routeId("Group_Send").aggregate(new GroupedExchangeAggregationStrategy()).constant(true)
+                        .completionSize(2).completionTimeout(5000L).to(topic)
                         .to(sendResult);
 
-                from(pubsubSubscription)
-                        .routeId("Group_Receive")
-                        .to(receiveResult);
+                from(pubsubSubscription).routeId("Group_Receive").to(receiveResult);
 
             }
         };
     }
 
     /**
-     * Tests that a grouped exhcange is successfully received
+     * Tests that a grouped exchange is successfully received
      *
      * @throws Exception
      */
@@ -109,11 +103,6 @@ public class GroupedExchangeRoundtripTest extends PubsubTestSupport {
 
         // Send result section
         List<Exchange> results = sendResult.getExchanges();
-        assertEquals("Received exchanges", 1, results.size());
-
-        List exchangeGrouped = (List) results
-                .get(0)
-                .getProperty(Exchange.GROUPED_EXCHANGE);
-        assertEquals("Received messages within the exchange", 2, exchangeGrouped.size());
+        assertEquals(1, results.size(), "Received exchanges");
     }
 }

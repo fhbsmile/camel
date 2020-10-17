@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,6 @@ import com.splunk.HttpService;
 import com.splunk.SSLSecurityProtocol;
 import com.splunk.Service;
 import com.splunk.ServiceArgs;
-
 import org.apache.camel.CamelContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,7 +119,8 @@ public class SplunkConnectionFactory {
         // (wls i'm looking at you)
         if (isUseSunHttpsHandler()) {
             String sunHandlerClassName = "sun.net.www.protocol.https.Handler";
-            Class<URLStreamHandler> clazz = camelContext.getClassResolver().resolveClass(sunHandlerClassName, URLStreamHandler.class);
+            Class<URLStreamHandler> clazz
+                    = camelContext.getClassResolver().resolveClass(sunHandlerClassName, URLStreamHandler.class);
             if (clazz != null) {
                 URLStreamHandler handler = camelContext.getInjector().newInstance(clazz);
                 args.setHTTPSHandler(handler);
@@ -130,7 +130,8 @@ public class SplunkConnectionFactory {
             }
         }
 
-        ExecutorService executor = camelContext.getExecutorServiceManager().newSingleThreadExecutor(this, "DefaultSplunkConnectionFactory");
+        ExecutorService executor
+                = camelContext.getExecutorServiceManager().newSingleThreadExecutor(this, "DefaultSplunkConnectionFactory");
 
         Future<Service> future = executor.submit(new Callable<Service>() {
             public Service call() throws Exception {
@@ -151,7 +152,8 @@ public class SplunkConnectionFactory {
             LOG.info("Successfully connected to Splunk");
             return service;
         } catch (Exception e) {
-            throw new RuntimeException(String.format("could not connect to Splunk Server @ %s:%d - %s", host, port, e.getMessage()));
+            throw new RuntimeException(
+                    String.format("could not connect to Splunk Server @ %s:%d - %s", host, port, e.getMessage()));
         } finally {
             if (executor != null) {
                 camelContext.getExecutorServiceManager().shutdownNow(executor);

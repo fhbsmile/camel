@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,15 +19,16 @@ package org.apache.camel.component.file.remote;
 import java.io.File;
 
 import org.apache.camel.Exchange;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class FtpProducerFileExistOverrideTwoUploadTest extends FtpServerTestSupport {
 
     protected String getFtpUrl() {
-        return "ftp://admin@localhost:" + getPort() + "/exist?password=admin&tempPrefix=upload-&fileExist=Override&disconnect=true";
+        return "ftp://admin@localhost:" + getPort()
+               + "/exist?password=admin&tempPrefix=upload-&fileExist=Override&disconnect=true";
     }
 
     @Test
@@ -52,10 +53,5 @@ public class FtpProducerFileExistOverrideTwoUploadTest extends FtpServerTestSupp
 
         body = context.getTypeConverter().convertTo(String.class, file);
         assertEquals("Bye World", body);
-    }
-
-    @Override
-    public boolean isUseRouteBuilder() {
-        return false;
     }
 }

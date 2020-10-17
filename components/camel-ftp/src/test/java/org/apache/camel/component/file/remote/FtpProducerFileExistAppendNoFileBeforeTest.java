@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,12 +19,11 @@ package org.apache.camel.component.file.remote;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+
 public class FtpProducerFileExistAppendNoFileBeforeTest extends FtpServerTestSupport {
 
     private String getFtpUrl() {
@@ -32,7 +31,7 @@ public class FtpProducerFileExistAppendNoFileBeforeTest extends FtpServerTestSup
     }
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         deleteDirectory("target/exist");

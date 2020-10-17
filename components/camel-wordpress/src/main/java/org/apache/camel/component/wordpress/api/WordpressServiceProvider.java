@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 package org.apache.camel.component.wordpress.api;
 
 import java.util.HashMap;
+
 import org.apache.camel.component.wordpress.api.service.WordpressService;
 import org.apache.camel.component.wordpress.api.service.WordpressServicePosts;
 import org.apache.camel.component.wordpress.api.service.WordpressServiceUsers;
@@ -24,6 +25,7 @@ import org.apache.camel.component.wordpress.api.service.impl.WordpressServicePos
 import org.apache.camel.component.wordpress.api.service.impl.WordpressServiceUsersAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -56,7 +58,8 @@ public final class WordpressServiceProvider {
     }
 
     public void init(WordpressAPIConfiguration config) {
-        checkNotNull(emptyToNull(config.getApiUrl()), "Please inform the Wordpress API url , eg.: http://myblog.com/wp-json/wp");
+        checkNotNull(emptyToNull(config.getApiUrl()),
+                "Please inform the Wordpress API url , eg.: http://myblog.com/wp-json/wp");
 
         if (isNullOrEmpty(config.getApiVersion())) {
             config.setApiVersion(WordpressConstants.API_VERSION);
@@ -71,13 +74,15 @@ public final class WordpressServiceProvider {
         this.services = new HashMap<>();
         this.services.put(WordpressServicePosts.class, servicePosts);
         this.services.put(WordpressServiceUsers.class, serviceUsers);
+        this.configuration = config;
 
-        LOGGER.info("Wordpress Service Provider initialized using base URL: {}, API Version {}", config.getApiUrl(), config.getApiVersion());
+        LOGGER.info("Wordpress Service Provider initialized using base URL: {}, API Version {}", config.getApiUrl(),
+                config.getApiVersion());
     }
 
     @SuppressWarnings("unchecked")
     public <T extends WordpressService> T getService(Class<T> wordpressServiceClazz) {
-        T service = (T)this.services.get(wordpressServiceClazz);
+        T service = (T) this.services.get(wordpressServiceClazz);
         if (service == null) {
             throw new IllegalArgumentException(String.format("Couldn't find a Wordpress Service '%s'", wordpressServiceClazz));
         }

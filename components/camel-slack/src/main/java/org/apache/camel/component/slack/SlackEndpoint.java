@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,38 +16,57 @@
  */
 package org.apache.camel.component.slack;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
+import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
+import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.RuntimeCamelException;
+import org.apache.camel.component.slack.helper.SlackMessage;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.apache.camel.support.ScheduledPollEndpoint;
+import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.json.JsonObject;
 
 /**
- * The slack component allows you to send messages to Slack.
+ * Send and receive messages to/from Slack.
  */
-@UriEndpoint(firstVersion = "2.16.0", scheme = "slack", title = "Slack", syntax = "slack:channel", producerOnly = true, label = "social")
-public class SlackEndpoint extends DefaultEndpoint {
+@UriEndpoint(firstVersion = "2.16.0", scheme = "slack", title = "Slack", syntax = "slack:channel",
+             category = { Category.SOCIAL })
+public class SlackEndpoint extends ScheduledPollEndpoint {
 
-    @UriPath @Metadata(required = "true")
+    @UriPath
+    @Metadata(required = true)
     private String channel;
-    @UriParam
+    @UriParam(label = "producer")
     private String webhookUrl;
-    @UriParam(secret = true)
+    @UriParam(label = "producer", secret = true)
+    @Deprecated
     private String username;
-    @UriParam
+    @UriParam(label = "producer")
+    @Deprecated
     private String iconUrl;
-    @UriParam
+    @UriParam(label = "producer")
+    @Deprecated
     private String iconEmoji;
+    @UriParam(label = "consumer", secret = true)
+    private String token;
+    @UriParam(label = "consumer", defaultValue = "10")
+    private String maxResults = "10";
+    @UriParam(label = "consumer", defaultValue = "https://slack.com")
+    private String serverUrl = "https://slack.com";
 
     /**
      * Constructor for SlackEndpoint
      *
-     * @param uri the full component url
+     * @param uri         the full component url
      * @param channelName the channel or username the message is directed at
-     * @param component the component that was created
+     * @param component   the component that was created
      */
     public SlackEndpoint(String uri, String channelName, SlackComponent component) {
         super(uri, component);
@@ -63,12 +82,13 @@ public class SlackEndpoint extends DefaultEndpoint {
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        throw new UnsupportedOperationException("You cannot consume slack messages from this endpoint: " + getEndpointUri());
-    }
-
-    @Override
-    public boolean isSingleton() {
-        return true;
+        if (ObjectHelper.isEmpty(token)) {
+            throw new RuntimeCamelException(
+                    "Missing required endpoint configuration: token must be defined for Slack consumer");
+        }
+        SlackConsumer consumer = new SlackConsumer(this, processor);
+        configureConsumer(consumer);
+        return consumer;
     }
 
     /**
@@ -125,5 +145,59 @@ public class SlackEndpoint extends DefaultEndpoint {
     public void setIconEmoji(String iconEmoji) {
         this.iconEmoji = iconEmoji;
     }
-}
 
+    public String getToken() {
+        return token;
+    }
+
+    /**
+     * The token to use
+     */
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public String getMaxResults() {
+        return maxResults;
+    }
+
+    /**
+     * The Max Result for the poll
+     */
+    public void setMaxResults(String maxResult) {
+        this.maxResults = maxResult;
+    }
+
+    public String getServerUrl() {
+        return serverUrl;
+    }
+
+    /**
+     * The Server URL of the Slack instance
+     */
+    public void setServerUrl(String serverUrl) {
+        this.serverUrl = serverUrl;
+    }
+
+    public Exchange createExchange(JsonObject object) {
+        return createExchange(getExchangePattern(), object);
+    }
+
+    public Exchange createExchange(ExchangePattern pattern, JsonObject object) {
+        Exchange exchange = super.createExchange(pattern);
+        SlackMessage slackMessage = new SlackMessage();
+        String text = object.getString(SlackConstants.SLACK_TEXT_FIELD);
+        String user = object.getString("user");
+        slackMessage.setText(text);
+        slackMessage.setUser(user);
+        if (ObjectHelper.isNotEmpty(object.get("icons"))) {
+            JsonObject icons = object.getMap("icons");
+            if (ObjectHelper.isNotEmpty(icons.get("emoji"))) {
+                slackMessage.setIconEmoji(icons.getString("emoji"));
+            }
+        }
+        Message message = exchange.getIn();
+        message.setBody(slackMessage);
+        return exchange;
+    }
+}

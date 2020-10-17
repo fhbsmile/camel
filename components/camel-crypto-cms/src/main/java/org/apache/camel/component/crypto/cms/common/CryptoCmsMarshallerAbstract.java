@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,7 @@ import java.io.OutputStream;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
-import org.apache.camel.converter.stream.OutputStreamBuilder;
+import org.apache.camel.support.builder.OutputStreamBuilder;
 import org.apache.camel.util.IOHelper;
 import org.apache.commons.codec.binary.Base64OutputStream;
 
@@ -64,7 +64,7 @@ public abstract class CryptoCmsMarshallerAbstract implements Processor {
                 marshalInternal(body, outStream, exchange);
             } finally {
                 IOHelper.close(outStream); // base64 stream must be closed,
-                                           // before we fetch the bytes
+                                          // before we fetch the bytes
             }
 
             setBodyAndHeader(out, output.build());
@@ -76,8 +76,7 @@ public abstract class CryptoCmsMarshallerAbstract implements Processor {
     }
 
     /**
-     * Intended for overwriting in order to set headers and body for the out
-     * message.
+     * Intended for overwriting in order to set headers and body for the out message.
      */
     protected void setBodyAndHeader(Message out, Object encodedDataObject) {
         out.setBody(encodedDataObject);

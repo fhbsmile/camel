@@ -37,7 +37,7 @@
         <keyManagers
                 keyPassword="changeit">
             <keyStore
-                    resource="/localhost.ks"
+                    resource="/localhost.p12"
                     password="changeit"/>
         </keyManagers>
     </sslContextParameters>
@@ -47,7 +47,7 @@
     </http-conf:conduit>
 
     <!-- setup the CxfEndpointConfigurer bean here -->
-    <bean id="myConfigurer" class="org.apache.camel.component.cxf.CxfTimeoutTest$MyCxfEndpointConfigurer"/>
+    <bean id="myConfigurer" class="org.apache.camel.component.cxf.CxfTimeoutTest$MyCxfConfigurer"/>
 
     <bean id="defaultHostnameVerifier" class="org.apache.cxf.transport.https.httpclient.DefaultHostnameVerifier"/>
 
@@ -63,18 +63,7 @@
 
         <route>
             <from uri="direct:doCatch"/>
-            <doTry>
-                <to uri="cxf:bean:springEndpoint"/>
-                <doCatch>
-                    <!-- and catch all other exceptions they are handled by default (ie handled
-                        = true) -->
-                    <exception>java.lang.Exception</exception>
-                    <handled>
-                        <constant>false</constant>
-                    </handled>
-                    <to uri="mock:error"/>
-                </doCatch>
-            </doTry>
+            <to uri="cxf:bean:springEndpoint"/>
         </route>
     </camelContext>
 

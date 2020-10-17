@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,6 @@ package org.apache.camel.component.splunk;
 
 import com.splunk.SSLSecurityProtocol;
 import com.splunk.Service;
-
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
@@ -30,7 +29,8 @@ public class SplunkConfiguration {
 
     private SplunkConnectionFactory connectionFactory;
 
-    @UriPath(description = "Name has no purpose") @Metadata(required = "true")
+    @UriPath(description = "Name has no purpose")
+    @Metadata(required = true)
     private String name;
     @UriParam(defaultValue = "https")
     private String scheme = Service.DEFAULT_SCHEME;
@@ -79,7 +79,7 @@ public class SplunkConfiguration {
     @UriParam(label = "consumer")
     private String initEarliestTime;
     @UriParam(label = "consumer")
-    private Boolean streaming;
+    private boolean streaming;
 
     public String getName() {
         return name;
@@ -301,7 +301,7 @@ public class SplunkConfiguration {
     }
 
     public boolean isStreaming() {
-        return streaming != null ? streaming : false;
+        return streaming;
     }
 
     /**
@@ -329,8 +329,8 @@ public class SplunkConfiguration {
     }
 
     /**
-     * Use sun.net.www.protocol.https.Handler Https handler to establish the Splunk Connection.
-     * Can be useful when running in application servers to avoid app. server https handling.
+     * Use sun.net.www.protocol.https.Handler Https handler to establish the Splunk Connection. Can be useful when
+     * running in application servers to avoid app. server https handling.
      */
     public void setUseSunHttpsHandler(boolean useSunHttpsHandler) {
         this.useSunHttpsHandler = useSunHttpsHandler;

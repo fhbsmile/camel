@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,7 @@
 package org.apache.camel.component.atomix.client;
 
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 
 public abstract class AbstractAtomixClientConsumer<E extends AbstractAtomixClientEndpoint> extends DefaultConsumer {
     protected AbstractAtomixClientConsumer(E endpoint, Processor processor) {
@@ -26,6 +26,6 @@ public abstract class AbstractAtomixClientConsumer<E extends AbstractAtomixClien
 
     @SuppressWarnings("unchecked")
     protected E getAtomixEndpoint() {
-        return (E)super.getEndpoint();
+        return (E) super.getEndpoint();
     }
 }

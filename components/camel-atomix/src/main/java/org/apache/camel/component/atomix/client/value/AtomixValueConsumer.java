@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,8 +28,9 @@ import org.apache.camel.component.atomix.client.AtomixClientConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class AtomixValueConsumer extends AbstractAtomixClientConsumer<AtomixValueEndpoint> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AtomixValueConsumer.class);
+public final class AtomixValueConsumer extends AbstractAtomixClientConsumer<AtomixValueEndpoint> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AtomixValueConsumer.class);
 
     private final List<Listener<DistributedValue.ChangeEvent<Object>>> listeners;
     private final String resourceName;
@@ -48,15 +49,14 @@ final class AtomixValueConsumer extends AbstractAtomixClientConsumer<AtomixValue
         super.doStart();
 
         this.value = getAtomixEndpoint()
-            .getAtomix()
-            .getValue(
-                resourceName,
-                new DistributedValue.Config(getAtomixEndpoint().getConfiguration().getResourceOptions(resourceName)),
-                new DistributedValue.Options(getAtomixEndpoint().getConfiguration().getResourceConfig(resourceName)))
-            .join();
+                .getAtomix()
+                .getValue(
+                        resourceName,
+                        new DistributedValue.Config(getAtomixEndpoint().getConfiguration().getResourceOptions(resourceName)),
+                        new DistributedValue.Options(getAtomixEndpoint().getConfiguration().getResourceConfig(resourceName)))
+                .join();
 
-
-        LOGGER.debug("Subscribe to events for queue: {}", resourceName);
+        LOG.debug("Subscribe to events for value: {}", resourceName);
         this.listeners.add(this.value.onChange(this::onEvent).join());
     }
 
@@ -65,7 +65,7 @@ final class AtomixValueConsumer extends AbstractAtomixClientConsumer<AtomixValue
         // close listeners
         listeners.forEach(Listener::close);
 
-        super.doStart();
+        super.doStop();
     }
 
     // ********************************************

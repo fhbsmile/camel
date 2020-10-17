@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,28 +16,35 @@
  */
 package org.apache.camel.component.aws.xray;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.camel.RoutesBuilder;
+import org.apache.camel.builder.NotifyBuilder;
 import org.apache.camel.builder.RouteBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TwoService2Test extends CamelAwsXRayTestSupport {
 
     public TwoService2Test() {
         super(
-            TestDataBuilder.createTrace().inRandomOrder()
-                .withSegment(TestDataBuilder.createSegment("route1")
-                    .withSubsegment(TestDataBuilder.createSubsegment("direct:ServiceB")
-                        .withSubsegment(TestDataBuilder.createSubsegment("route2"))
-                    )
-                )
-        );
+              TestDataBuilder.createTrace().inRandomOrder()
+                      .withSegment(TestDataBuilder.createSegment("route1"))
+                      .withSegment(TestDataBuilder.createSegment("route2")));
     }
 
     @Test
     public void testRoute() throws Exception {
+        NotifyBuilder notify = new NotifyBuilder(context).whenDone(1).create();
+
         template.requestBody("direct:ServiceA", "Hello");
 
-        Thread.sleep(500);
+        assertThat("Not all exchanges were fully processed",
+                notify.matches(10, TimeUnit.SECONDS), is(equalTo(true)));
+
         verify();
     }
 
@@ -47,13 +54,13 @@ public class TwoService2Test extends CamelAwsXRayTestSupport {
             @Override
             public void configure() throws Exception {
                 from("direct:ServiceA")
-                    .log("ServiceA has been called")
-                    .delay(simple("${random(1000,2000)}"))
-                    .to("direct:ServiceB");
+                        .log("ServiceA has been called")
+                        .delay(simple("${random(1000,2000)}"))
+                        .to("direct:ServiceB");
 
                 from("direct:ServiceB")
-                    .log("ServiceB has been called")
-                    .delay(simple("${random(0,500)}"));
+                        .log("ServiceB has been called")
+                        .delay(simple("${random(0,500)}"));
             }
         };
     }

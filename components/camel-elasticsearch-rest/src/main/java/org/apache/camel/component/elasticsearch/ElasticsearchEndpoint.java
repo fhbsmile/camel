@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,19 +16,21 @@
  */
 package org.apache.camel.component.elasticsearch;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.support.DefaultEndpoint;
 import org.elasticsearch.client.RestClient;
 
 /**
- * The elasticsearch component is used for interfacing with ElasticSearch server using REST API.
+ * Send requests to with an ElasticSearch via REST API.
  */
-@UriEndpoint(firstVersion = "2.21.0", scheme = "elasticsearch-rest", title = "Elastichsearch Rest",
-    syntax = "elasticsearch-rest:clusterName", producerOnly = true, label = "monitoring,search")
+@UriEndpoint(firstVersion = "2.21.0", scheme = "elasticsearch-rest", title = "Elasticsearch Rest",
+             syntax = "elasticsearch-rest:clusterName", producerOnly = true,
+             category = { Category.SEARCH, Category.MONITORING })
 public class ElasticsearchEndpoint extends DefaultEndpoint {
 
     @UriParam
@@ -36,22 +38,25 @@ public class ElasticsearchEndpoint extends DefaultEndpoint {
 
     private RestClient client;
 
-    public ElasticsearchEndpoint(String uri, ElasticsearchComponent component, ElasticsearchConfiguration config, RestClient client) throws Exception {
+    public ElasticsearchEndpoint(String uri, ElasticsearchComponent component, ElasticsearchConfiguration config,
+                                 RestClient client) throws Exception {
         super(uri, component);
         this.configuration = config;
         this.client = client;
     }
 
+    public ElasticsearchConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    @Override
     public Producer createProducer() throws Exception {
         return new ElasticsearchProducer(this, configuration);
     }
 
+    @Override
     public Consumer createConsumer(Processor processor) throws Exception {
         throw new UnsupportedOperationException("Cannot consume from an ElasticsearchEndpoint: " + getEndpointUri());
-    }
-    
-    public boolean isSingleton() {
-        return true;
     }
 
     public RestClient getClient() {

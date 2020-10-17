@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,8 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Verifies the signature contained in the header
- * {@link CryptoCmsConstants#CAMEL_CRYPTO_CMS_SIGNED_DATA}.
+ * Verifies the signature contained in the header {@link CryptoCmsConstants#CAMEL_CRYPTO_CMS_SIGNED_DATA}.
  */
 public class SignedDataVerifierFromHeader extends SignedDataVerifier {
 
@@ -49,12 +48,13 @@ public class SignedDataVerifierFromHeader extends SignedDataVerifier {
 
     @Override
     public void process(Exchange exchange) throws Exception { // NOPMD see
-                                                              // method
-                                                              // processSignedDataHader
+                                                             // method
+                                                             // processSignedDataHader
 
         InputStream signature = exchange.getIn().getHeader(CryptoCmsConstants.CAMEL_CRYPTO_CMS_SIGNED_DATA, InputStream.class);
         if (signature == null) {
-            LOG.debug("No signed data found in header {}. Assuming signed data contained in message body", CryptoCmsConstants.CAMEL_CRYPTO_CMS_SIGNED_DATA);
+            LOG.debug("No signed data found in header {}. Assuming signed data contained in message body",
+                    CryptoCmsConstants.CAMEL_CRYPTO_CMS_SIGNED_DATA);
             super.process(exchange);
         } else {
             LOG.debug("Signed data header {} found.", CryptoCmsConstants.CAMEL_CRYPTO_CMS_SIGNED_DATA);
@@ -68,7 +68,7 @@ public class SignedDataVerifierFromHeader extends SignedDataVerifier {
     protected void processSignedDataHeader(Exchange exchange, InputStream signature) throws Exception { // NOPMD
         // all exceptions must be caught and re-thrown in order to make a
         // clean-up, see code below
-        if (conf.isSignedDataHeaderBase64(exchange)) {
+        if (conf.isSignedDataHeaderBase64()) {
             signature = new Base64InputStream(signature);
         }
 
@@ -79,7 +79,7 @@ public class SignedDataVerifierFromHeader extends SignedDataVerifier {
             Message out = exchange.getOut();
             out.copyFrom(exchange.getIn());
 
-            if (conf.isFromBase64(exchange)) {
+            if (conf.isFromBase64()) {
                 stream = new Base64InputStream(stream);
             }
             unmarshalInternal(stream, signature, exchange);
@@ -96,7 +96,9 @@ public class SignedDataVerifierFromHeader extends SignedDataVerifier {
 
         CMSSignedDataParser sp;
         try {
-            sp = new CMSSignedDataParser(new JcaDigestCalculatorProviderBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME).build(), new CMSTypedStream(is), signature);
+            sp = new CMSSignedDataParser(
+                    new JcaDigestCalculatorProviderBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME).build(),
+                    new CMSTypedStream(is), signature);
         } catch (CMSException e) {
             throw new CryptoCmsFormatException(getFormatErrorMessage(), e);
         }
@@ -105,7 +107,7 @@ public class SignedDataVerifierFromHeader extends SignedDataVerifier {
             // signature
             sp.getSignedContent().drain();
         } catch (NullPointerException e) { // nullpointer exception is thrown
-                                           // when the signed content is missing
+                                          // when the signed content is missing
             throw getContentMissingException(e);
         }
 

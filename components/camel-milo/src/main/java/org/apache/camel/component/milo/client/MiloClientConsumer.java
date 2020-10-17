@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,18 +16,19 @@
  */
 package org.apache.camel.component.milo.client;
 
-import java.util.Objects;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.component.milo.Messages;
 import org.apache.camel.component.milo.client.MiloClientConnection.MonitorHandle;
-import org.apache.camel.impl.DefaultConsumer;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultConsumer;
+import org.apache.camel.support.DefaultMessage;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Objects.requireNonNull;
 
 public class MiloClientConsumer extends DefaultConsumer {
 
@@ -35,26 +36,28 @@ public class MiloClientConsumer extends DefaultConsumer {
 
     private final MiloClientConnection connection;
 
-    private final MiloClientItemConfiguration configuration;
-
     private MonitorHandle handle;
 
-    public MiloClientConsumer(final MiloClientEndpoint endpoint, final Processor processor, final MiloClientConnection connection,
-                              final MiloClientItemConfiguration configuration) {
+    private ExpandedNodeId node;
+
+    private Double samplingInterval;
+
+    public MiloClientConsumer(final MiloClientEndpoint endpoint, final Processor processor,
+                              final MiloClientConnection connection) {
         super(endpoint, processor);
 
-        Objects.requireNonNull(connection);
-        Objects.requireNonNull(configuration);
+        requireNonNull(connection);
 
         this.connection = connection;
-        this.configuration = configuration;
+        this.node = endpoint.getNodeId();
+        this.samplingInterval = endpoint.getSamplingInterval();
     }
 
     @Override
     protected void doStart() throws Exception {
         super.doStart();
 
-        this.handle = this.connection.monitorValue(this.configuration, this::handleValueUpdate);
+        this.handle = this.connection.monitorValue(this.node, this.samplingInterval, this::handleValueUpdate);
     }
 
     @Override
@@ -68,6 +71,8 @@ public class MiloClientConsumer extends DefaultConsumer {
     }
 
     private void handleValueUpdate(final DataValue value) {
+        LOG.debug("Handle item update - {} = {}", node, value);
+
         final Exchange exchange = getEndpoint().createExchange();
         exchange.setIn(mapMessage(value));
         try {

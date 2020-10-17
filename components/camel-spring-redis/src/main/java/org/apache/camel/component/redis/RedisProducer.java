@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,14 +20,14 @@ import java.util.Map;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.HeaderSelectorProducer;
+import org.apache.camel.support.HeaderSelectorProducer;
 
 final class RedisProducer extends HeaderSelectorProducer {
 
     RedisProducer(Endpoint endpoint,
-                         String header,
-                         String defaultHeaderValue,
-                         RedisProcessorsCreator redisProcessorsCreator) {
+                  String header,
+                  String defaultHeaderValue,
+                  RedisProcessorsCreator redisProcessorsCreator) {
         super(endpoint, header, defaultHeaderValue);
 
         for (Map.Entry<Command, Processor> entry : redisProcessorsCreator.getRedisProcessors().entrySet()) {

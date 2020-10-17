@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.component.salesforce.api.dto.analytics.reports.ReportMetadata;
 import org.apache.camel.component.salesforce.api.dto.approval.ApprovalRequest;
@@ -86,7 +85,8 @@ public class SalesforceEndpointConfig implements Cloneable {
     // parameters for Approval API
     public static final String APPROVAL = "approval";
 
-    // default maximum authentication retries on failed authentication or expired session
+    // default maximum authentication retries on failed authentication or
+    // expired session
     public static final int DEFAULT_MAX_AUTHENTICATION_RETRIES = 4;
 
     // default increment and limit for Streaming connection restart attempts
@@ -95,10 +95,8 @@ public class SalesforceEndpointConfig implements Cloneable {
 
     public static final String NOT_FOUND_BEHAVIOUR = "notFoundBehaviour";
 
-    public static final String SERIALIZE_NULLS = "serializeNulls";
-
     // general properties
-    @UriParam
+    @UriParam(defaultValue = DEFAULT_VERSION)
     private String apiVersion = DEFAULT_VERSION;
 
     // Rest API properties
@@ -124,8 +122,6 @@ public class SalesforceEndpointConfig implements Cloneable {
     private String sObjectQuery;
     @UriParam(displayName = "SObject Search")
     private String sObjectSearch;
-    @UriParam(displayName = "Serialize NULL values")
-    private boolean serializeNulls;
     @UriParam
     private String apexMethod;
     @UriParam
@@ -187,23 +183,24 @@ public class SalesforceEndpointConfig implements Cloneable {
     private ObjectMapper objectMapper;
 
     // Streaming connection restart attempt backoff interval increment
-    @UriParam
+    @UriParam(javaType = "java.time.Duration", defaultValue = "" + DEFAULT_BACKOFF_INCREMENT)
     private long backoffIncrement = DEFAULT_BACKOFF_INCREMENT;
 
     // Streaming connection restart attempt maximum backoff interval
-    @UriParam
+    @UriParam(javaType = "java.time.Duration", defaultValue = "" + DEFAULT_MAX_BACKOFF)
     private long maxBackoff = DEFAULT_MAX_BACKOFF;
 
     @UriParam
     private Integer limit;
 
-    @UriParam
+    @UriParam(defaultValue = "EXCEPTION")
     private NotFoundBehaviour notFoundBehaviour = NotFoundBehaviour.EXCEPTION;
 
     public SalesforceEndpointConfig copy() {
         try {
             final SalesforceEndpointConfig copy = (SalesforceEndpointConfig) super.clone();
-            // nothing to deep copy, getApexQueryParams() is readonly, so no need to deep copy
+            // nothing to deep copy, getApexQueryParams() is readonly, so no
+            // need to deep copy
             return copy;
         } catch (CloneNotSupportedException ex) {
             throw new RuntimeCamelException(ex);
@@ -221,13 +218,13 @@ public class SalesforceEndpointConfig implements Cloneable {
         this.format = format;
     }
 
-    public boolean getRawPayload() {
+    public boolean isRawPayload() {
         return rawPayload;
     }
 
     /**
-     * Use raw payload {@link String} for request and response (either JSON or XML depending on {@code format}),
-     * instead of DTOs, false by default
+     * Use raw payload {@link String} for request and response (either JSON or XML depending on {@code format}), instead
+     * of DTOs, false by default
      */
     public void setRawPayload(boolean rawPayload) {
         this.rawPayload = rawPayload;
@@ -238,7 +235,7 @@ public class SalesforceEndpointConfig implements Cloneable {
     }
 
     /**
-     * Salesforce API version, defaults to SalesforceEndpointConfig.DEFAULT_VERSION
+     * Salesforce API version.
      */
     public void setApiVersion(String apiVersion) {
         this.apiVersion = apiVersion;
@@ -341,18 +338,6 @@ public class SalesforceEndpointConfig implements Cloneable {
      */
     public void setSObjectSearch(String sObjectSearch) {
         this.sObjectSearch = sObjectSearch;
-    }
-
-    /**
-     * Should the NULL values of given DTO be serialized with
-     * empty (NULL) values. This affects only JSON data format.
-     */
-    public void setSerializeNulls(boolean serializeNulls) {
-        this.serializeNulls = serializeNulls;
-    }
-
-    public boolean isSerializeNulls() {
-        return serializeNulls;
     }
 
     public String getApexMethod() {
@@ -614,7 +599,7 @@ public class SalesforceEndpointConfig implements Cloneable {
 
     public Map<String, Object> toValueMap() {
 
-        final Map<String, Object> valueMap = new HashMap<String, Object>();
+        final Map<String, Object> valueMap = new HashMap<>();
         valueMap.put(FORMAT, format.toString().toLowerCase());
         valueMap.put(API_VERSION, apiVersion);
 
@@ -627,7 +612,6 @@ public class SalesforceEndpointConfig implements Cloneable {
         valueMap.put(SOBJECT_CLASS, sObjectClass);
         valueMap.put(SOBJECT_QUERY, sObjectQuery);
         valueMap.put(SOBJECT_SEARCH, sObjectSearch);
-        valueMap.put(SERIALIZE_NULLS, serializeNulls);
         valueMap.put(APEX_METHOD, apexMethod);
         valueMap.put(APEX_URL, apexUrl);
         valueMap.put(LIMIT, limit);
@@ -777,7 +761,7 @@ public class SalesforceEndpointConfig implements Cloneable {
     }
 
     /**
-     * The ID of the submitter who’s requesting the approval record. 
+     * The ID of the submitter who’s requesting the approval record.
      *
      * @param contextActorId
      */
@@ -818,7 +802,7 @@ public class SalesforceEndpointConfig implements Cloneable {
     /**
      * If the process requires specification of the next approval, the ID of the user to be assigned the next request.
      *
-     * @param nextApproverIds
+     * @param nextApproverId
      */
     public void setApprovalNextApproverIds(String nextApproverId) {
         if (approval == null) {
@@ -843,7 +827,7 @@ public class SalesforceEndpointConfig implements Cloneable {
 
     /**
      * Determines whether to evaluate the entry criteria for the process (true) or not (false) if the process definition
-     * name or ID isn’t null. If the process definition name or ID isn’t specified, this argument is ignored, and 
+     * name or ID isn’t null. If the process definition name or ID isn’t specified, this argument is ignored, and
      * standard evaluation is followed based on process order. By default, the entry criteria isn’t skipped if it’s not
      * set by this request.
      *
@@ -862,10 +846,9 @@ public class SalesforceEndpointConfig implements Cloneable {
     }
 
     /**
-     * Sets the behaviour of 404 not found status received from Salesforce API.
-     * Should the body be set to NULL {@link NotFoundBehaviour#NULL} or should a
-     * exception be signaled on the exchange {@link NotFoundBehaviour#EXCEPTION}
-     * - the default.
+     * Sets the behaviour of 404 not found status received from Salesforce API. Should the body be set to NULL
+     * {@link NotFoundBehaviour#NULL} or should a exception be signaled on the exchange
+     * {@link NotFoundBehaviour#EXCEPTION} - the default.
      */
     public void setNotFoundBehaviour(final NotFoundBehaviour notFoundBehaviour) {
         this.notFoundBehaviour = notFoundBehaviour;

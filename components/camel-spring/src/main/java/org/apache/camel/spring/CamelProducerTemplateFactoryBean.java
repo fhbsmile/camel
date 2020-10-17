@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -35,13 +35,12 @@ import org.springframework.context.ApplicationContextAware;
 
 /**
  * Configures a {@link ProducerTemplate}
- * 
- * @version 
  */
 @Metadata(label = "spring,configuration")
 @XmlRootElement(name = "template")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class CamelProducerTemplateFactoryBean extends AbstractCamelProducerTemplateFactoryBean implements FactoryBean<ProducerTemplate>, InitializingBean, DisposableBean, ApplicationContextAware {
+public class CamelProducerTemplateFactoryBean extends AbstractCamelProducerTemplateFactoryBean
+        implements FactoryBean<ProducerTemplate>, InitializingBean, DisposableBean, ApplicationContextAware {
 
     @XmlTransient
     private ApplicationContext applicationContext;
@@ -51,6 +50,7 @@ public class CamelProducerTemplateFactoryBean extends AbstractCamelProducerTempl
         return CamelContextResolverHelper.getCamelContextWithId(applicationContext, camelContextId);
     }
 
+    @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }

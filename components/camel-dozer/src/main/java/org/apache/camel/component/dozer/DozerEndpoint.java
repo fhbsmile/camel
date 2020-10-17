@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,34 +18,33 @@ package org.apache.camel.component.dozer;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.el.ExpressionFactory;
-
+import com.github.dozermapper.core.CustomConverter;
+import com.github.dozermapper.core.Mapper;
+import org.apache.camel.Category;
 import org.apache.camel.Component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.converter.dozer.DozerBeanMapperConfiguration;
 import org.apache.camel.converter.dozer.MapperFactory;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
-import org.apache.camel.util.ResourceHelper;
-import org.dozer.CustomConverter;
-import org.dozer.Mapper;
-import org.dozer.config.BeanContainer;
-import org.dozer.loader.xml.ELEngine;
-import org.dozer.loader.xml.ExpressionElementReader;
+import org.apache.camel.support.DefaultEndpoint;
+import org.apache.camel.support.ResourceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The dozer component provides the ability to map between Java beans using the Dozer mapping library.
+ * Map between Java beans using the Dozer mapping library.
  */
-@UriEndpoint(firstVersion = "2.15.0", scheme = "dozer", title = "Dozer", syntax = "dozer:name", producerOnly = true, label = "transformation")
+@UriEndpoint(firstVersion = "2.15.0", scheme = "dozer", title = "Dozer", syntax = "dozer:name", producerOnly = true,
+             category = { Category.TRANSFORMATION })
 public class DozerEndpoint extends DefaultEndpoint {
+
     private static final Logger LOG = LoggerFactory.getLogger(DozerEndpoint.class);
 
     // IDs for built-in custom converters used with the Dozer component
@@ -79,11 +78,6 @@ public class DozerEndpoint extends DefaultEndpoint {
         throw new UnsupportedOperationException("Consumer not supported for Dozer endpoints");
     }
 
-    @Override
-    public boolean isSingleton() {
-        return true;
-    }
-
     public Mapper getMapper() throws Exception {
         return mapper;
     }
@@ -109,8 +103,8 @@ public class DozerEndpoint extends DefaultEndpoint {
     }
 
     @Override
-    protected void doStart() throws Exception {
-        super.doStart();
+    protected void doInit() throws Exception {
+        super.doInit();
 
         initDozerBeanContainerAndMapper();
     }
@@ -124,9 +118,15 @@ public class DozerEndpoint extends DefaultEndpoint {
     protected void initDozerBeanContainerAndMapper() throws Exception {
         LOG.info("Configuring {}...", Mapper.class.getName());
 
+        // Validate endpoint parameters
+        if (configuration.getTargetModel() == null) {
+            throw new IllegalArgumentException("The targetModel parameter is required for dozer endpoints");
+        }
+
         if (mapper == null) {
             if (configuration.getMappingConfiguration() == null) {
-                URL url = ResourceHelper.resolveMandatoryResourceAsUrl(getCamelContext().getClassResolver(), configuration.getMappingFile());
+                URL url = ResourceHelper.resolveMandatoryResourceAsUrl(getCamelContext().getClassResolver(),
+                        configuration.getMappingFile());
 
                 DozerBeanMapperConfiguration config = new DozerBeanMapperConfiguration();
                 config.setCustomConvertersWithId(getCustomConvertersWithId());
@@ -141,9 +141,13 @@ public class DozerEndpoint extends DefaultEndpoint {
                     config.getCustomConvertersWithId().putAll(getCustomConvertersWithId());
                 }
 
-                if (config.getMappingFiles() == null || config.getMappingFiles().size() <= 0) {
-                    URL url = ResourceHelper.resolveMandatoryResourceAsUrl(getCamelContext().getClassResolver(), configuration.getMappingFile());
-                    config.setMappingFiles(Arrays.asList(url.toString()));
+                // if bean mapping builders have been defined skip loading the "default" mapping file.
+                if (isNullOrEmpty(configuration.getMappingConfiguration().getBeanMappingBuilders())) {
+                    if (config.getMappingFiles() == null || config.getMappingFiles().size() <= 0) {
+                        URL url = ResourceHelper.resolveMandatoryResourceAsUrl(getCamelContext().getClassResolver(),
+                                configuration.getMappingFile());
+                        config.setMappingFiles(Arrays.asList(url.toString()));
+                    }
                 }
             }
 
@@ -152,8 +156,12 @@ public class DozerEndpoint extends DefaultEndpoint {
         }
     }
 
+    private static boolean isNullOrEmpty(final Collection<?> collection) {
+        return null == collection || collection.isEmpty();
+    }
+
     private Map<String, CustomConverter> getCustomConvertersWithId() {
-        Map<String, CustomConverter> customConvertersWithId = new HashMap<String, CustomConverter>();
+        Map<String, CustomConverter> customConvertersWithId = new HashMap<>();
         customConvertersWithId.put(CUSTOM_MAPPING_ID, customMapper);
         customConvertersWithId.put(VARIABLE_MAPPING_ID, variableMapper);
         customConvertersWithId.put(EXPRESSION_MAPPING_ID, expressionMapper);

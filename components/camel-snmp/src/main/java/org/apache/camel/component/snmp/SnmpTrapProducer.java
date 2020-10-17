@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,7 @@
 package org.apache.camel.component.snmp;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snmp4j.CommunityTarget;
@@ -40,11 +40,11 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
  * A snmp trap producer
  */
 public class SnmpTrapProducer extends DefaultProducer {
-   
+
     private static final Logger LOG = LoggerFactory.getLogger(SnmpTrapProducer.class);
-    
+
     private SnmpEndpoint endpoint;
-    
+
     private Address targetAddress;
     private USM usm;
     private CommunityTarget target;
@@ -53,7 +53,7 @@ public class SnmpTrapProducer extends DefaultProducer {
         super(endpoint);
         this.endpoint = endpoint;
     }
-    
+
     @Override
     protected void doStart() throws Exception {
         super.doStart();
@@ -63,7 +63,7 @@ public class SnmpTrapProducer extends DefaultProducer {
 
         this.usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
         SecurityModels.getInstance().addSecurityModel(this.usm);
-        
+
         // setting up target
         this.target = new CommunityTarget();
         this.target.setCommunity(new OctetString(endpoint.getSnmpCommunity()));
@@ -72,7 +72,7 @@ public class SnmpTrapProducer extends DefaultProducer {
         this.target.setTimeout(this.endpoint.getTimeout());
         this.target.setVersion(this.endpoint.getSnmpVersion());
     }
-    
+
     @Override
     protected void doStop() throws Exception {
         super.doStop();
@@ -85,7 +85,7 @@ public class SnmpTrapProducer extends DefaultProducer {
             this.target = null;
         }
     }
-    
+
     @Override
     public void process(final Exchange exchange) throws Exception {
         // load connection data only if the endpoint is enabled
@@ -94,16 +94,16 @@ public class SnmpTrapProducer extends DefaultProducer {
 
         try {
             LOG.debug("Starting SNMP Trap producer on {}", this.endpoint.getAddress());
-            
+
             // either tcp or udp
             if ("tcp".equals(this.endpoint.getProtocol())) {
                 transport = new DefaultTcpTransportMapping();
             } else if ("udp".equals(this.endpoint.getProtocol())) {
                 transport = new DefaultUdpTransportMapping();
             } else {
-                throw new IllegalArgumentException("Unknown protocol: {} " + this.endpoint.getProtocol());
+                throw new IllegalArgumentException("Unknown protocol: " + this.endpoint.getProtocol());
             }
-    
+
             snmp = new Snmp(transport);
 
             LOG.debug("SnmpTrap: getting pdu from body");
@@ -119,15 +119,17 @@ public class SnmpTrapProducer extends DefaultProducer {
             }
 
             LOG.debug("SnmpTrap: sending");
-            snmp.send(trap, this.target);            
+            snmp.send(trap, this.target);
             LOG.debug("SnmpTrap: sent");
         } finally {
             try {
-                transport.close(); 
-            } catch (Exception e) { }
+                transport.close();
+            } catch (Exception e) {
+            }
             try {
-                snmp.close(); 
-            } catch (Exception e) { }
+                snmp.close();
+            } catch (Exception e) {
+            }
         }
     } //end process
 }

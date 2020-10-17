@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,26 +19,31 @@ package org.apache.camel.spring.processor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ContextTestSupport;
 import org.apache.camel.FailedToCreateRouteException;
-import org.apache.camel.RuntimeCamelException;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.camel.spring.processor.SpringTestHelper.createSpringCamelContext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SpringTryCatchMustHaveExceptionConfiguredTest extends ContextTestSupport {
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
         try {
-            createSpringCamelContext(this, "org/apache/camel/spring/processor/SpringTryCatchMustHaveExceptionConfiguredTest.xml");
+            createSpringCamelContext(this,
+                    "org/apache/camel/spring/processor/SpringTryCatchMustHaveExceptionConfiguredTest.xml");
             fail("Should have thrown exception");
-        } catch (RuntimeCamelException e) {
-            FailedToCreateRouteException ftcre = assertIsInstanceOf(FailedToCreateRouteException.class, e.getCause());
+        } catch (Exception e) {
+            FailedToCreateRouteException ftcre = assertIsInstanceOf(FailedToCreateRouteException.class, e);
             IllegalArgumentException iae = assertIsInstanceOf(IllegalArgumentException.class, ftcre.getCause());
             assertEquals("At least one Exception must be configured to catch", iae.getMessage());
         }
 
         // return a working context instead, to let this test pass
-        return createSpringCamelContext(this, "org/apache/camel/spring/processor/SpringTryProcessorHandledTest.xml");
+        return createSpringCamelContext(this, "org/apache/camel/spring/processor/convertBody.xml");
     }
 
+    @Test
     public void testTryCatchMustHaveExceptionConfigured() {
         // noop
     }

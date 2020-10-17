@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,13 +21,12 @@ import org.apache.camel.processor.onexception.OnExceptionOccurredProcessorTest;
 
 import static org.apache.camel.spring.processor.SpringTestHelper.createSpringCamelContext;
 
-/**
- * @version 
- */
 public class SpringOnExceptionOccurredProcessorTest extends OnExceptionOccurredProcessorTest {
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
-        return createSpringCamelContext(this, "org/apache/camel/spring/processor/onexception/OnExceptionOccurredProcessorTest.xml");
+        return createSpringCamelContext(this,
+                "org/apache/camel/spring/processor/onexception/OnExceptionOccurredProcessorTest.xml");
     }
 
 }

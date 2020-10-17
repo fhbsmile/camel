@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,24 +16,20 @@
  */
 package org.apache.camel.component.kubernetes.namespaces;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.component.kubernetes.AbstractKubernetesEndpoint;
 import org.apache.camel.component.kubernetes.KubernetesConfiguration;
 import org.apache.camel.spi.UriEndpoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * The Kubernetes Namespaces component provides a producer to execute kubernetes namespace operations
- * and a consumer to consume namespace events.
+ * Perform operations on Kubernetes Namespaces and get notified on Namespace changes.
  */
 @UriEndpoint(firstVersion = "2.17.0", scheme = "kubernetes-namespaces", title = "Kubernetes Namespaces",
-    syntax = "kubernetes-namespaces:masterUrl", consumerClass = KubernetesNamespacesConsumer.class, label = "container,cloud,paas")
+             syntax = "kubernetes-namespaces:masterUrl", category = { Category.CONTAINER, Category.CLOUD, Category.PAAS })
 public class KubernetesNamespacesEndpoint extends AbstractKubernetesEndpoint {
-
-    private static final Logger LOG = LoggerFactory.getLogger(KubernetesNamespacesEndpoint.class);
 
     public KubernetesNamespacesEndpoint(String uri, KubernetesNamespacesComponent component, KubernetesConfiguration config) {
         super(uri, component, config);
@@ -46,7 +42,10 @@ public class KubernetesNamespacesEndpoint extends AbstractKubernetesEndpoint {
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new KubernetesNamespacesConsumer(this, processor);
+        Consumer consumer = new KubernetesNamespacesConsumer(this, processor);
+        configureConsumer(consumer);
+        return consumer;
+
     }
 
 }

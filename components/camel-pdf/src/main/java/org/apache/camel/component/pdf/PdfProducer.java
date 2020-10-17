@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,7 +28,7 @@ import org.apache.camel.component.pdf.text.LineTerminationWriterAbstractFactory;
 import org.apache.camel.component.pdf.text.SplitStrategy;
 import org.apache.camel.component.pdf.text.TextProcessingAbstractFactory;
 import org.apache.camel.component.pdf.text.WriteStrategy;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.camel.component.pdf.PdfHeaderConstants.*;
 
 public class PdfProducer extends DefaultProducer {
+
     private static final Logger LOG = LoggerFactory.getLogger(PdfProducer.class);
 
     private final WriteStrategy writeStrategy;
@@ -59,67 +60,68 @@ public class PdfProducer extends DefaultProducer {
     public void process(Exchange exchange) throws Exception {
         Object result;
         switch (pdfConfiguration.getOperation()) {
-        case append:
-            result = doAppend(exchange);
-            break;
-        case create:
-            result = doCreate(exchange);
-            break;
-        case extractText:
-            result = doExtractText(exchange);
-            break;
-        default:
-            throw new IllegalArgumentException(String.format("Unknown operation %s", pdfConfiguration.getOperation()));
+            case append:
+                result = doAppend(exchange);
+                break;
+            case create:
+                result = doCreate(exchange);
+                break;
+            case extractText:
+                result = doExtractText(exchange);
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unknown operation %s", pdfConfiguration.getOperation()));
         }
         // propagate headers
-        exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-        exchange.getOut().setAttachments(exchange.getIn().getAttachments());
+        exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
         // and set result
-        exchange.getOut().setBody(result);
+        exchange.getMessage().setBody(result);
     }
 
     private Object doAppend(Exchange exchange) throws IOException {
         LOG.debug("Got {} operation, going to append text to provided pdf.", pdfConfiguration.getOperation());
         String body = exchange.getIn().getBody(String.class);
-        PDDocument document = exchange.getIn().getHeader(PDF_DOCUMENT_HEADER_NAME, PDDocument.class);
-        if (document == null) {
-            throw new IllegalArgumentException(String.format("%s header is expected for append operation",
-                    PDF_DOCUMENT_HEADER_NAME));
+        try (PDDocument document = exchange.getIn().getHeader(PDF_DOCUMENT_HEADER_NAME, PDDocument.class)) {
+            if (document == null) {
+                throw new IllegalArgumentException(
+                        String.format("%s header is expected for append operation",
+                                PDF_DOCUMENT_HEADER_NAME));
+            }
+
+            if (document.isEncrypted()) {
+                document.setAllSecurityToBeRemoved(true);
+            }
+
+            ProtectionPolicy protectionPolicy = exchange.getIn().getHeader(
+                    PROTECTION_POLICY_HEADER_NAME, ProtectionPolicy.class);
+
+            appendToPdfDocument(body, document, protectionPolicy);
+            OutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            document.save(byteArrayOutputStream);
+            return byteArrayOutputStream;
         }
-
-        if (document.isEncrypted()) {
-            document.setAllSecurityToBeRemoved(true);
-        }
-
-        ProtectionPolicy protectionPolicy = exchange.getIn().getHeader(
-                PROTECTION_POLICY_HEADER_NAME, ProtectionPolicy.class);
-
-        appendToPdfDocument(body, document, protectionPolicy);
-        OutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        document.save(byteArrayOutputStream);
-        return byteArrayOutputStream;
     }
 
     private String doExtractText(Exchange exchange) throws IOException {
         LOG.debug("Got {} operation, going to extract text from provided pdf.", pdfConfiguration.getOperation());
-        PDDocument document = exchange.getIn().getBody(PDDocument.class);
-
-
-        PDFTextStripper pdfTextStripper = new PDFTextStripper();
-        return pdfTextStripper.getText(document);
+        try (PDDocument document = exchange.getIn().getBody(PDDocument.class)) {
+            PDFTextStripper pdfTextStripper = new PDFTextStripper();
+            return pdfTextStripper.getText(document);
+        }
     }
 
     private OutputStream doCreate(Exchange exchange) throws IOException {
         LOG.debug("Got {} operation, going to create and write provided string to pdf document.",
                 pdfConfiguration.getOperation());
         String body = exchange.getIn().getBody(String.class);
-        PDDocument document = new PDDocument();
-        StandardProtectionPolicy protectionPolicy = exchange.getIn().getHeader(
-                PROTECTION_POLICY_HEADER_NAME, StandardProtectionPolicy.class);
-        appendToPdfDocument(body, document, protectionPolicy);
-        OutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        document.save(byteArrayOutputStream);
-        return byteArrayOutputStream;
+        try (PDDocument document = new PDDocument()) {
+            StandardProtectionPolicy protectionPolicy = exchange.getIn().getHeader(
+                    PROTECTION_POLICY_HEADER_NAME, StandardProtectionPolicy.class);
+            appendToPdfDocument(body, document, protectionPolicy);
+            OutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            document.save(byteArrayOutputStream);
+            return byteArrayOutputStream;
+        }
     }
 
     private void appendToPdfDocument(String text, PDDocument document, ProtectionPolicy protectionPolicy) throws IOException {
@@ -134,15 +136,16 @@ public class PdfProducer extends DefaultProducer {
     private TextProcessingAbstractFactory createTextProcessingFactory(PdfConfiguration pdfConfiguration) {
         TextProcessingAbstractFactory result;
         switch (pdfConfiguration.getTextProcessingFactory()) {
-        case autoFormatting:
-            result = new AutoFormattedWriterAbstractFactory(pdfConfiguration);
-            break;
-        case lineTermination:
-            result = new LineTerminationWriterAbstractFactory(pdfConfiguration);
-            break;
-        default:
-            throw new IllegalArgumentException(String.format("Unknown text processing factory %s",
-                    pdfConfiguration.getTextProcessingFactory()));
+            case autoFormatting:
+                result = new AutoFormattedWriterAbstractFactory(pdfConfiguration);
+                break;
+            case lineTermination:
+                result = new LineTerminationWriterAbstractFactory(pdfConfiguration);
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        String.format("Unknown text processing factory %s",
+                                pdfConfiguration.getTextProcessingFactory()));
         }
         return result;
     }

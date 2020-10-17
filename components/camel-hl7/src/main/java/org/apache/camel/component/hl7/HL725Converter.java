@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -228,9 +228,7 @@ import ca.uhn.hl7v2.model.v25.message.VXX_V02;
 import ca.uhn.hl7v2.parser.DefaultModelClassFactory;
 import ca.uhn.hl7v2.parser.ParserConfiguration;
 import ca.uhn.hl7v2.parser.UnexpectedSegmentBehaviourEnum;
-import ca.uhn.hl7v2.validation.ValidationContext;
 import ca.uhn.hl7v2.validation.impl.ValidationContextFactory;
-
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.TypeConversionException;
@@ -239,7 +237,7 @@ import org.apache.camel.converter.IOConverter;
 /**
  * HL7 converters.
  */
-@Converter
+@Converter(generateLoader = true, ignoreOnLoadError = true)
 public final class HL725Converter {
 
     private static final HapiContext DEFAULT_CONTEXT;
@@ -250,7 +248,8 @@ public final class HL725Converter {
         parserConfiguration.setInvalidObx2Type("ST");
         parserConfiguration.setUnexpectedSegmentBehaviour(UnexpectedSegmentBehaviourEnum.ADD_INLINE);
 
-        DEFAULT_CONTEXT = new DefaultHapiContext(parserConfiguration, (ValidationContext) ValidationContextFactory.noValidation(), new DefaultModelClassFactory());
+        DEFAULT_CONTEXT = new DefaultHapiContext(
+                parserConfiguration, ValidationContextFactory.noValidation(), new DefaultModelClassFactory());
     }
 
     private HL725Converter() {
@@ -376,6 +375,7 @@ public final class HL725Converter {
     public static ADT_A17 toAdtA17(byte[] body, Exchange exchange) throws HL7Exception, IOException {
         return toMessage(ADT_A17.class, body, exchange);
     }
+
     @Converter
     public static ADT_A18 toAdtA18(String body) throws HL7Exception {
         return toMessage(ADT_A18.class, body);
@@ -2205,7 +2205,7 @@ public final class HL725Converter {
     public static SUR_P09 toSurP09(byte[] body, Exchange exchange) throws HL7Exception, IOException {
         return toMessage(SUR_P09.class, body, exchange);
     }
-    
+
     @Converter
     public static TBR_R08 toTbrR08(String body) throws HL7Exception {
         return toMessage(TBR_R08.class, body);
@@ -2286,7 +2286,6 @@ public final class HL725Converter {
         return toMessage(VXX_V02.class, body, exchange);
     }
 
-
     static <T extends Message> T toMessage(Class<T> messageClass, String hl7String) {
         try {
             T genericMessage = DEFAULT_CONTEXT.newMessage(messageClass);
@@ -2299,7 +2298,6 @@ public final class HL725Converter {
 
         }
     }
-
 
     static <T extends Message> T toMessage(Class<T> messageClass, byte[] hl7Bytes, Exchange exchange) {
         try {

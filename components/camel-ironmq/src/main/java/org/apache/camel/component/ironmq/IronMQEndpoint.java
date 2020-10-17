@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,25 +20,28 @@ import java.net.MalformedURLException;
 
 import io.iron.ironmq.Client;
 import io.iron.ironmq.Cloud;
-
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultScheduledPollConsumerScheduler;
-import org.apache.camel.impl.ScheduledPollEndpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.support.DefaultScheduledPollConsumerScheduler;
+import org.apache.camel.support.ScheduledPollEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The ironmq provides integration with <a href="https://www.iron.io/">IronMQ</a> an elastic and durable hosted message queue as a service.
+ * Send and receive messages to/from <a href="https://www.iron.io/">IronMQ</a> an elastic and durable hosted message
+ * queue as a service.
  */
-@UriEndpoint(firstVersion = "2.17.0", scheme = "ironmq", syntax = "ironmq:queueName", title = "IronMQ", consumerClass = IronMQConsumer.class, label = "cloud,messaging")
+@UriEndpoint(firstVersion = "2.17.0", scheme = "ironmq", syntax = "ironmq:queueName", title = "IronMQ",
+             category = { Category.CLOUD, Category.MESSAGING })
 public class IronMQEndpoint extends ScheduledPollEndpoint {
+
     private static final Logger LOG = LoggerFactory.getLogger(IronMQEndpoint.class);
 
     @UriParam
@@ -51,18 +54,23 @@ public class IronMQEndpoint extends ScheduledPollEndpoint {
         this.configuration = ironMQConfiguration;
     }
 
+    @Override
     public Producer createProducer() throws Exception {
         return new IronMQProducer(this, getClient().queue(configuration.getQueueName()));
     }
 
+    @Override
     public Consumer createConsumer(Processor processor) throws Exception {
         IronMQConsumer ironMQConsumer = new IronMQConsumer(this, processor, getClient().queue(configuration.getQueueName()));
         configureConsumer(ironMQConsumer);
         ironMQConsumer.setMaxMessagesPerPoll(configuration.getMaxMessagesPerPoll());
         DefaultScheduledPollConsumerScheduler scheduler = new DefaultScheduledPollConsumerScheduler();
+        scheduler.setDelay(ironMQConsumer.getDelay());
+        scheduler.setUseFixedDelay(ironMQConsumer.isUseFixedDelay());
+        scheduler.setInitialDelay(ironMQConsumer.getInitialDelay());
+        scheduler.setTimeUnit(ironMQConsumer.getTimeUnit());
         scheduler.setConcurrentTasks(configuration.getConcurrentConsumers());
         ironMQConsumer.setScheduler(scheduler);
-
         return ironMQConsumer;
     }
 
@@ -82,10 +90,6 @@ public class IronMQEndpoint extends ScheduledPollEndpoint {
         message.setHeader(IronMQConstants.MESSAGE_RESERVATION_ID, msg.getReservationId());
         message.setHeader(IronMQConstants.MESSAGE_RESERVED_COUNT, msg.getReservedCount());
         return exchange;
-    }
-
-    public boolean isSingleton() {
-        return true;
     }
 
     @Override
@@ -112,9 +116,8 @@ public class IronMQEndpoint extends ScheduledPollEndpoint {
     }
 
     /**
-     * Provide the possibility to override this method for an mock
-     * implementation
-     * 
+     * Provide the possibility to override this method for an mock implementation
+     *
      * @return Client
      */
     Client createClient() {

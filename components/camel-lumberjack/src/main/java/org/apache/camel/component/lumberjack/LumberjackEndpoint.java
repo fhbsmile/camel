@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,26 +18,30 @@ package org.apache.camel.component.lumberjack;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+
 import javax.net.ssl.SSLContext;
 
+import org.apache.camel.Category;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.support.DefaultEndpoint;
+import org.apache.camel.support.jsse.SSLContextParameters;
 
 /**
- * The lumberjack retrieves logs sent over the network using the Lumberjack protocol.
+ * Receive logs messages using the Lumberjack protocol.
  */
-@UriEndpoint(firstVersion = "2.18.0", scheme = "lumberjack", title = "Lumberjack", syntax = "lumberjack:host:port", consumerOnly = true, consumerClass = LumberjackConsumer.class, label = "log")
+@UriEndpoint(firstVersion = "2.18.0", scheme = "lumberjack", title = "Lumberjack", syntax = "lumberjack:host:port",
+             consumerOnly = true, category = { Category.LOG })
 public class LumberjackEndpoint extends DefaultEndpoint {
     @UriPath(description = "Network interface on which to listen for Lumberjack")
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private final String host;
-    @UriPath(description = "Network port on which to listen for Lumberjack", defaultValue = "" + LumberjackComponent.DEFAULT_PORT)
+    @UriPath(description = "Network port on which to listen for Lumberjack",
+             defaultValue = "" + LumberjackComponent.DEFAULT_PORT)
     private final int port;
     @UriParam(description = "SSL configuration")
     private SSLContextParameters sslContextParameters;
@@ -61,11 +65,6 @@ public class LumberjackEndpoint extends DefaultEndpoint {
     @Override
     public LumberjackConsumer createConsumer(Processor processor) throws Exception {
         return new LumberjackConsumer(this, processor, host, port, provideSSLContext());
-    }
-
-    @Override
-    public boolean isSingleton() {
-        return true;
     }
 
     public SSLContextParameters getSslContextParameters() {

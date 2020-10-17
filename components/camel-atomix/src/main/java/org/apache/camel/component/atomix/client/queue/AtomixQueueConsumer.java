@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,8 +28,9 @@ import org.apache.camel.component.atomix.client.AtomixClientConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class AtomixQueueConsumer extends AbstractAtomixClientConsumer<AtomixQueueEndpoint> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AtomixQueueConsumer.class);
+public final class AtomixQueueConsumer extends AbstractAtomixClientConsumer<AtomixQueueEndpoint> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AtomixQueueConsumer.class);
 
     private final List<Listener<DistributedQueue.ValueEvent<Object>>> listeners;
     private final String resourceName;
@@ -48,15 +49,14 @@ final class AtomixQueueConsumer extends AbstractAtomixClientConsumer<AtomixQueue
         super.doStart();
 
         this.queue = getAtomixEndpoint()
-            .getAtomix()
-            .getQueue(
-                resourceName,
-                new DistributedQueue.Config(getAtomixEndpoint().getConfiguration().getResourceOptions(resourceName)),
-                new DistributedQueue.Options(getAtomixEndpoint().getConfiguration().getResourceConfig(resourceName)))
-            .join();
+                .getAtomix()
+                .getQueue(
+                        resourceName,
+                        new DistributedQueue.Config(getAtomixEndpoint().getConfiguration().getResourceOptions(resourceName)),
+                        new DistributedQueue.Options(getAtomixEndpoint().getConfiguration().getResourceConfig(resourceName)))
+                .join();
 
-
-        LOGGER.debug("Subscribe to events for queue: {}", resourceName);
+        LOG.debug("Subscribe to events for queue: {}", resourceName);
         this.listeners.add(this.queue.onAdd(this::onEvent).join());
         this.listeners.add(this.queue.onRemove(this::onEvent).join());
     }
@@ -66,7 +66,7 @@ final class AtomixQueueConsumer extends AbstractAtomixClientConsumer<AtomixQueue
         // close listeners
         listeners.forEach(Listener::close);
 
-        super.doStart();
+        super.doStop();
     }
 
     // ********************************************

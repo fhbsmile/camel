@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,8 +18,6 @@ package org.apache.camel.component.netty;
 
 /**
  * Netty constants
- *
- * @version 
  */
 public final class NettyConstants {
 
@@ -28,13 +26,15 @@ public final class NettyConstants {
     public static final String NETTY_MESSAGE_EVENT = "CamelNettyMessageEvent";
     public static final String NETTY_REMOTE_ADDRESS = "CamelNettyRemoteAddress";
     public static final String NETTY_LOCAL_ADDRESS = "CamelNettyLocalAddress";
-    public static final String NETTY_REQUEST_TIMEOUT = "CamelNettyRequestTimeout";
     public static final String NETTY_SSL_SESSION = "CamelNettySSLSession";
     public static final String NETTY_SSL_CLIENT_CERT_SUBJECT_NAME = "CamelNettySSLClientCertSubjectName";
     public static final String NETTY_SSL_CLIENT_CERT_ISSUER_NAME = "CamelNettySSLClientCertIssuerName";
     public static final String NETTY_SSL_CLIENT_CERT_SERIAL_NO = "CamelNettySSLClientCertSerialNumber";
     public static final String NETTY_SSL_CLIENT_CERT_NOT_BEFORE = "CamelNettySSLClientCertNotBefore";
     public static final String NETTY_SSL_CLIENT_CERT_NOT_AFTER = "CamelNettySSLClientCertNotAfter";
+    public static final String NETTY_REQUEST_TIMEOUT = "CamelNettyRequestTimeout";
+    public static final String NETTY_CHANNEL = "CamelNettyChannel";
+    public static final String NETTY_CLIENT_CONTINUE = "CamelClientContinue";
 
     private NettyConstants() {
         // Utility class

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,26 +27,26 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class SingleRowTest extends BigQueryTestSupport {
     private static final String TABLE_ID = "singlerow";
 
-    @EndpointInject(uri = "direct:in")
+    @EndpointInject("direct:in")
     private Endpoint directIn;
 
-    @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:" + TABLE_ID)
+    @EndpointInject("google-bigquery:{{project.id}}:{{bigquery.datasetId}}:" + TABLE_ID)
     private Endpoint bigqueryEndpoint;
 
-    @EndpointInject(uri = "mock:sendResult")
+    @EndpointInject("mock:sendResult")
     private MockEndpoint sendResult;
 
-    @Produce(uri = "direct:in")
+    @Produce("direct:in")
     private ProducerTemplate producer;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         createBqTable(TABLE_ID);
     }

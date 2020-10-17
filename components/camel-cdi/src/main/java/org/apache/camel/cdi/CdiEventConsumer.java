@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,10 +17,11 @@
 package org.apache.camel.cdi;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Processor;
 import org.apache.camel.RuntimeExchangeException;
-import org.apache.camel.impl.DefaultConsumer;
-import org.apache.camel.management.event.AbstractExchangeEvent;
+import org.apache.camel.spi.CamelEvent.ExchangeEvent;
+import org.apache.camel.support.DefaultConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,16 +56,16 @@ final class CdiEventConsumer<T> extends DefaultConsumer {
         exchange.getIn().setBody(event);
 
         // Avoid infinite loop of exchange events
-        if (event instanceof AbstractExchangeEvent) {
-            exchange.setProperty(Exchange.NOTIFY_EVENT, Boolean.TRUE);
+        if (event instanceof ExchangeEvent) {
+            exchange.adapt(ExtendedExchange.class).setNotifyEvent(true);
         }
         try {
             getProcessor().process(exchange);
         } catch (Exception cause) {
             throw new RuntimeExchangeException("Error while processing CDI event", exchange, cause);
         } finally {
-            if (event instanceof AbstractExchangeEvent) {
-                exchange.setProperty(Exchange.NOTIFY_EVENT, Boolean.FALSE);
+            if (event instanceof ExchangeEvent) {
+                exchange.adapt(ExtendedExchange.class).setNotifyEvent(false);
             }
         }
     }

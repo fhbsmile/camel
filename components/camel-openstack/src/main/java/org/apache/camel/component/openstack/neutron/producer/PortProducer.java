@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,7 @@ import org.apache.camel.component.openstack.common.AbstractOpenstackProducer;
 import org.apache.camel.component.openstack.common.OpenstackConstants;
 import org.apache.camel.component.openstack.neutron.NeutronConstants;
 import org.apache.camel.component.openstack.neutron.NeutronEndpoint;
-import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.StringHelper;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.ActionResponse;
@@ -42,23 +42,23 @@ public class PortProducer extends AbstractOpenstackProducer {
     public void process(Exchange exchange) throws Exception {
         final String operation = getOperation(exchange);
         switch (operation) {
-        case OpenstackConstants.CREATE:
-            doCreate(exchange);
-            break;
-        case OpenstackConstants.GET:
-            doGet(exchange);
-            break;
-        case OpenstackConstants.GET_ALL:
-            doGetAll(exchange);
-            break;
-        case OpenstackConstants.UPDATE:
-            doUpdate(exchange);
-            break;
-        case OpenstackConstants.DELETE:
-            doDelete(exchange);
-            break;
-        default:
-            throw new IllegalArgumentException("Unsupported operation " + operation);
+            case OpenstackConstants.CREATE:
+                doCreate(exchange);
+                break;
+            case OpenstackConstants.GET:
+                doGet(exchange);
+                break;
+            case OpenstackConstants.GET_ALL:
+                doGetAll(exchange);
+                break;
+            case OpenstackConstants.UPDATE:
+                doUpdate(exchange);
+                break;
+            case OpenstackConstants.DELETE:
+                doDelete(exchange);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
@@ -70,8 +70,9 @@ public class PortProducer extends AbstractOpenstackProducer {
 
     private void doGet(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String id = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.PORT_ID, String.class), String.class);
-        ObjectHelper.notEmpty(id, "Port ID");
+        final String id
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.PORT_ID, String.class), String.class);
+        StringHelper.notEmpty(id, "Port ID");
         final Port result = os.networking().port().get(id);
         msg.setBody(result);
     }
@@ -90,10 +91,11 @@ public class PortProducer extends AbstractOpenstackProducer {
 
     private void doDelete(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String id = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.PORT_ID, String.class), String.class);
-        ObjectHelper.notEmpty(id, "Port ID");
+        final String id
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.PORT_ID, String.class), String.class);
+        StringHelper.notEmpty(id, "Port ID");
         final ActionResponse response = os.networking().port().delete(id);
-        checkFailure(response, msg, "Delete port with ID " + id);
+        checkFailure(response, exchange, "Delete port with ID " + id);
     }
 
     private Port messageToPort(Message message) {
@@ -103,7 +105,7 @@ public class PortProducer extends AbstractOpenstackProducer {
             Map headers = message.getHeaders();
             PortBuilder builder = Builders.port();
 
-            ObjectHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
+            StringHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
             builder.name(message.getHeader(OpenstackConstants.NAME, String.class));
 
             if (headers.containsKey(NeutronConstants.TENANT_ID)) {

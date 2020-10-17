@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,33 +16,30 @@
  */
 package org.apache.camel.component.azure.blob;
 
+import org.apache.camel.Category;
 import org.apache.camel.Component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.camel.support.DefaultEndpoint;
 
 /**
- * The azure-blob component is used for storing and retrieving blobs from Azure Storage Blob Service.
+ * Store and retrieve blobs from Azure Storage Blob Service.
  */
+@Deprecated
 @UriEndpoint(firstVersion = "2.19.0",
              scheme = "azure-blob",
-             title = "Azure Storage Blob Service", 
-             syntax = "azure-blob:containerOrBlobUri", 
-             consumerClass = BlobServiceConsumer.class,
-             label = "cloud,database,nosql")
+             title = "Azure Storage Blob Service (Deprecated)",
+             syntax = "azure-blob:containerOrBlobUri",
+             category = { Category.CLOUD, Category.FILE })
 public class BlobServiceEndpoint extends DefaultEndpoint {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BlobServiceEndpoint.class);
-    
     @UriPath(description = "Container or Blob compact Uri")
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String containerOrBlobUri; // to support component docs
     @UriParam
     private BlobServiceConfiguration configuration;
@@ -52,8 +49,8 @@ public class BlobServiceEndpoint extends DefaultEndpoint {
         this.configuration = configuration;
     }
 
+    @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        LOG.trace("Creating a consumer");
         if (getConfiguration().getBlobName() == null) {
             throw new IllegalArgumentException("Blob name must be specified.");
         }
@@ -62,19 +59,15 @@ public class BlobServiceEndpoint extends DefaultEndpoint {
         return consumer;
     }
 
+    @Override
     public Producer createProducer() throws Exception {
-        LOG.trace("Creating a producer");
         if (getConfiguration().getBlobName() == null
-            && getConfiguration().getOperation() != null 
-            && BlobServiceOperations.listBlobs != configuration.getOperation()) {
+                && getConfiguration().getOperation() != null
+                && BlobServiceOperations.listBlobs != configuration.getOperation()) {
             // Omitting a blob name is only possible it is a (default) listBlobs producer operation
             throw new IllegalArgumentException("Blob name must be specified.");
         }
         return new BlobServiceProducer(this);
-    }
-
-    public boolean isSingleton() {
-        return true;
     }
 
     public BlobServiceConfiguration getConfiguration() {

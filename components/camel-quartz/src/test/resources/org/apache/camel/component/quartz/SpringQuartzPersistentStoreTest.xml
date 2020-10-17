@@ -43,7 +43,7 @@
     <property name="schedulerContextAsMap">
       <!-- hook Camel into Quartz -->
       <map>
-        <entry key="CamelQuartzCamelContext" value-ref="camelContext"/>
+        <entry key="CamelQuartzCamelContext-camelContext" value-ref="camelContext"/>
       </map>
     </property>
     <property name="quartzProperties">
@@ -51,6 +51,7 @@
         <prop key="org.quartz.scheduler.instanceName">myscheduler</prop>
         <prop key="org.quartz.scheduler.instanceId">AUTO</prop>
         <prop key="org.quartz.scheduler.skipUpdateCheck">true</prop>
+        <prop key="org.terracotta.quartz.skipUpdateCheck">true</prop>
         <prop key="org.quartz.jobStore.driverDelegateClass">org.quartz.impl.jdbcjobstore.StdJDBCDelegate</prop>
         <prop key="org.quartz.jobStore.isClustered">false</prop>
       </props>

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,55 +19,78 @@ package org.apache.camel.component.mongodb.converters;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.util.JSON;
-import com.mongodb.util.JSONCallback;
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.converter.IOConverter;
 import org.apache.camel.util.IOHelper;
-import org.bson.BSONCallback;
-import org.bson.BasicBSONDecoder;
+import org.bson.BsonArray;
+import org.bson.BsonValue;
+import org.bson.Document;
+import org.bson.codecs.BsonArrayCodec;
+import org.bson.codecs.BsonValueCodecProvider;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.DocumentCodec;
+import org.bson.codecs.DocumentCodecProvider;
+import org.bson.codecs.ValueCodecProvider;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.conversions.Bson;
+import org.bson.json.JsonReader;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Converter
+@Converter(generateLoader = true)
 public final class MongoDbBasicConverters {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(MongoDbBasicConverters.class);
 
     private MongoDbBasicConverters() {
     }
-    
+
     @Converter
-    public static BasicDBObject fromMapToDBObject(Map<?, ?> map) {
-        return new BasicDBObject(map);
-    }
-    
-    @Converter
-    public static Map<String, Object> fromBasicDBObjectToMap(BasicDBObject basicDbObject) {
-        return basicDbObject;
+    public static Document fromMapToDocument(Map<String, Object> map) {
+        return new Document(map);
     }
 
     @Converter
-    public static BasicDBObject fromFileToDBObject(File f, Exchange exchange) throws Exception {
-        return fromInputStreamToDBObject(new FileInputStream(f), exchange);
+    public static Map<String, Object> fromDocumentToMap(Document document) {
+        return document;
     }
-    
+
     @Converter
-    public static BasicDBObject fromInputStreamToDBObject(InputStream is, Exchange exchange) throws Exception {
-        BasicDBObject answer;
+    public static Document fromStringToDocument(String s) {
+        return Document.parse(s);
+    }
+
+    @Converter
+    public static ObjectId fromStringToObjectId(String s) {
+        return new ObjectId(s);
+    }
+
+    @Converter
+    public static Document fromFileToDocument(File f, Exchange exchange) throws Exception {
+        return fromInputStreamToDocument(new FileInputStream(f), exchange);
+    }
+
+    @Converter
+    public static Document fromInputStreamToDocument(InputStream is, Exchange exchange) throws Exception {
+        Document answer = null;
         try {
             byte[] input = IOConverter.toBytes(is);
-            
+
             if (isBson(input)) {
-                BSONCallback callback = new JSONCallback();
-                new BasicBSONDecoder().decode(input, callback);
-                answer = (BasicDBObject) callback.get();
+                JsonReader reader = new JsonReader(new String(input));
+                DocumentCodec documentReader = new DocumentCodec();
+
+                answer = documentReader.decode(reader, DecoderContext.builder().build());
             } else {
-                answer = (BasicDBObject) JSON.parse(IOConverter.toString(input, exchange));
+                answer = Document.parse(IOConverter.toString(input, exchange));
             }
         } finally {
             // we need to make sure to close the input stream
@@ -77,8 +100,8 @@ public final class MongoDbBasicConverters {
     }
 
     /**
-     * If the input starts with any number of whitespace characters and then a '{' character, we
-     * assume it is JSON rather than BSON. There are probably no useful BSON blobs that fit this pattern
+     * If the input starts with any number of whitespace characters and then a '{' character, we assume it is JSON
+     * rather than BSON. There are probably no useful BSON blobs that fit this pattern
      */
     private static boolean isBson(byte[] input) {
         int i = 0;
@@ -88,8 +111,29 @@ public final class MongoDbBasicConverters {
             } else if (!Character.isWhitespace(input[i])) {
                 return true;
             }
+
+            i++;
         }
         return true;
+    }
+
+    @Converter
+    public static List<Bson> fromStringToList(String value) {
+
+        final CodecRegistry codecRegistry = CodecRegistries.fromProviders(
+                Arrays.asList(new ValueCodecProvider(), new BsonValueCodecProvider(), new DocumentCodecProvider()));
+
+        JsonReader reader = new JsonReader(value);
+        BsonArrayCodec arrayReader = new BsonArrayCodec(codecRegistry);
+
+        BsonArray docArray = arrayReader.decode(reader, DecoderContext.builder().build());
+
+        List<Bson> answer = new ArrayList<>(docArray.size());
+
+        for (BsonValue doc : docArray) {
+            answer.add(doc.asDocument());
+        }
+        return answer;
     }
 
 }

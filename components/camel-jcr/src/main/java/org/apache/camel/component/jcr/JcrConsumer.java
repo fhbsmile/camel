@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,15 +26,13 @@ import javax.jcr.Session;
 import javax.jcr.observation.EventListener;
 
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * A {@link org.apache.camel.Consumer} to consume JCR events.
- *
- * @version $Id$
  */
 public class JcrConsumer extends DefaultConsumer {
 
@@ -69,10 +67,11 @@ public class JcrConsumer extends DefaultConsumer {
     private synchronized void createSessionAndRegisterListener() throws RepositoryException {
         LOG.trace("createSessionAndRegisterListener START");
 
-        if (ObjectHelper.isEmpty(getJcrEndpoint().getWorkspaceName())) { 
+        if (ObjectHelper.isEmpty(getJcrEndpoint().getWorkspaceName())) {
             session = getJcrEndpoint().getRepository().login(getJcrEndpoint().getCredentials());
         } else {
-            session = getJcrEndpoint().getRepository().login(getJcrEndpoint().getCredentials(), getJcrEndpoint().getWorkspaceName());
+            session = getJcrEndpoint().getRepository().login(getJcrEndpoint().getCredentials(),
+                    getJcrEndpoint().getWorkspaceName());
         }
 
         int eventTypes = getJcrEndpoint().getEventTypes();
@@ -112,9 +111,9 @@ public class JcrConsumer extends DefaultConsumer {
         eventListener = new EndpointEventListener(getJcrEndpoint(), getProcessor());
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Adding JCR Event Listener, {}, on {}. eventTypes=" + eventTypes + ", isDeep=" + isDeep
-                    + ", uuid=" + Arrays.toString(uuid) + ", nodeTypeName=" + Arrays.toString(nodeTypeName) + ", noLocal=" + noLocal, eventListener,
-                    absPath);
+            LOG.debug("Adding JCR Event Listener, {}, on {}. eventTypes={}, isDeep={}, uuid={}, nodeTypeName={}, noLocal={}",
+                    eventListener, absPath, eventTypes, isDeep, Arrays.toString(uuid), Arrays.toString(nodeTypeName),
+                    noLocal);
         }
 
         session.getWorkspace().getObservationManager()
@@ -166,6 +165,7 @@ public class JcrConsumer extends DefaultConsumer {
 
     private class JcrConsumerSessionListenerChecker implements Runnable {
 
+        @Override
         public void run() {
             LOG.debug("JcrConsumerSessionListenerChecker starts.");
 

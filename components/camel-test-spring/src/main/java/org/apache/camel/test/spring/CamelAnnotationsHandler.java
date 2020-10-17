@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,24 +22,27 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.apache.camel.component.properties.PropertiesComponent;
-import org.apache.camel.impl.DefaultDebugger;
-import org.apache.camel.impl.InterceptSendToMockEndpointStrategy;
-import org.apache.camel.management.JmxSystemPropertyKeys;
+import org.apache.camel.ExtendedCamelContext;
+import org.apache.camel.api.management.JmxSystemPropertyKeys;
+import org.apache.camel.api.management.ManagedCamelContext;
+import org.apache.camel.api.management.mbean.ManagedCamelContextMBean;
+import org.apache.camel.impl.engine.InterceptSendToMockEndpointStrategy;
+import org.apache.camel.processor.interceptor.DefaultDebugger;
 import org.apache.camel.spi.Breakpoint;
 import org.apache.camel.spi.Debugger;
 import org.apache.camel.spi.EventNotifier;
+import org.apache.camel.spi.PropertiesComponent;
 import org.apache.camel.spring.SpringCamelContext;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.annotation.AnnotationUtils;
-
-import static org.apache.camel.test.spring.CamelSpringTestHelper.getAllMethods;
 
 public final class CamelAnnotationsHandler {
 
@@ -49,9 +52,60 @@ public final class CamelAnnotationsHandler {
     }
 
     /**
+     * Cleanup/restore global state to defaults / pre-test values after the test setup is complete.
+     *
+     * @param testClass the test class being executed
+     */
+    public static void cleanup(Class<?> testClass) {
+        SpringCamelContext.setNoStart(false);
+
+        if (CamelSpringTestHelper.getOriginalJmxDisabled() == null) {
+            System.clearProperty(JmxSystemPropertyKeys.DISABLED);
+        } else {
+            System.setProperty(JmxSystemPropertyKeys.DISABLED,
+                    CamelSpringTestHelper.getOriginalJmxDisabled());
+        }
+        if (CamelSpringTestHelper.getOriginalExcludeRoutes() == null) {
+            System.clearProperty(SpringCamelContext.EXCLUDE_ROUTES);
+        } else {
+            System.setProperty(SpringCamelContext.EXCLUDE_ROUTES,
+                    CamelSpringTestHelper.getOriginalExcludeRoutes());
+        }
+    }
+
+    /**
+     * Handles @ExcludeRoutes to make it easier to exclude other routes when testing with Spring.
+     *
+     * @param context   the initialized Spring context
+     * @param testClass the test class being executed
+     */
+    public static void handleExcludeRoutes(ConfigurableApplicationContext context, Class<?> testClass) {
+        CamelSpringTestHelper.setOriginalExcludeRoutesValue(System.getProperty(SpringCamelContext.EXCLUDE_ROUTES));
+
+        if (testClass.isAnnotationPresent(ExcludeRoutes.class)) {
+            Class[] routes = testClass.getAnnotation(ExcludeRoutes.class).value();
+            // need to setup this as a JVM system property
+            StringJoiner routesBuilder = new StringJoiner(",");
+            for (Class clazz : routes) {
+                routesBuilder.add(clazz.getName());
+            }
+            String key = SpringCamelContext.EXCLUDE_ROUTES;
+            String value = routesBuilder.toString();
+
+            String exists = System.getProperty(key);
+            if (exists != null) {
+                LOGGER.warn("Cannot use @ExcludeRoutes as JVM property " + key + " has already been set.");
+            } else {
+                LOGGER.info("@ExcludeRoutes annotation found. Setting up JVM property {}={}", key, value);
+                System.setProperty(key, value);
+            }
+        }
+    }
+
+    /**
      * Handles disabling of JMX on Camel contexts based on {@link DisableJmx}.
      *
-     * @param context the initialized Spring context
+     * @param context   the initialized Spring context
      * @param testClass the test class being executed
      */
     public static void handleDisableJmx(ConfigurableApplicationContext context, Class<?> testClass) {
@@ -61,24 +115,29 @@ public final class CamelAnnotationsHandler {
             if (testClass.getAnnotation(DisableJmx.class).value()) {
                 LOGGER.info("Disabling Camel JMX globally as DisableJmx annotation was found and disableJmx is set to true.");
                 System.setProperty(JmxSystemPropertyKeys.DISABLED, "true");
-
             } else {
                 LOGGER.info("Enabling Camel JMX as DisableJmx annotation was found and disableJmx is set to false.");
                 System.clearProperty(JmxSystemPropertyKeys.DISABLED);
             }
-        } else {
-            LOGGER.info("Disabling Camel JMX globally for tests by default. Use the DisableJMX annotation to override the default setting.");
+        } else if (!testClass.isAnnotationPresent(EnableRouteCoverage.class)) {
+            // route coverage need JMX so do not disable it by default
+            LOGGER.info(
+                    "Disabling Camel JMX globally for tests by default.  Use the DisableJMX annotation to override the default setting.");
             System.setProperty(JmxSystemPropertyKeys.DISABLED, "true");
+        } else {
+            LOGGER.info("Enabling Camel JMX as EnableRouteCoverage is used.");
+            System.setProperty(JmxSystemPropertyKeys.DISABLED, "false");
         }
     }
 
     /**
      * Handles disabling of JMX on Camel contexts based on {@link DisableJmx}.
      *
-     * @param context the initialized Spring context
+     * @param context   the initialized Spring context
      * @param testClass the test class being executed
      */
-    public static void handleRouteCoverage(ConfigurableApplicationContext context, Class<?> testClass, Function testMethod) throws Exception {
+    public static void handleRouteCoverage(ConfigurableApplicationContext context, Class<?> testClass, Function testMethod)
+            throws Exception {
         if (testClass.isAnnotationPresent(EnableRouteCoverage.class)) {
             System.setProperty(CamelTestSupport.ROUTE_COVERAGE_ENABLED, "true");
 
@@ -95,32 +154,70 @@ public final class CamelAnnotationsHandler {
         }
     }
 
+    public static void handleRouteCoverageDump(ConfigurableApplicationContext context, Class<?> testClass, Function testMethod)
+            throws Exception {
+        if (testClass.isAnnotationPresent(EnableRouteCoverage.class)) {
+            CamelSpringTestHelper.doToSpringCamelContexts(context, new CamelSpringTestHelper.DoToSpringCamelContextsStrategy() {
+
+                @Override
+                public void execute(String contextName, SpringCamelContext camelContext) throws Exception {
+                    LOGGER.debug("Dumping RouteCoverage");
+
+                    String testMethodName = (String) testMethod.apply(this);
+                    RouteCoverageDumper.dumpRouteCoverage(camelContext, testClass.getName(), testMethodName);
+
+                    // reset JMX statistics
+                    ManagedCamelContextMBean managedCamelContext
+                            = camelContext.getExtension(ManagedCamelContext.class).getManagedCamelContext();
+                    if (managedCamelContext != null) {
+                        LOGGER.debug("Resetting JMX statistics for RouteCoverage");
+                        managedCamelContext.reset(true);
+                    }
+
+                    // turn off dumping one more time by removing the event listener (which would dump as well when Camel is stopping)
+                    // but this method was explicit invoked to dump such as from afterTest callbacks from JUnit.
+                    RouteCoverageEventNotifier eventNotifier = camelContext.hasService(RouteCoverageEventNotifier.class);
+                    if (eventNotifier != null) {
+                        camelContext.getManagementStrategy().removeEventNotifier(eventNotifier);
+                        camelContext.removeService(eventNotifier);
+                    }
+                }
+            });
+        }
+    }
+
     public static void handleProvidesBreakpoint(ConfigurableApplicationContext context, Class<?> testClass) throws Exception {
-        Collection<Method> methods = getAllMethods(testClass);
-        final List<Breakpoint> breakpoints = new LinkedList<Breakpoint>();
+        Collection<Method> methods = CamelSpringTestHelper.getAllMethods(testClass);
+        final List<Breakpoint> breakpoints = new LinkedList<>();
 
         for (Method method : methods) {
             if (AnnotationUtils.findAnnotation(method, ProvidesBreakpoint.class) != null) {
                 Class<?>[] argTypes = method.getParameterTypes();
                 if (argTypes.length != 0) {
-                    throw new IllegalArgumentException("Method [" + method.getName()
-                            + "] is annotated with ProvidesBreakpoint but is not a no-argument method.");
+                    throw new IllegalArgumentException(
+                            "Method [" + method.getName()
+                                                       + "] is annotated with ProvidesBreakpoint but is not a no-argument method.");
                 } else if (!Breakpoint.class.isAssignableFrom(method.getReturnType())) {
-                    throw new IllegalArgumentException("Method [" + method.getName()
-                            + "] is annotated with ProvidesBreakpoint but does not return a Breakpoint.");
+                    throw new IllegalArgumentException(
+                            "Method [" + method.getName()
+                                                       + "] is annotated with ProvidesBreakpoint but does not return a Breakpoint.");
                 } else if (!Modifier.isStatic(method.getModifiers())) {
-                    throw new IllegalArgumentException("Method [" + method.getName()
-                            + "] is annotated with ProvidesBreakpoint but is not static.");
+                    throw new IllegalArgumentException(
+                            "Method [" + method.getName()
+                                                       + "] is annotated with ProvidesBreakpoint but is not static.");
                 } else if (!Modifier.isPublic(method.getModifiers())) {
-                    throw new IllegalArgumentException("Method [" + method.getName()
-                            + "] is annotated with ProvidesBreakpoint but is not public.");
+                    throw new IllegalArgumentException(
+                            "Method [" + method.getName()
+                                                       + "] is annotated with ProvidesBreakpoint but is not public.");
                 }
 
                 try {
                     breakpoints.add((Breakpoint) method.invoke(null));
                 } catch (Exception e) {
-                    throw new RuntimeException("Method [" + method.getName()
-                            + "] threw exception during evaluation.", e);
+                    throw new RuntimeException(
+                            "Method [" + method.getName()
+                                               + "] threw exception during evaluation.",
+                            e);
                 }
             }
         }
@@ -148,7 +245,7 @@ public final class CamelAnnotationsHandler {
     /**
      * Handles updating shutdown timeouts on Camel contexts based on {@link ShutdownTimeout}.
      *
-     * @param context the initialized Spring context
+     * @param context   the initialized Spring context
      * @param testClass the test class being executed
      */
     public static void handleShutdownTimeout(ConfigurableApplicationContext context, Class<?> testClass) throws Exception {
@@ -166,7 +263,8 @@ public final class CamelAnnotationsHandler {
 
             public void execute(String contextName, SpringCamelContext camelContext)
                     throws Exception {
-                LOGGER.info("Setting shutdown timeout to [{} {}] on CamelContext with name [{}].", new Object[]{shutdownTimeout, shutdownTimeUnit, contextName});
+                LOGGER.info("Setting shutdown timeout to [{} {}] on CamelContext with name [{}].", shutdownTimeout,
+                        shutdownTimeUnit, contextName);
                 camelContext.getShutdownStrategy().setTimeout(shutdownTimeout);
                 camelContext.getShutdownStrategy().setTimeUnit(shutdownTimeUnit);
             }
@@ -176,7 +274,7 @@ public final class CamelAnnotationsHandler {
     /**
      * Handles auto-intercepting of endpoints with mocks based on {@link MockEndpoints}.
      *
-     * @param context the initialized Spring context
+     * @param context   the initialized Spring context
      * @param testClass the test class being executed
      */
     public static void handleMockEndpoints(ConfigurableApplicationContext context, Class<?> testClass) throws Exception {
@@ -186,18 +284,20 @@ public final class CamelAnnotationsHandler {
 
                 public void execute(String contextName, SpringCamelContext camelContext)
                         throws Exception {
-                    LOGGER.info("Enabling auto mocking of endpoints matching pattern [{}] on CamelContext with name [{}].", mockEndpoints, contextName);
-                    camelContext.addRegisterEndpointCallback(new InterceptSendToMockEndpointStrategy(mockEndpoints));
+                    LOGGER.info("Enabling auto mocking of endpoints matching pattern [{}] on CamelContext with name [{}].",
+                            mockEndpoints, contextName);
+                    camelContext.adapt(ExtendedCamelContext.class)
+                            .registerEndpointCallback(new InterceptSendToMockEndpointStrategy(mockEndpoints));
                 }
             });
         }
     }
 
     /**
-     * Handles auto-intercepting of endpoints with mocks based on {@link MockEndpointsAndSkip} and skipping the
-     * original endpoint.
+     * Handles auto-intercepting of endpoints with mocks based on {@link MockEndpointsAndSkip} and skipping the original
+     * endpoint.
      *
-     * @param context the initialized Spring context
+     * @param context   the initialized Spring context
      * @param testClass the test class being executed
      */
     public static void handleMockEndpointsAndSkip(ConfigurableApplicationContext context, Class<?> testClass) throws Exception {
@@ -207,72 +307,88 @@ public final class CamelAnnotationsHandler {
 
                 public void execute(String contextName, SpringCamelContext camelContext)
                         throws Exception {
-                    // resovle the property place holders of the mockEndpoints
+                    // resolve the property place holders of the mockEndpoints
                     String mockEndpointsValue = camelContext.resolvePropertyPlaceholders(mockEndpoints);
-                    LOGGER.info("Enabling auto mocking and skipping of endpoints matching pattern [{}] on CamelContext with name [{}].", mockEndpointsValue, contextName);
-                    camelContext.addRegisterEndpointCallback(new InterceptSendToMockEndpointStrategy(mockEndpointsValue, true));
+                    LOGGER.info(
+                            "Enabling auto mocking and skipping of endpoints matching pattern [{}] on CamelContext with name [{}].",
+                            mockEndpointsValue, contextName);
+                    camelContext.adapt(ExtendedCamelContext.class)
+                            .registerEndpointCallback(new InterceptSendToMockEndpointStrategy(mockEndpointsValue, true));
                 }
             });
         }
     }
 
     /**
-     * Handles override this method to include and override properties with the Camel {@link org.apache.camel.component.properties.PropertiesComponent}.
+     * Handles override this method to include and override properties with the Camel
+     * {@link org.apache.camel.component.properties.PropertiesComponent}.
      *
-     * @param context the initialized Spring context
+     * @param context   the initialized Spring context
      * @param testClass the test class being executed
      */
-    public static void handleUseOverridePropertiesWithPropertiesComponent(ConfigurableApplicationContext context, Class<?> testClass) throws Exception {
-        Collection<Method> methods = getAllMethods(testClass);
-        final List<Properties> properties = new LinkedList<Properties>();
+    public static void handleUseOverridePropertiesWithPropertiesComponent(
+            ConfigurableApplicationContext context, Class<?> testClass)
+            throws Exception {
+        Collection<Method> methods = CamelSpringTestHelper.getAllMethods(testClass);
+        final List<Properties> properties = new LinkedList<>();
 
         for (Method method : methods) {
             if (AnnotationUtils.findAnnotation(method, UseOverridePropertiesWithPropertiesComponent.class) != null) {
                 Class<?>[] argTypes = method.getParameterTypes();
                 if (argTypes.length > 0) {
-                    throw new IllegalArgumentException("Method [" + method.getName()
-                            + "] is annotated with UseOverridePropertiesWithPropertiesComponent but is not a no-argument method.");
+                    throw new IllegalArgumentException(
+                            "Method [" + method.getName()
+                                                       + "] is annotated with UseOverridePropertiesWithPropertiesComponent but is not a no-argument method.");
                 } else if (!Properties.class.isAssignableFrom(method.getReturnType())) {
-                    throw new IllegalArgumentException("Method [" + method.getName()
-                            + "] is annotated with UseOverridePropertiesWithPropertiesComponent but does not return a java.util.Properties.");
+                    throw new IllegalArgumentException(
+                            "Method [" + method.getName()
+                                                       + "] is annotated with UseOverridePropertiesWithPropertiesComponent but does not return a java.util.Properties.");
                 } else if (!Modifier.isStatic(method.getModifiers())) {
-                    throw new IllegalArgumentException("Method [" + method.getName()
-                            + "] is annotated with UseOverridePropertiesWithPropertiesComponent but is not static.");
+                    throw new IllegalArgumentException(
+                            "Method [" + method.getName()
+                                                       + "] is annotated with UseOverridePropertiesWithPropertiesComponent but is not static.");
                 } else if (!Modifier.isPublic(method.getModifiers())) {
-                    throw new IllegalArgumentException("Method [" + method.getName()
-                            + "] is annotated with UseOverridePropertiesWithPropertiesComponent but is not public.");
+                    throw new IllegalArgumentException(
+                            "Method [" + method.getName()
+                                                       + "] is annotated with UseOverridePropertiesWithPropertiesComponent but is not public.");
                 }
 
                 try {
                     properties.add((Properties) method.invoke(null));
                 } catch (Exception e) {
-                    throw new RuntimeException("Method [" + method.getName()
-                            + "] threw exception during evaluation.", e);
+                    throw new RuntimeException(
+                            "Method [" + method.getName()
+                                               + "] threw exception during evaluation.",
+                            e);
                 }
             }
         }
 
-        if (properties.size() != 0) {
-            CamelSpringTestHelper.doToSpringCamelContexts(context, new CamelSpringTestHelper.DoToSpringCamelContextsStrategy() {
-                public void execute(String contextName, SpringCamelContext camelContext) throws Exception {
-                    PropertiesComponent pc = camelContext.getComponent("properties", PropertiesComponent.class);
-                    Properties extra = new Properties();
-                    for (Properties prop : properties) {
-                        extra.putAll(prop);
-                    }
-                    if (!extra.isEmpty()) {
-                        LOGGER.info("Using {} properties to override any existing properties on the PropertiesComponent on CamelContext with name [{}].", extra.size(), contextName);
+        Properties extra = new Properties();
+        for (Properties prop : properties) {
+            extra.putAll(prop);
+        }
+
+        if (!extra.isEmpty()) {
+            context.addBeanFactoryPostProcessor(beanFactory -> beanFactory.addBeanPostProcessor(new BeanPostProcessor() {
+                @Override
+                public Object postProcessBeforeInitialization(Object bean, String beanName) {
+                    if (bean instanceof PropertiesComponent) {
+                        PropertiesComponent pc = (PropertiesComponent) bean;
+                        LOGGER.info("Using {} properties to override any existing properties on the PropertiesComponent",
+                                extra.size());
                         pc.setOverrideProperties(extra);
                     }
+                    return bean;
                 }
-            });
+            }));
         }
     }
 
     /**
      * Handles starting of Camel contexts based on {@link UseAdviceWith} and other state in the JVM.
      *
-     * @param context the initialized Spring context
+     * @param context   the initialized Spring context
      * @param testClass the test class being executed
      */
     public static void handleCamelContextStartup(ConfigurableApplicationContext context, Class<?> testClass) throws Exception {
@@ -281,18 +397,22 @@ public final class CamelAnnotationsHandler {
             LOGGER.info("Skipping starting CamelContext(s) as system property skipStartingCamelContext is set to be true.");
         } else if (testClass.isAnnotationPresent(UseAdviceWith.class)) {
             if (testClass.getAnnotation(UseAdviceWith.class).value()) {
-                LOGGER.info("Skipping starting CamelContext(s) as UseAdviceWith annotation was found and isUseAdviceWith is set to true.");
+                LOGGER.info(
+                        "Skipping starting CamelContext(s) as UseAdviceWith annotation was found and isUseAdviceWith is set to true.");
                 skip = true;
             } else {
-                LOGGER.info("Starting CamelContext(s) as UseAdviceWith annotation was found, but isUseAdviceWith is set to false.");
+                LOGGER.info(
+                        "Starting CamelContext(s) as UseAdviceWith annotation was found, but isUseAdviceWith is set to false.");
                 skip = false;
             }
         }
 
         if (!skip) {
             CamelSpringTestHelper.doToSpringCamelContexts(context, new CamelSpringTestHelper.DoToSpringCamelContextsStrategy() {
-                public void execute(String contextName,
-                                    SpringCamelContext camelContext) throws Exception {
+                public void execute(
+                        String contextName,
+                        SpringCamelContext camelContext)
+                        throws Exception {
                     if (!camelContext.isStarted()) {
                         LOGGER.info("Starting CamelContext with name [{}].", contextName);
                         camelContext.start();

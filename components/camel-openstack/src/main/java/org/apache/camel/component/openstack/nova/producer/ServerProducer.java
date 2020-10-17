@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,6 +26,7 @@ import org.apache.camel.component.openstack.common.OpenstackConstants;
 import org.apache.camel.component.openstack.nova.NovaConstants;
 import org.apache.camel.component.openstack.nova.NovaEndpoint;
 import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.StringHelper;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.ActionResponse;
@@ -44,32 +45,32 @@ public class ServerProducer extends AbstractOpenstackProducer {
     public void process(Exchange exchange) throws Exception {
         final String operation = getOperation(exchange);
         switch (operation) {
-        case OpenstackConstants.CREATE:
-            doCreate(exchange);
-            break;
-        case NovaConstants.CREATE_SNAPSHOT:
-            doCreateSnapshot(exchange);
-            break;
-        case OpenstackConstants.GET:
-            doGet(exchange);
-            break;
-        case OpenstackConstants.GET_ALL:
-            doGetAll(exchange);
-            break;
-        case OpenstackConstants.DELETE:
-            doDelete(exchange);
-            break;
-        case NovaConstants.ACTION:
-            doAction(exchange);
-            break;
-        default:
-            //execute action when Operation:Action header is not set but
-            // Action is properly specified
-            if (exchange.getIn().getHeaders().containsKey(NovaConstants.ACTION)) {
+            case OpenstackConstants.CREATE:
+                doCreate(exchange);
+                break;
+            case NovaConstants.CREATE_SNAPSHOT:
+                doCreateSnapshot(exchange);
+                break;
+            case OpenstackConstants.GET:
+                doGet(exchange);
+                break;
+            case OpenstackConstants.GET_ALL:
+                doGetAll(exchange);
+                break;
+            case OpenstackConstants.DELETE:
+                doDelete(exchange);
+                break;
+            case NovaConstants.ACTION:
                 doAction(exchange);
-            } else {
-                throw new IllegalArgumentException("Unsupported operation " + operation);
-            }
+                break;
+            default:
+                //execute action when Operation:Action header is not set but
+                // Action is properly specified
+                if (exchange.getIn().getHeaders().containsKey(NovaConstants.ACTION)) {
+                    doAction(exchange);
+                } else {
+                    throw new IllegalArgumentException("Unsupported operation " + operation);
+                }
         }
     }
 
@@ -83,8 +84,8 @@ public class ServerProducer extends AbstractOpenstackProducer {
         final Message msg = exchange.getIn();
         final String serverId = msg.getHeader(OpenstackConstants.ID, String.class);
         final String name = msg.getHeader(OpenstackConstants.NAME, String.class);
-        ObjectHelper.notEmpty(serverId, "Server ID");
-        ObjectHelper.notEmpty(name, "VolumeSnapshot name");
+        StringHelper.notEmpty(serverId, "Server ID");
+        StringHelper.notEmpty(name, "VolumeSnapshot name");
 
         final String snapshotId = os.compute().servers().createSnapshot(serverId, name);
         msg.setBody(snapshotId);
@@ -93,7 +94,7 @@ public class ServerProducer extends AbstractOpenstackProducer {
     private void doGet(Exchange exchange) {
         final Message msg = exchange.getIn();
         final String serverId = msg.getHeader(OpenstackConstants.ID, String.class);
-        ObjectHelper.notEmpty(serverId, "Server ID");
+        StringHelper.notEmpty(serverId, "Server ID");
         final Server result = os.compute().servers().get(serverId);
         msg.setBody(result);
     }
@@ -108,17 +109,17 @@ public class ServerProducer extends AbstractOpenstackProducer {
         final Action action = msg.getHeader(NovaConstants.ACTION, Action.class);
         final String serverId = msg.getHeader(OpenstackConstants.ID, String.class);
         ObjectHelper.notNull(action, "Server action");
-        ObjectHelper.notEmpty(serverId, "Server ID");
+        StringHelper.notEmpty(serverId, "Server ID");
         final ActionResponse response = os.compute().servers().action(serverId, action);
-        checkFailure(response, msg, "Performing action " + action.name());
+        checkFailure(response, exchange, "Performing action " + action.name());
     }
 
     private void doDelete(Exchange exchange) {
         final Message msg = exchange.getIn();
         final String serverId = msg.getHeader(OpenstackConstants.ID, String.class);
-        ObjectHelper.notEmpty(serverId, "Server ID");
+        StringHelper.notEmpty(serverId, "Server ID");
         final ActionResponse response = os.compute().servers().delete(serverId);
-        checkFailure(response, msg, "Delete server with ID " + serverId);
+        checkFailure(response, exchange, "Delete server with ID " + serverId);
     }
 
     private ServerCreate messageToServer(Message message) {
@@ -128,7 +129,7 @@ public class ServerProducer extends AbstractOpenstackProducer {
             Map headers = message.getHeaders();
             ServerCreateBuilder builder = Builders.server();
 
-            ObjectHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
+            StringHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
             builder.name(message.getHeader(OpenstackConstants.NAME, String.class));
 
             if (headers.containsKey(NovaConstants.IMAGE_ID)) {

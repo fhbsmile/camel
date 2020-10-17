@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,10 +19,16 @@ package org.apache.camel.component.headersmap;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
-public class FastHeadersMapFactoryTest extends TestCase {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+public class FastHeadersMapFactoryTest {
+
+    @Test
     public void testLookupCaseAgnostic() {
         Map<String, Object> map = new FastHeadersMapFactory().newMap();
         assertNull(map.get("foo"));
@@ -34,6 +40,7 @@ public class FastHeadersMapFactoryTest extends TestCase {
         assertEquals("cheese", map.get("FOO"));
     }
 
+    @Test
     public void testConstructFromOther() {
         Map<String, Object> other = new FastHeadersMapFactory().newMap();
         other.put("Foo", "cheese");
@@ -50,6 +57,7 @@ public class FastHeadersMapFactoryTest extends TestCase {
         assertEquals(123, map.get("BaR"));
     }
 
+    @Test
     public void testIsInstance() {
         Map<String, Object> map = new FastHeadersMapFactory().newMap();
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,26 +31,25 @@ final class XmlFactoryBeanInjectionTarget<T> extends SyntheticInjectionTarget<T>
 
     XmlFactoryBeanInjectionTarget(BeanManager manager, AbstractCamelFactoryBean<T> factory, Bean<?> context) {
         super(
-            () -> {
-                try {
-                    if (isEmpty(factory.getCamelContextId()) && context != null) {
-                        factory.setCamelContext(getReference(manager, CamelContext.class, context));
-                    }
-                    factory.afterPropertiesSet();
-                    return factory.getObject();
-                } catch (Exception cause) {
-                    throw new CreationException(cause);
-                }
-            },
-            i -> {
-            },
-            i -> {
-                try {
-                    factory.destroy();
-                } catch (Exception cause) {
-                    throw new InjectionException(cause);
-                }
-            }
-        );
+              () -> {
+                  try {
+                      if (isEmpty(factory.getCamelContextId()) && context != null) {
+                          factory.setCamelContext(getReference(manager, CamelContext.class, context));
+                      }
+                      factory.afterPropertiesSet();
+                      return factory.getObject();
+                  } catch (Exception cause) {
+                      throw new CreationException(cause);
+                  }
+              },
+              i -> {
+              },
+              i -> {
+                  try {
+                      factory.destroy();
+                  } catch (Exception cause) {
+                      throw new InjectionException(cause);
+                  }
+              });
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,7 @@ import org.apache.camel.component.openstack.common.AbstractOpenstackProducer;
 import org.apache.camel.component.openstack.common.OpenstackConstants;
 import org.apache.camel.component.openstack.nova.NovaConstants;
 import org.apache.camel.component.openstack.nova.NovaEndpoint;
-import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.StringHelper;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.ActionResponse;
@@ -42,20 +42,20 @@ public class FlavorsProducer extends AbstractOpenstackProducer {
     public void process(Exchange exchange) throws Exception {
         final String operation = getOperation(exchange);
         switch (operation) {
-        case OpenstackConstants.CREATE:
-            doCreate(exchange);
-            break;
-        case OpenstackConstants.GET:
-            doGet(exchange);
-            break;
-        case OpenstackConstants.GET_ALL:
-            doGetAll(exchange);
-            break;
-        case OpenstackConstants.DELETE:
-            doDelete(exchange);
-            break;
-        default:
-            throw new IllegalArgumentException("Unsupported operation " + operation);
+            case OpenstackConstants.CREATE:
+                doCreate(exchange);
+                break;
+            case OpenstackConstants.GET:
+                doGet(exchange);
+                break;
+            case OpenstackConstants.GET_ALL:
+                doGetAll(exchange);
+                break;
+            case OpenstackConstants.DELETE:
+                doDelete(exchange);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
@@ -67,8 +67,9 @@ public class FlavorsProducer extends AbstractOpenstackProducer {
 
     private void doGet(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String flavorId = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NovaConstants.FLAVOR_ID, String.class), String.class);
-        ObjectHelper.notEmpty(flavorId, "FlavorID");
+        final String flavorId
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NovaConstants.FLAVOR_ID, String.class), String.class);
+        StringHelper.notEmpty(flavorId, "FlavorID");
         final Flavor out = os.compute().flavors().get(flavorId);
         exchange.getIn().setBody(out);
     }
@@ -80,10 +81,11 @@ public class FlavorsProducer extends AbstractOpenstackProducer {
 
     private void doDelete(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String flavorId = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NovaConstants.FLAVOR_ID, String.class), String.class);
-        ObjectHelper.notEmpty(flavorId, "FlavorID");
+        final String flavorId
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NovaConstants.FLAVOR_ID, String.class), String.class);
+        StringHelper.notEmpty(flavorId, "FlavorID");
         final ActionResponse response = os.compute().flavors().delete(flavorId);
-        checkFailure(response, msg, "Delete flavor");
+        checkFailure(response, exchange, "Delete flavor");
     }
 
     private org.openstack4j.model.compute.Flavor messageToFlavor(Message message) {
@@ -92,7 +94,7 @@ public class FlavorsProducer extends AbstractOpenstackProducer {
             Map headers = message.getHeaders();
             FlavorBuilder flavorBuilder = Builders.flavor();
 
-            ObjectHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
+            StringHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
             flavorBuilder.name(message.getHeader(OpenstackConstants.NAME, String.class));
 
             if (headers.containsKey(NovaConstants.VCPU)) {

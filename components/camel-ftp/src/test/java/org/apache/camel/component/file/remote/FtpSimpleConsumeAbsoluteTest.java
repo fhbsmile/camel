@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,11 +19,8 @@ package org.apache.camel.component.file.remote;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
 public class FtpSimpleConsumeAbsoluteTest extends FtpServerTestSupport {
 
     @Test
@@ -44,7 +41,7 @@ public class FtpSimpleConsumeAbsoluteTest extends FtpServerTestSupport {
         mock.expectedMessageCount(1);
         mock.expectedHeaderReceived(Exchange.FILE_NAME, "hello.txt");
 
-        context.startRoute("foo");
+        context.getRouteController().startRoute("foo");
 
         assertMockEndpointsSatisfied();
     }
@@ -55,10 +52,10 @@ public class FtpSimpleConsumeAbsoluteTest extends FtpServerTestSupport {
             @Override
             public void configure() throws Exception {
                 // notice we use an absolute starting path: /tmp/mytemp
-                // - we must remember to use // slash because of the url separator
-                from("ftp://localhost:" + getPort() + "//tmp/mytemp?username=admin&password=admin&delay=10s&disconnect=true")
-                    .routeId("foo").noAutoStartup()
-                    .to("mock:result");
+                // - we must remember to use // slash because of the url
+                // separator
+                from("ftp://localhost:" + getPort() + "//tmp/mytemp?username=admin&password=admin&delay=10000&disconnect=true")
+                        .routeId("foo").noAutoStartup().to("mock:result");
             }
         };
     }

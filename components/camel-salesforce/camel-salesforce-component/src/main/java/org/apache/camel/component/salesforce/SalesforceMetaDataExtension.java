@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
-
+import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.component.extension.metadata.AbstractMetaDataExtension;
 import org.apache.camel.component.extension.metadata.MetaDataBuilder;
 import org.apache.camel.component.salesforce.api.dto.GlobalObjects;
@@ -36,7 +36,6 @@ import org.apache.camel.component.salesforce.api.dto.SObjectDescription;
 import org.apache.camel.component.salesforce.api.utils.JsonUtils;
 import org.apache.camel.component.salesforce.internal.client.RestClient;
 import org.apache.camel.component.salesforce.internal.client.RestClient.ResponseCallback;
-import org.apache.camel.util.ObjectHelper;
 
 public class SalesforceMetaDataExtension extends AbstractMetaDataExtension {
 
@@ -52,9 +51,9 @@ public class SalesforceMetaDataExtension extends AbstractMetaDataExtension {
         final JsonSchema schema = schemaFor(parameters);
 
         final MetaData metaData = MetaDataBuilder.on(getCamelContext())//
-            .withAttribute(MetaData.CONTENT_TYPE, "application/schema+json")//
-            .withAttribute(MetaData.JAVA_TYPE, JsonNode.class)//
-            .withPayload(schema).build();
+                .withAttribute(MetaData.CONTENT_TYPE, "application/schema+json")//
+                .withAttribute(MetaData.JAVA_TYPE, JsonNode.class)//
+                .withPayload(schema).build();
 
         return Optional.ofNullable(metaData);
     }
@@ -71,14 +70,14 @@ public class SalesforceMetaDataExtension extends AbstractMetaDataExtension {
 
             return allObjectsSchema(parameters);
         } catch (final Exception e) {
-            throw ObjectHelper.wrapRuntimeCamelException(e);
+            throw RuntimeCamelException.wrapRuntimeCamelException(e);
         }
 
     }
 
     JsonSchema singleObjectSchema(final Map<String, Object> parameters) throws Exception {
         return SalesforceClientTemplate.invoke(getCamelContext(), parameters,
-            client -> fetchSingleObjectSchema(client, (String) parameters.get(SalesforceEndpointConfig.SOBJECT_NAME)));
+                client -> fetchSingleObjectSchema(client, (String) parameters.get(SalesforceEndpointConfig.SOBJECT_NAME)));
     }
 
     static JsonSchema fetch(final Consumer<ResponseCallback> restMethod, final SchemaMapper callback) {
@@ -99,17 +98,18 @@ public class SalesforceMetaDataExtension extends AbstractMetaDataExtension {
         try {
             return ret.get();
         } catch (InterruptedException | ExecutionException e) {
-            throw ObjectHelper.wrapRuntimeCamelException(e);
+            throw RuntimeCamelException.wrapRuntimeCamelException(e);
         }
     }
 
     static JsonSchema fetchAllObjectsSchema(final RestClient client) {
-        return fetch(callback -> client.getGlobalObjects(Collections.emptyMap(), callback), SalesforceMetaDataExtension::mapAllObjectsSchema);
+        return fetch(callback -> client.getGlobalObjects(Collections.emptyMap(), callback),
+                SalesforceMetaDataExtension::mapAllObjectsSchema);
     }
 
     static JsonSchema fetchSingleObjectSchema(final RestClient client, final String objectName) {
         return fetch(callback -> client.getDescription(objectName, Collections.emptyMap(), callback),
-            SalesforceMetaDataExtension::mapSingleObjectSchema);
+                SalesforceMetaDataExtension::mapSingleObjectSchema);
     }
 
     static JsonSchema mapAllObjectsSchema(final InputStream stream) throws IOException {

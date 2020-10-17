@@ -19,19 +19,23 @@ package ${package};
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
+import org.apache.camel.support.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
 
+import java.util.concurrent.ExecutorService;
+
 /**
- * Represents a ${name} endpoint.
+ * ${name} component which does bla bla.
+ *
+ * TODO: Update one line description above what the component does.
  */
-@UriEndpoint(firstVersion = "${version}", scheme = "${scheme}", title = "${name}", syntax="${scheme}:name", 
+@UriEndpoint(firstVersion = "${version}", scheme = "${scheme}", title = "${name}", syntax="${scheme}:name",
              consumerClass = ${name}Consumer.class, label = "custom")
 public class ${name}Endpoint extends DefaultEndpoint {
-    @UriPath @Metadata(required = "true")
+    @UriPath @Metadata(required = true)
     private String name;
     @UriParam(defaultValue = "10")
     private int option = 10;
@@ -43,20 +47,14 @@ public class ${name}Endpoint extends DefaultEndpoint {
         super(uri, component);
     }
 
-    public ${name}Endpoint(String endpointUri) {
-        super(endpointUri);
-    }
-
     public Producer createProducer() throws Exception {
         return new ${name}Producer(this);
     }
 
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new ${name}Consumer(this, processor);
-    }
-
-    public boolean isSingleton() {
-        return true;
+        Consumer consumer = new ${name}Consumer(this, processor);
+        configureConsumer(consumer);
+        return consumer;
     }
 
     /**
@@ -79,5 +77,10 @@ public class ${name}Endpoint extends DefaultEndpoint {
 
     public int getOption() {
         return option;
+    }
+
+    public ExecutorService createExecutor() {
+        // TODO: Delete me when you implementy your custom component
+        return getCamelContext().getExecutorServiceManager().newSingleThreadExecutor(this, "${name}Consumer");
     }
 }

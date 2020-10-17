@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,10 +26,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.RecoverableAggregationRepository;
-import org.apache.camel.support.ServiceSupport;
+import org.apache.camel.support.service.ServiceHelper;
+import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.IOHelper;
 import org.apache.camel.util.ObjectHelper;
-import org.apache.camel.util.ServiceHelper;
+import org.apache.camel.util.StringHelper;
 import org.fusesource.hawtbuf.Buffer;
 import org.iq80.leveldb.DBIterator;
 import org.iq80.leveldb.WriteBatch;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 public class LevelDBAggregationRepository extends ServiceSupport implements RecoverableAggregationRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(LevelDBAggregationRepository.class);
+
     private LevelDBFile levelDBFile;
     private String persistentFileName;
     private String repositoryName;
@@ -66,20 +68,19 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
      * @param repositoryName the repository name
      */
     public LevelDBAggregationRepository(String repositoryName) {
-        ObjectHelper.notEmpty(repositoryName, "repositoryName");
+        StringHelper.notEmpty(repositoryName, "repositoryName");
         this.repositoryName = repositoryName;
     }
 
     /**
-     * Creates an aggregation repository using a new {@link LevelDBFile}
-     * that persists using the provided file.
+     * Creates an aggregation repository using a new {@link LevelDBFile} that persists using the provided file.
      *
      * @param repositoryName     the repository name
      * @param persistentFileName the persistent store filename
      */
     public LevelDBAggregationRepository(String repositoryName, String persistentFileName) {
-        ObjectHelper.notEmpty(repositoryName, "repositoryName");
-        ObjectHelper.notEmpty(persistentFileName, "persistentFileName");
+        StringHelper.notEmpty(repositoryName, "repositoryName");
+        StringHelper.notEmpty(persistentFileName, "persistentFileName");
         this.repositoryName = repositoryName;
         this.persistentFileName = persistentFileName;
     }
@@ -91,12 +92,13 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
      * @param levelDBFile    the leveldb file to use as persistent store
      */
     public LevelDBAggregationRepository(String repositoryName, LevelDBFile levelDBFile) {
-        ObjectHelper.notEmpty(repositoryName, "repositoryName");
+        StringHelper.notEmpty(repositoryName, "repositoryName");
         ObjectHelper.notNull(levelDBFile, "levelDBFile");
         this.levelDBFile = levelDBFile;
         this.repositoryName = repositoryName;
     }
 
+    @Override
     public Exchange add(final CamelContext camelContext, final String key, final Exchange exchange) {
         LOG.debug("Adding key [{}] -> {}", key, exchange);
         try {
@@ -127,6 +129,7 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
         return null;
     }
 
+    @Override
     public Exchange get(final CamelContext camelContext, final String key) {
         Exchange answer = null;
 
@@ -146,6 +149,7 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
         return answer;
     }
 
+    @Override
     public void remove(final CamelContext camelContext, final String key, final Exchange exchange) {
         LOG.debug("Removing key [{}]", key);
 
@@ -179,6 +183,7 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
         }
     }
 
+    @Override
     public void confirm(final CamelContext camelContext, final String exchangeId) {
         LOG.debug("Confirming exchangeId [{}]", exchangeId);
 
@@ -192,8 +197,9 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
         }
     }
 
+    @Override
     public Set<String> getKeys() {
-        final Set<String> keys = new LinkedHashSet<String>();
+        final Set<String> keys = new LinkedHashSet<>();
 
         // interval task could potentially be running while we are shutting down so check for that
         if (!isRunAllowed()) {
@@ -228,8 +234,9 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
         return Collections.unmodifiableSet(keys);
     }
 
+    @Override
     public Set<String> scan(CamelContext camelContext) {
-        final Set<String> answer = new LinkedHashSet<String>();
+        final Set<String> answer = new LinkedHashSet<>();
 
         if (!isRunAllowed()) {
             return null;
@@ -261,13 +268,15 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
             LOG.trace("Scanned and found no exchange to recover.");
         } else {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Scanned and found {} exchange(s) to recover (note some of them may already be in progress).", answer.size());
+                LOG.debug("Scanned and found {} exchange(s) to recover (note some of them may already be in progress).",
+                        answer.size());
             }
         }
         return answer;
 
     }
 
+    @Override
     public Exchange recover(CamelContext camelContext, final String exchangeId) {
         Exchange answer = null;
 
@@ -344,38 +353,47 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
         this.returnOldExchange = returnOldExchange;
     }
 
+    @Override
     public void setRecoveryInterval(long interval, TimeUnit timeUnit) {
         this.recoveryInterval = timeUnit.toMillis(interval);
     }
 
+    @Override
     public void setRecoveryInterval(long interval) {
         this.recoveryInterval = interval;
     }
 
+    @Override
     public long getRecoveryIntervalInMillis() {
         return recoveryInterval;
     }
 
+    @Override
     public boolean isUseRecovery() {
         return useRecovery;
     }
 
+    @Override
     public void setUseRecovery(boolean useRecovery) {
         this.useRecovery = useRecovery;
     }
 
+    @Override
     public int getMaximumRedeliveries() {
         return maximumRedeliveries;
     }
 
+    @Override
     public void setMaximumRedeliveries(int maximumRedeliveries) {
         this.maximumRedeliveries = maximumRedeliveries;
     }
 
+    @Override
     public String getDeadLetterUri() {
         return deadLetterUri;
     }
 
+    @Override
     public void setDeadLetterUri(String deadLetterUri) {
         this.deadLetterUri = deadLetterUri;
     }
@@ -415,14 +433,18 @@ public class LevelDBAggregationRepository extends ServiceSupport implements Reco
         int completed = size(getRepositoryNameCompleted());
 
         if (current > 0) {
-            LOG.info("On startup there are " + current + " aggregate exchanges (not completed) in repository: " + getRepositoryName());
+            LOG.info("On startup there are {} aggregate exchanges (not completed) in repository: {}",
+                    current, getRepositoryName());
         } else {
-            LOG.info("On startup there are no existing aggregate exchanges (not completed) in repository: " + getRepositoryName());
+            LOG.info("On startup there are no existing aggregate exchanges (not completed) in repository: {}",
+                    getRepositoryName());
         }
         if (completed > 0) {
-            LOG.warn("On startup there are " + completed + " completed exchanges to be recovered in repository: " + getRepositoryNameCompleted());
+            LOG.warn("On startup there are {} completed exchanges to be recovered in repository: {}",
+                    completed, getRepositoryNameCompleted());
         } else {
-            LOG.info("On startup there are no completed exchanges to be recovered in repository: " + getRepositoryNameCompleted());
+            LOG.info("On startup there are no completed exchanges to be recovered in repository: {}",
+                    getRepositoryNameCompleted());
         }
     }
 

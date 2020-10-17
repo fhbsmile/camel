@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,12 +31,15 @@ import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableSchema;
+import org.apache.camel.BindToRegistry;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryComponent;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryConnectionFactory;
-import org.apache.camel.component.properties.PropertiesComponent;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BigQueryTestSupport extends CamelTestSupport {
     public static final String SERVICE_KEY;
@@ -45,6 +48,8 @@ public class BigQueryTestSupport extends CamelTestSupport {
     public static final String DATASET_ID;
     public static final String SERVICE_URL;
     public static final String CREDENTIALS_FILE_LOCATION;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BigQueryTestSupport.class);
 
     private GoogleBigQueryConnectionFactory connectionFactory;
 
@@ -82,7 +87,7 @@ public class BigQueryTestSupport extends CamelTestSupport {
         component.setConnectionFactory(connectionFactory);
 
         context.addComponent("google-bigquery", component);
-        context.addComponent("properties", new PropertiesComponent("ref:prop"));
+        context.getPropertiesComponent().setLocation("ref:prop");
     }
 
     @Override
@@ -92,11 +97,9 @@ public class BigQueryTestSupport extends CamelTestSupport {
         return context;
     }
 
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndi = super.createRegistry();
-        jndi.bind("prop", loadProperties());
-        return jndi;
+    @BindToRegistry("prop")
+    public Properties loadRegProperties() throws Exception {
+        return loadProperties();
     }
 
     public GoogleBigQueryConnectionFactory getConnectionFactory() {
@@ -106,10 +109,10 @@ public class BigQueryTestSupport extends CamelTestSupport {
     protected void assertRowExist(String tableName, Map<String, String> row) throws Exception {
         QueryRequest queryRequest = new QueryRequest();
         String query = "SELECT * FROM " + DATASET_ID + "." + tableName + " WHERE "
-                + row.entrySet().stream()
-                .map(e -> e.getKey() + " = '" + e.getValue() + "'")
-                .collect(Collectors.joining(" AND "));
-        log.debug("Query: {}", query);
+                       + row.entrySet().stream()
+                               .map(e -> e.getKey() + " = '" + e.getValue() + "'")
+                               .collect(Collectors.joining(" AND "));
+        LOGGER.debug("Query: {}", query);
         queryRequest.setQuery(query);
         QueryResponse queryResponse = getConnectionFactory()
                 .getDefaultClient()
@@ -135,7 +138,7 @@ public class BigQueryTestSupport extends CamelTestSupport {
                     .execute();
         } catch (GoogleJsonResponseException e) {
             if (e.getDetails().getCode() == 409) {
-                log.info("Table {} already exist");
+                LOGGER.info("Table {} already exist");
             } else {
                 throw e;
             }

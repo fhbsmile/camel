@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,10 +18,14 @@ package org.apache.camel.component.kubernetes.namespaces;
 
 import org.apache.camel.component.kubernetes.AbstractKubernetesComponent;
 import org.apache.camel.component.kubernetes.KubernetesConfiguration;
+import org.apache.camel.spi.annotations.Component;
 
+@Component("kubernetes-namespaces")
 public class KubernetesNamespacesComponent extends AbstractKubernetesComponent {
 
-    protected KubernetesNamespacesEndpoint doCreateEndpoint(String uri, String remaining, KubernetesConfiguration config) throws Exception {
+    @Override
+    protected KubernetesNamespacesEndpoint doCreateEndpoint(String uri, String remaining, KubernetesConfiguration config)
+            throws Exception {
         KubernetesNamespacesEndpoint endpoint = new KubernetesNamespacesEndpoint(uri, this, config);
         return endpoint;
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,14 +22,14 @@ import java.util.Queue;
 import io.iron.ironmq.EmptyQueueException;
 import io.iron.ironmq.Message;
 import io.iron.ironmq.Messages;
-
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.ScheduledBatchPollingConsumer;
 import org.apache.camel.spi.Synchronization;
+import org.apache.camel.support.ExchangeHelper;
+import org.apache.camel.support.ScheduledBatchPollingConsumer;
 import org.apache.camel.util.CastUtils;
-import org.apache.camel.util.ExchangeHelper;
 import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +38,11 @@ import org.slf4j.LoggerFactory;
  * The IronMQ consumer.
  */
 public class IronMQConsumer extends ScheduledBatchPollingConsumer {
+
     private static final Logger LOG = LoggerFactory.getLogger(IronMQConsumer.class);
-    
+
     private final io.iron.ironmq.Queue ironQueue;
-    
+
     public IronMQConsumer(Endpoint endpoint, Processor processor, io.iron.ironmq.Queue ironQueue) {
         super(endpoint, processor);
         this.ironQueue = ironQueue;
@@ -54,8 +55,10 @@ public class IronMQConsumer extends ScheduledBatchPollingConsumer {
         pendingExchanges = 0;
         try {
             Messages messages = null;
-            LOG.trace("Receiving messages with request [messagePerPoll {}, timeout {}]...", getMaxMessagesPerPoll(), getEndpoint().getConfiguration().getTimeout());
-            messages = this.ironQueue.reserve(getMaxMessagesPerPoll(), getEndpoint().getConfiguration().getTimeout(), getEndpoint().getConfiguration().getWait());
+            LOG.trace("Receiving messages with request [messagePerPoll {}, timeout {}]...", getMaxMessagesPerPoll(),
+                    getEndpoint().getConfiguration().getTimeout());
+            messages = this.ironQueue.reserve(getMaxMessagesPerPoll(), getEndpoint().getConfiguration().getTimeout(),
+                    getEndpoint().getConfiguration().getWait());
             LOG.trace("Received {} messages", messages.getSize());
 
             Queue<Exchange> exchanges = createExchanges(messages.getMessages());
@@ -74,7 +77,7 @@ public class IronMQConsumer extends ScheduledBatchPollingConsumer {
     protected Queue<Exchange> createExchanges(Message[] messages) {
         LOG.trace("Received {} messages in this poll", messages.length);
 
-        Queue<Exchange> answer = new LinkedList<Exchange>();
+        Queue<Exchange> answer = new LinkedList<>();
         for (Message message : messages) {
             Exchange exchange = getEndpoint().createExchange(message);
             answer.add(exchange);
@@ -100,9 +103,11 @@ public class IronMQConsumer extends ScheduledBatchPollingConsumer {
             // add on completion to handle after work when the exchange is done
             // if batchDelete is not enabled
             if (!getEndpoint().getConfiguration().isBatchDelete()) {
-                exchange.addOnCompletion(new Synchronization() {
-                    final String reservationId = ExchangeHelper.getMandatoryHeader(exchange, IronMQConstants.MESSAGE_RESERVATION_ID, String.class);
-                    final String messageid = ExchangeHelper.getMandatoryHeader(exchange, IronMQConstants.MESSAGE_ID, String.class);
+                exchange.adapt(ExtendedExchange.class).addOnCompletion(new Synchronization() {
+                    final String reservationId
+                            = ExchangeHelper.getMandatoryHeader(exchange, IronMQConstants.MESSAGE_RESERVATION_ID, String.class);
+                    final String messageid
+                            = ExchangeHelper.getMandatoryHeader(exchange, IronMQConstants.MESSAGE_ID, String.class);
 
                     public void onComplete(Exchange exchange) {
                         processCommit(exchange, messageid, reservationId);
@@ -138,7 +143,8 @@ public class IronMQConsumer extends ScheduledBatchPollingConsumer {
             this.ironQueue.deleteMessage(messageid, reservationId);
             LOG.trace("Message deleted");
         } catch (Exception e) {
-            getExceptionHandler().handleException("Error occurred during delete of message. This exception is ignored.", exchange, e);
+            getExceptionHandler().handleException("Error occurred during delete of message. This exception is ignored.",
+                    exchange, e);
         }
     }
 
@@ -150,7 +156,7 @@ public class IronMQConsumer extends ScheduledBatchPollingConsumer {
     protected void processRollback(Exchange exchange) {
         Exception cause = exchange.getException();
         if (cause != null) {
-            LOG.warn("Exchange failed, so rolling back message status: " + exchange, cause);
+            LOG.warn("Exchange failed, so rolling back message status: {}", exchange, cause);
         } else {
             LOG.warn("Exchange failed, so rolling back message status: {}", exchange);
         }
@@ -158,7 +164,7 @@ public class IronMQConsumer extends ScheduledBatchPollingConsumer {
 
     @Override
     public IronMQEndpoint getEndpoint() {
-        return (IronMQEndpoint)super.getEndpoint();
+        return (IronMQEndpoint) super.getEndpoint();
     }
 
 }

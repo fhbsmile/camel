@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.camel.component.hbase.HBaseHelper;
 import org.apache.camel.spi.IdempotentRepository;
-import org.apache.camel.support.ServiceSupport;
+import org.apache.camel.support.service.ServiceSupport;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
@@ -35,7 +35,7 @@ import org.apache.hadoop.hbase.client.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HBaseIdempotentRepository extends ServiceSupport implements IdempotentRepository<Object> {
+public class HBaseIdempotentRepository extends ServiceSupport implements IdempotentRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(HBaseIdempotentRepository.class);
 
@@ -46,7 +46,8 @@ public class HBaseIdempotentRepository extends ServiceSupport implements Idempot
     private Connection connection;
     private Table table;
 
-    public HBaseIdempotentRepository(Configuration configuration, String tableName, String family, String qualifier) throws IOException {
+    public HBaseIdempotentRepository(Configuration configuration, String tableName, String family,
+                                     String qualifier) throws IOException {
         this.tableName = tableName;
         this.family = family;
         this.qualifier = qualifier;
@@ -56,18 +57,16 @@ public class HBaseIdempotentRepository extends ServiceSupport implements Idempot
     }
 
     @Override
-    public boolean add(Object o) {
+    public boolean add(String o) {
         try {
-            synchronized (tableName.intern()) {
-                if (contains(o)) {
-                    return false;
-                }
-                byte[] b = HBaseHelper.toBytes(o);
-                Put put = new Put(b);
-                put.addColumn(HBaseHelper.getHBaseFieldAsBytes(family), HBaseHelper.getHBaseFieldAsBytes(qualifier), b);
-                table.put(put);
-                return true;
+            if (contains(o)) {
+                return false;
             }
+            byte[] b = HBaseHelper.toBytes(o);
+            Put put = new Put(b);
+            put.addColumn(HBaseHelper.getHBaseFieldAsBytes(family), HBaseHelper.getHBaseFieldAsBytes(qualifier), b);
+            table.put(put);
+            return true;
         } catch (Exception e) {
             LOG.warn("Error adding object {} to HBase repository.", o);
             return false;
@@ -75,7 +74,7 @@ public class HBaseIdempotentRepository extends ServiceSupport implements Idempot
     }
 
     @Override
-    public boolean contains(Object o) {
+    public boolean contains(String o) {
         try {
             byte[] b = HBaseHelper.toBytes(o);
             Get get = new Get(b);
@@ -88,7 +87,7 @@ public class HBaseIdempotentRepository extends ServiceSupport implements Idempot
     }
 
     @Override
-    public boolean remove(Object o) {
+    public boolean remove(String o) {
         try {
             byte[] b = HBaseHelper.toBytes(o);
             if (table.exists(new Get(b))) {
@@ -105,10 +104,10 @@ public class HBaseIdempotentRepository extends ServiceSupport implements Idempot
     }
 
     @Override
-    public boolean confirm(Object o) {
+    public boolean confirm(String o) {
         return true;
     }
-    
+
     @Override
     public void clear() {
         Scan s = new Scan();
@@ -118,11 +117,11 @@ public class HBaseIdempotentRepository extends ServiceSupport implements Idempot
             for (Result rr : scanner) {
                 Delete d = new Delete(rr.getRow());
                 table.delete(d);
-            } 
+            }
         } catch (Exception e) {
             LOG.warn("Error clear HBase repository {}", table);
         }
-    }    
+    }
 
     @Override
     protected void doStart() throws Exception {

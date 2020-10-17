@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,13 +22,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.DefaultExchangeHolder;
 import org.apache.camel.spi.RecoverableAggregationRepository;
-import org.apache.camel.support.ServiceSupport;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.support.DefaultExchangeHolder;
+import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.ObjectHelper;
 import org.infinispan.commons.api.BasicCache;
 import org.infinispan.configuration.cache.Configuration;
+import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class InfinispanLocalAggregationRepository extends ServiceSupport implements RecoverableAggregationRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(InfinispanLocalAggregationRepository.class.getName());
-    
+
     private boolean useRecovery = true;
     private DefaultCacheManager manager;
     private String cacheName;
@@ -48,15 +49,16 @@ public class InfinispanLocalAggregationRepository extends ServiceSupport impleme
     private Configuration configuration;
 
     /**
-     * Creates new {@link InfinispanLocalAggregationRepository} that defaults to non-optimistic locking
-     * with recoverable behavior and a local Infinispan cache. 
+     * Creates new {@link InfinispanLocalAggregationRepository} that defaults to non-optimistic locking with recoverable
+     * behavior and a local Infinispan cache.
      */
     public InfinispanLocalAggregationRepository() {
     }
-    
+
     /**
-     * Creates new {@link InfinispanLocalAggregationRepository} that defaults to non-optimistic locking
-     * with recoverable behavior and a local Infinispan cache. 
+     * Creates new {@link InfinispanLocalAggregationRepository} that defaults to non-optimistic locking with recoverable
+     * behavior and a local Infinispan cache.
+     * 
      * @param cacheName cache name
      */
     public InfinispanLocalAggregationRepository(final String cacheName) {
@@ -78,7 +80,7 @@ public class InfinispanLocalAggregationRepository extends ServiceSupport impleme
 
     @Override
     public void remove(CamelContext camelContext, String key, Exchange exchange) {
-        LOG.trace("Removing an exchange with ID {} for key {} ", exchange.getExchangeId(), key);
+        LOG.trace("Removing an exchange with ID {} for key {}", exchange.getExchangeId(), key);
         cache.remove(key);
     }
 
@@ -116,7 +118,7 @@ public class InfinispanLocalAggregationRepository extends ServiceSupport impleme
     public void setRecoveryInterval(long interval) {
         this.recoveryInterval = interval;
     }
-    
+
     @Override
     public long getRecoveryIntervalInMillis() {
         return recoveryInterval;
@@ -161,12 +163,13 @@ public class InfinispanLocalAggregationRepository extends ServiceSupport impleme
             throw new IllegalArgumentException("Recovery interval must be zero or a positive integer.");
         }
         if (ObjectHelper.isEmpty(configuration)) {
-            manager = new DefaultCacheManager();
+            manager = new DefaultCacheManager(new GlobalConfigurationBuilder().defaultCacheName("default").build());
             manager.start();
         } else {
-            manager = new DefaultCacheManager(configuration);
+            manager = new DefaultCacheManager(
+                    new GlobalConfigurationBuilder().defaultCacheName("default").build(), configuration);
             manager.start();
-        }        
+        }
         if (ObjectHelper.isEmpty(cacheName)) {
             cache = manager.getCache();
         } else {
@@ -187,7 +190,7 @@ public class InfinispanLocalAggregationRepository extends ServiceSupport impleme
         }
         return exchange;
     }
-    
+
     public DefaultCacheManager getManager() {
         return manager;
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,55 +20,58 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 
-import junit.framework.TestCase;
-import org.apache.camel.impl.DefaultModelJAXBContextFactory;
-import org.apache.camel.impl.DefaultUuidGenerator;
-import org.apache.camel.impl.SimpleUuidGenerator;
 import org.apache.camel.spi.ModelJAXBContextFactory;
 import org.apache.camel.spi.UuidGenerator;
+import org.apache.camel.support.DefaultUuidGenerator;
+import org.apache.camel.support.SimpleUuidGenerator;
+import org.apache.camel.xml.jaxb.DefaultModelJAXBContextFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.StaticApplicationContext;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
 
-/**
- * @version 
- */
-public class CamelContextFactoryBeanTest extends TestCase {
-    
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class CamelContextFactoryBeanTest {
+
     private CamelContextFactoryBean factory;
 
-    protected void setUp() throws Exception {
-        super.setUp();
-        
+    @BeforeEach
+    public void setUp() throws Exception {
         factory = new CamelContextFactoryBean();
         factory.setId("camelContext");
     }
 
+    @Test
     public void testGetDefaultUuidGenerator() throws Exception {
         factory.setApplicationContext(new StaticApplicationContext());
         factory.afterPropertiesSet();
-        
+
         UuidGenerator uuidGenerator = factory.getContext().getUuidGenerator();
-        
+
         assertTrue(uuidGenerator instanceof DefaultUuidGenerator);
     }
-    
+
+    @Test
     public void testGetCustomUuidGenerator() throws Exception {
         StaticApplicationContext applicationContext = new StaticApplicationContext();
         applicationContext.registerSingleton("uuidGenerator", SimpleUuidGenerator.class);
         factory.setApplicationContext(applicationContext);
         factory.afterPropertiesSet();
-        
+
         UuidGenerator uuidGenerator = factory.getContext().getUuidGenerator();
-        
+
         assertTrue(uuidGenerator instanceof SimpleUuidGenerator);
     }
 
+    @Test
     public void testSetEndpoints() throws Exception {
         // Create a new Camel context and add an endpoint
         CamelContextFactoryBean camelContext = new CamelContextFactoryBean();
-        List<CamelEndpointFactoryBean> endpoints = new LinkedList<CamelEndpointFactoryBean>();
+        List<CamelEndpointFactoryBean> endpoints = new LinkedList<>();
         CamelEndpointFactoryBean endpoint = new CamelEndpointFactoryBean();
         endpoint.setId("endpoint1");
         endpoint.setUri("mock:end");
@@ -79,9 +82,10 @@ public class CamelContextFactoryBeanTest extends TestCase {
         URL expectedContext = getClass().getResource("/org/apache/camel/spring/context-with-endpoint.xml");
         Diff diff = DiffBuilder.compare(expectedContext).withTest(Input.fromJaxb(camelContext))
                 .ignoreWhitespace().ignoreComments().checkForSimilar().build();
-        assertFalse("Expected context and actual context differ:\n" + diff.toString(), diff.hasDifferences());
+        assertFalse(diff.hasDifferences(), "Expected context and actual context differ:\n" + diff.toString());
     }
 
+    @Test
     public void testCustomModelJAXBContextFactory() throws Exception {
         StaticApplicationContext applicationContext = new StaticApplicationContext();
         applicationContext.registerSingleton("customModelJAXBContextFactory", CustomModelJAXBContextFactory.class);

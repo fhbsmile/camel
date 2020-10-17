@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,19 +17,21 @@
 package org.apache.camel.component.http.handler;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpException;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.protocol.HttpRequestHandler;
+import org.apache.http.util.EntityUtils;
 
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-
-/**
- *
- */
-public class BasicValidationHandler extends AbstractHandler {
+public class BasicValidationHandler implements HttpRequestHandler {
 
     protected String expectedMethod;
     protected String expectedQuery;
@@ -45,48 +47,52 @@ public class BasicValidationHandler extends AbstractHandler {
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
+    public void handle(
+            final HttpRequest request, final HttpResponse response,
+            final HttpContext context)
+            throws HttpException, IOException {
 
-        baseRequest.setHandled(true);
-
-        if (expectedMethod != null && !expectedMethod.equals(request.getMethod())) {
-            response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        if (expectedMethod != null && !expectedMethod.equals(request.getRequestLine().getMethod())) {
+            response.setStatusCode(HttpStatus.SC_METHOD_FAILURE);
             return;
         }
 
         if (!validateQuery(request)) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             return;
         }
 
         if (expectedContent != null) {
-            StringBuilder content = new StringBuilder();
-            String line = null;
-            while ((line = request.getReader().readLine()) != null) {
-                content.append(line);
-            }
+            HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+            String content = EntityUtils.toString(entity);
 
-            if (!expectedContent.equals(content.toString())) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            if (!expectedContent.equals(content)) {
+                response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
                 return;
             }
         }
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        if (responseContent != null) {
-            response.setContentType("text/plain; charset=utf-8");
-            PrintWriter out = response.getWriter();
-            out.print(responseContent);
+        response.setStatusCode(HttpStatus.SC_OK);
+        String content = buildResponse(request);
+        if (content != null) {
+            response.setEntity(new StringEntity(content, "ASCII"));
         }
     }
 
-    protected boolean validateQuery(HttpServletRequest request) {
-        String query = request.getQueryString();
-        if (expectedQuery != null && !expectedQuery.equals(query)) {
-            return false;
+    protected boolean validateQuery(HttpRequest request) throws IOException {
+        try {
+            String query = new URI(request.getRequestLine().getUri()).getQuery();
+            if (expectedQuery != null && !expectedQuery.equals(query)) {
+                return false;
+            }
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
         }
         return true;
+    }
+
+    protected String buildResponse(HttpRequest request) {
+        return responseContent;
     }
 
 }

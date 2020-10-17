@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,16 +20,17 @@ import java.util.Map;
 
 import io.fabric8.kubernetes.api.model.DoneableNode;
 import io.fabric8.kubernetes.api.model.Node;
+import io.fabric8.kubernetes.api.model.NodeBuilder;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.NodeSpec;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.component.kubernetes.AbstractKubernetesEndpoint;
 import org.apache.camel.component.kubernetes.KubernetesConstants;
 import org.apache.camel.component.kubernetes.KubernetesOperations;
-import org.apache.camel.impl.DefaultProducer;
-import org.apache.camel.util.MessageHelper;
+import org.apache.camel.support.DefaultProducer;
+import org.apache.camel.support.MessageHelper;
 import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,26 +60,34 @@ public class KubernetesNodesProducer extends DefaultProducer {
 
         switch (operation) {
 
-        case KubernetesOperations.LIST_NODES:
-            doList(exchange, operation);
-            break;
+            case KubernetesOperations.LIST_NODES:
+                doList(exchange, operation);
+                break;
 
-        case KubernetesOperations.LIST_NODES_BY_LABELS_OPERATION:
-            doListNodesByLabels(exchange, operation);
-            break;
+            case KubernetesOperations.LIST_NODES_BY_LABELS_OPERATION:
+                doListNodesByLabels(exchange, operation);
+                break;
 
-        case KubernetesOperations.GET_NODE_OPERATION:
-            doGetNode(exchange, operation);
-            break;
+            case KubernetesOperations.GET_NODE_OPERATION:
+                doGetNode(exchange, operation);
+                break;
 
-        default:
-            throw new IllegalArgumentException("Unsupported operation " + operation);
+            case KubernetesOperations.CREATE_NODE_OPERATION:
+                doCreateNode(exchange, operation);
+                break;
+
+            case KubernetesOperations.DELETE_NODE_OPERATION:
+                doDeleteNode(exchange, operation);
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
     protected void doList(Exchange exchange, String operation) throws Exception {
         NodeList nodeList = getEndpoint().getKubernetesClient().nodes().list();
-        
+
         MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
         exchange.getOut().setBody(nodeList.getItems());
     }
@@ -86,12 +95,13 @@ public class KubernetesNodesProducer extends DefaultProducer {
     protected void doListNodesByLabels(Exchange exchange, String operation) throws Exception {
         NodeList nodeList = null;
         Map<String, String> labels = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_NODES_LABELS, Map.class);
-        NonNamespaceOperation<Node, NodeList, DoneableNode, Resource<Node, DoneableNode>> nodes = getEndpoint().getKubernetesClient().nodes();
+        NonNamespaceOperation<Node, NodeList, DoneableNode, Resource<Node, DoneableNode>> nodes
+                = getEndpoint().getKubernetesClient().nodes();
         for (Map.Entry<String, String> entry : labels.entrySet()) {
             nodes.withLabel(entry.getKey(), entry.getValue());
         }
         nodeList = nodes.list();
-        
+
         MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
         exchange.getOut().setBody(nodeList.getItems());
     }
@@ -107,5 +117,38 @@ public class KubernetesNodesProducer extends DefaultProducer {
 
         MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
         exchange.getOut().setBody(node);
+    }
+
+    protected void doCreateNode(Exchange exchange, String operation) throws Exception {
+        Node node = null;
+        String nodeName = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_NODE_NAME, String.class);
+        NodeSpec nodeSpec = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_NODE_SPEC, NodeSpec.class);
+        if (ObjectHelper.isEmpty(nodeName)) {
+            LOG.error("Create a specific node require specify a node name");
+            throw new IllegalArgumentException("Create a specific node require specify a node name");
+        }
+        if (ObjectHelper.isEmpty(nodeSpec)) {
+            LOG.error("Create a specific node require specify a node spec bean");
+            throw new IllegalArgumentException("Create a specific node require specify a node spec bean");
+        }
+        Map<String, String> labels = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_PODS_LABELS, Map.class);
+        Node nodeCreating = new NodeBuilder().withNewMetadata().withName(nodeName).withLabels(labels).endMetadata()
+                .withSpec(nodeSpec).build();
+        node = getEndpoint().getKubernetesClient().nodes().create(nodeCreating);
+
+        MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
+        exchange.getOut().setBody(node);
+    }
+
+    protected void doDeleteNode(Exchange exchange, String operation) throws Exception {
+        String nodeName = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_NODE_NAME, String.class);
+        if (ObjectHelper.isEmpty(nodeName)) {
+            LOG.error("Deleting a specific Node require specify a Node name");
+            throw new IllegalArgumentException("Deleting a specific Node require specify a Node name");
+        }
+        boolean nodeDeleted = getEndpoint().getKubernetesClient().nodes().withName(nodeName).delete();
+
+        MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
+        exchange.getOut().setBody(nodeDeleted);
     }
 }

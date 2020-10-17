@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.salesforce.internal.client.HttpClientHolder;
 import org.apache.camel.component.salesforce.internal.client.RestClient;
-import org.apache.camel.util.ServiceHelper;
+import org.apache.camel.support.service.ServiceHelper;
 
 final class SalesforceClientTemplate {
 
@@ -35,23 +35,24 @@ final class SalesforceClientTemplate {
         T invoke(RestClient client);
     }
 
-    static RestClientSupplier restClientSupplier = (camelContext, parameters) -> SalesforceComponent
-        .createRestClient(camelContext, parameters);
+    static RestClientSupplier restClientSupplier
+            = (camelContext, parameters) -> SalesforceComponent.createRestClient(camelContext, parameters);
 
     private SalesforceClientTemplate() {
         // utility class
     }
 
-    static <T> T invoke(final CamelContext camelContext, final Map<String, Object> parameters,
-        final WithClient<T> performer) throws Exception {
+    static <T> T invoke(final CamelContext camelContext, final Map<String, Object> parameters, final WithClient<T> performer)
+            throws Exception {
 
         final RestClient client = restClientSupplier.restClientWith(camelContext, parameters);
 
         return invokeInternal(client, performer);
     }
 
-    static <T> T invoke(final SalesforceComponent component, final Map<String, Object> parameters,
-        final WithClient<T> performer) throws Exception {
+    static <T> T invoke(
+            final SalesforceComponent component, final Map<String, Object> parameters, final WithClient<T> performer)
+            throws Exception {
 
         final RestClient client = component.createRestClient(parameters);
 

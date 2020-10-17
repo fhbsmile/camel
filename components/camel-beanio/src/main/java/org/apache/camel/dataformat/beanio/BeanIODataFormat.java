@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -34,10 +33,11 @@ import org.apache.camel.Exchange;
 import org.apache.camel.NoTypeConversionAvailableException;
 import org.apache.camel.spi.DataFormat;
 import org.apache.camel.spi.DataFormatName;
-import org.apache.camel.support.ServiceSupport;
+import org.apache.camel.spi.annotations.Dataformat;
+import org.apache.camel.support.ObjectHelper;
+import org.apache.camel.support.ResourceHelper;
+import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.IOHelper;
-import org.apache.camel.util.ObjectHelper;
-import org.apache.camel.util.ResourceHelper;
 import org.beanio.BeanReader;
 import org.beanio.BeanReaderErrorHandler;
 import org.beanio.BeanWriter;
@@ -47,9 +47,9 @@ import org.beanio.Unmarshaller;
 import static org.apache.camel.dataformat.beanio.BeanIOHelper.getOrCreateBeanReaderErrorHandler;
 
 /**
- * A <a href="http://camel.apache.org/data-format.html">data format</a> (
- * {@link DataFormat}) for beanio data.
+ * A <a href="http://camel.apache.org/data-format.html">data format</a> ( {@link DataFormat}) for beanio data.
  */
+@Dataformat("beanio")
 public class BeanIODataFormat extends ServiceSupport implements DataFormat, DataFormatName, CamelContextAware {
 
     private transient CamelContext camelContext;
@@ -70,23 +70,25 @@ public class BeanIODataFormat extends ServiceSupport implements DataFormat, Data
     }
 
     @Override
-    protected void doStart() throws Exception {
-        ObjectHelper.notNull(getStreamName(), "Stream name not configured.");
+    protected void doInit() throws Exception {
+        super.doInit();
+
+        org.apache.camel.util.ObjectHelper.notNull(getStreamName(), "Stream name not configured.");
         if (factory == null) {
             // Create the stream factory that will be used to read/write objects.
             factory = StreamFactory.newInstance();
-
-            // Load the mapping file using the resource helper to ensure it can be loaded in OSGi and other environments
-            InputStream is = ResourceHelper.resolveMandatoryResourceAsInputStream(getCamelContext(), getMapping());
-            try {
-                if (getProperties() != null) {
-                    factory.load(is, getProperties());
-                } else {
-                    factory.load(is);
-                }
-            } finally {
-                IOHelper.close(is);
+            if (ResourceHelper.isClasspathUri(getMapping())) {
+                loadMappingResource();
             }
+        }
+    }
+
+    @Override
+    protected void doStart() throws Exception {
+        super.doStart();
+
+        if (!ResourceHelper.isClasspathUri(getMapping())) {
+            loadMappingResource();
         }
     }
 
@@ -95,10 +97,12 @@ public class BeanIODataFormat extends ServiceSupport implements DataFormat, Data
         factory = null;
     }
 
+    @Override
     public CamelContext getCamelContext() {
         return camelContext;
     }
 
+    @Override
     public void setCamelContext(CamelContext camelContext) {
         this.camelContext = camelContext;
     }
@@ -107,11 +111,13 @@ public class BeanIODataFormat extends ServiceSupport implements DataFormat, Data
         return factory;
     }
 
+    @Override
     public void marshal(Exchange exchange, Object body, OutputStream stream) throws Exception {
         List<Object> models = getModels(exchange, body);
         writeModels(stream, models);
     }
 
+    @Override
     public Object unmarshal(Exchange exchange, InputStream stream) throws Exception {
         if (isUnmarshalSingleObject()) {
             return readSingleModel(exchange, stream);
@@ -120,14 +126,27 @@ public class BeanIODataFormat extends ServiceSupport implements DataFormat, Data
         }
     }
 
+    private void loadMappingResource() throws Exception {
+        // Load the mapping file using the resource helper to ensure it can be loaded in OSGi and other environments
+        InputStream is = ResourceHelper.resolveMandatoryResourceAsInputStream(getCamelContext(), getMapping());
+        try {
+            if (getProperties() != null) {
+                factory.load(is, getProperties());
+            } else {
+                factory.load(is);
+            }
+        } finally {
+            IOHelper.close(is);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private List<Object> getModels(Exchange exchange, Object body) {
         List<Object> models;
         if ((models = exchange.getContext().getTypeConverter().convertTo(List.class, body)) == null) {
-            models = new ArrayList<Object>();
-            Iterator<Object> it = ObjectHelper.createIterator(body);
-            while (it.hasNext()) {
-                models.add(it.next());
+            models = new ArrayList<>();
+            for (Object model : ObjectHelper.createIterable(body)) {
+                models.add(model);
             }
         }
         return models;
@@ -146,7 +165,7 @@ public class BeanIODataFormat extends ServiceSupport implements DataFormat, Data
     }
 
     private List<Object> readModels(Exchange exchange, InputStream stream) throws Exception {
-        List<Object> results = new ArrayList<Object>();
+        List<Object> results = new ArrayList<>();
         BufferedReader streamReader = IOHelper.buffered(new InputStreamReader(stream, getEncoding()));
 
         BeanReader in = factory.createReader(getStreamName(), streamReader);
@@ -242,7 +261,7 @@ public class BeanIODataFormat extends ServiceSupport implements DataFormat, Data
     public Charset getEncoding() {
         return configuration.getEncoding();
     }
-    
+
     public BeanReaderErrorHandler getBeanReaderErrorHandler() {
         return configuration.getBeanReaderErrorHandler();
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 
@@ -45,7 +46,8 @@ public class CamelCdiRunner extends BlockJUnit4ClassRunner {
     }
 
     @Override
-    protected void validatePublicVoidNoArgMethods(Class<? extends Annotation> annotation, boolean isStatic, List<Throwable> errors) {
+    protected void validatePublicVoidNoArgMethods(
+            Class<? extends Annotation> annotation, boolean isStatic, List<Throwable> errors) {
         // Overrides the default validation to allow test methods with
         // parameters so that we can inject CDI references.
         List<FrameworkMethod> methods = getTestClass().getAnnotatedMethods(annotation);

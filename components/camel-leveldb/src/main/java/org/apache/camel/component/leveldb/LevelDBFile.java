@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,9 +18,13 @@ package org.apache.camel.component.leveldb;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.camel.Service;
 import org.apache.camel.util.IOHelper;
+import org.apache.camel.util.ObjectHelper;
 import org.iq80.leveldb.CompressionType;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.DBFactory;
@@ -32,8 +36,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Manages access to a shared <a href="https://github.com/fusesource/leveldbjni/">LevelDB</a> file.
  * <p/>
- * Will by default not sync writes which allows it to be faster.
- * You can force syncing by setting the sync option to <tt>true</tt>.
+ * Will by default not sync writes which allows it to be faster. You can force syncing by setting the sync option to
+ * <tt>true</tt>.
  */
 public class LevelDBFile implements Service {
 
@@ -55,20 +59,20 @@ public class LevelDBFile implements Service {
         return db;
     }
 
-    public void setFile(File file) throws IOException {
-        this.file = file;
-    }
-
     public File getFile() {
         return file;
     }
 
-    public void setFileName(String fileName) {
-        this.file = new File(fileName);
+    public void setFile(File file) throws IOException {
+        this.file = file;
     }
 
     public String getFileName() throws IOException {
         return file.getCanonicalPath();
+    }
+
+    public void setFileName(String fileName) {
+        this.file = new File(fileName);
     }
 
     public int getWriteBufferSize() {
@@ -149,6 +153,7 @@ public class LevelDBFile implements Service {
         return options;
     }
 
+    @Override
     public void start() {
         if (getFile() == null) {
             throw new IllegalArgumentException("A file must be configured");
@@ -170,7 +175,8 @@ public class LevelDBFile implements Service {
 
         options.createIfMissing(true);
         try {
-            getFile().getParentFile().mkdirs();
+            final Path dbFile = Paths.get(this.getFileName());
+            Files.createDirectories(dbFile.getParent());
             DBFactory factory = getFactory();
             db = factory.open(getFile(), options);
         } catch (IOException ioe) {
@@ -180,12 +186,12 @@ public class LevelDBFile implements Service {
 
     private DBFactory getFactory() {
         String[] classNames = new String[] {
-            "org.fusesource.leveldbjni.JniDBFactory",
-            "org.iq80.leveldb.impl.Iq80DBFactory"
+                "org.fusesource.leveldbjni.JniDBFactory",
+                "org.iq80.leveldb.impl.Iq80DBFactory"
         };
         for (String cn : classNames) {
             try {
-                Class<?> clz = getClass().getClassLoader().loadClass(cn);
+                Class<?> clz = ObjectHelper.loadClass(cn, getClass().getClassLoader());
                 DBFactory factory = (DBFactory) clz.newInstance();
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Using {} implementation of org.iq80.leveldb.DBFactory", factory.getClass().getName());
@@ -197,6 +203,7 @@ public class LevelDBFile implements Service {
         throw new IllegalStateException("Can't find implementation of org.iq80.leveldb.DBFactory");
     }
 
+    @Override
     public void stop() {
         File file = getFile();
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,12 +21,14 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.file.GenericFileOperationFailedException;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.apache.camel.test.junit5.TestSupport.assertIsInstanceOf;
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class FtpProducerFileExistFailTest extends FtpServerTestSupport {
 
     protected String getFtpUrl() {
@@ -34,7 +36,7 @@ public class FtpProducerFileExistFailTest extends FtpServerTestSupport {
     }
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         deleteDirectory("target/exist");
@@ -52,7 +54,8 @@ public class FtpProducerFileExistFailTest extends FtpServerTestSupport {
             template.sendBodyAndHeader(getFtpUrl(), "Bye World", Exchange.FILE_NAME, "hello.txt");
             fail("Should have thrown an exception");
         } catch (CamelExecutionException e) {
-            GenericFileOperationFailedException cause = assertIsInstanceOf(GenericFileOperationFailedException.class, e.getCause());
+            GenericFileOperationFailedException cause
+                    = assertIsInstanceOf(GenericFileOperationFailedException.class, e.getCause());
             assertEquals("File already exist: exist/hello.txt. Cannot write new file.", cause.getMessage());
         }
 

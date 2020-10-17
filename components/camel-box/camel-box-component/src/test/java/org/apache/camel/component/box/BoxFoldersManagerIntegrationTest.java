@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,20 +24,22 @@ import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFolder;
 import com.box.sdk.BoxItem;
 import com.box.sdk.BoxSharedLink;
-
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.box.api.BoxFoldersManager;
 import org.apache.camel.component.box.internal.BoxApiCollection;
 import org.apache.camel.component.box.internal.BoxFoldersManagerApiMethod;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
- * Test class for {@link BoxFoldersManager}
- * APIs.
+ * Test class for {@link BoxFoldersManager} APIs.
  */
 public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
 
@@ -49,7 +51,7 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
     private static final String CAMEL_TEST_COPY_FOLDER = BoxFoldersManagerIntegrationTest.CAMEL_TEST_FOLDER + "_Copy";
     private static final String CAMEL_TEST_MOVE_FOLDER = BoxFoldersManagerIntegrationTest.CAMEL_TEST_FOLDER + "_Move";
     private static final String CAMEL_TEST_RENAME_FOLDER = BoxFoldersManagerIntegrationTest.CAMEL_TEST_FOLDER
-            + "_Rename";
+                                                           + "_Rename";
     private static final String CAMEL_TEST_ROOT_FOLDER_ID = "0";
     private static final String CAMEL_TEST_DESTINATION_FOLDER_ID = "0";
 
@@ -59,7 +61,7 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
         // delete folder created in test setup.
         deleteTestFolder();
 
-        final Map<String, Object> headers = new HashMap<String, Object>();
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.parentFolderId", "0");
         // parameter type is String
@@ -67,8 +69,8 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
 
         testFolder = requestBodyAndHeaders("direct://CREATEFOLDER", null, headers);
 
-        assertNotNull("createFolder result", testFolder);
-        assertEquals("createFolder folder name", CAMEL_TEST_FOLDER, testFolder.getInfo().getName());
+        assertNotNull(testFolder, "createFolder result");
+        assertEquals(CAMEL_TEST_FOLDER, testFolder.getInfo().getName(), "createFolder folder name");
         LOG.debug("createFolder: " + testFolder);
     }
 
@@ -78,16 +80,16 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
         // delete folder created in test setup.
         deleteTestFolder();
 
-        final Map<String, Object> headers = new HashMap<String, Object>();
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.parentFolderId", "0");
         // parameter type is String[]
-        headers.put("CamelBox.path", new String[] {CAMEL_TEST_FOLDER});
+        headers.put("CamelBox.path", new String[] { CAMEL_TEST_FOLDER });
 
         testFolder = requestBodyAndHeaders("direct://CREATEFOLDER", null, headers);
 
-        assertNotNull("createFolder result", testFolder);
-        assertEquals("createFolder folder name", CAMEL_TEST_FOLDER, testFolder.getInfo().getName());
+        assertNotNull(testFolder, "createFolder result");
+        assertEquals(CAMEL_TEST_FOLDER, testFolder.getInfo().getName(), "createFolder folder name");
         LOG.debug("createFolder: " + testFolder);
     }
 
@@ -99,16 +101,14 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
         BoxFolder rootFolder = BoxFolder.getRootFolder(getConnection());
         Iterable<BoxItem.Info> it = rootFolder.search("^" + CAMEL_TEST_FOLDER + "$");
         int searchResults = sizeOfIterable(it);
-        boolean exists = searchResults > 0 ? true : false;
-        assertEquals("deleteFolder exists", false, exists);
-        LOG.debug("deleteFolder: exists? " + exists);
+        assertFalse(searchResults > 0, "deleteFolder exists");
     }
 
     @Test
     public void testCopyFolder() throws Exception {
         com.box.sdk.BoxFolder result = null;
         try {
-            final Map<String, Object> headers = new HashMap<String, Object>();
+            final Map<String, Object> headers = new HashMap<>();
             // parameter type is String
             headers.put("CamelBox.folderId", testFolder.getID());
             // parameter type is String
@@ -116,8 +116,8 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
             // parameter type is String
             headers.put("CamelBox.newName", CAMEL_TEST_COPY_FOLDER);
             result = requestBodyAndHeaders("direct://COPYFOLDER", null, headers);
-            assertNotNull("copyFolder result", result);
-            assertEquals("copyFolder folder name", CAMEL_TEST_COPY_FOLDER, result.getInfo().getName());
+            assertNotNull(result, "copyFolder result");
+            assertEquals(CAMEL_TEST_COPY_FOLDER, result.getInfo().getName(), "copyFolder folder name");
             LOG.debug("copyFolder: " + result);
         } finally {
             if (result != null) {
@@ -131,7 +131,7 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
 
     @Test
     public void testCreateSharedLink() throws Exception {
-        final Map<String, Object> headers = new HashMap<String, Object>();
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.folderId", testFolder.getID());
         // parameter type is com.box.sdk.BoxSharedLink.Access
@@ -144,39 +144,39 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
         final com.box.sdk.BoxSharedLink result = requestBodyAndHeaders("direct://CREATEFOLDERSHAREDLINK", null,
                 headers);
 
-        assertNotNull("createFolderSharedLink result", result);
+        assertNotNull(result, "createFolderSharedLink result");
         LOG.debug("createFolderSharedLink: " + result);
     }
 
     @Test
     public void testGetFolder() throws Exception {
         // using String[] message body for single parameter "path"
-        final com.box.sdk.BoxFolder result = requestBody("direct://GETFOLDER", new String[] {CAMEL_TEST_FOLDER});
+        final com.box.sdk.BoxFolder result = requestBody("direct://GETFOLDER", new String[] { CAMEL_TEST_FOLDER });
 
-        assertNotNull("getFolder result", result);
-        assertEquals("getFolder folder id", testFolder.getID(), result.getID());
+        assertNotNull(result, "getFolder result");
+        assertEquals(testFolder.getID(), result.getID(), "getFolder folder id");
         LOG.debug("getFolder: " + result);
     }
 
     @Test
     public void testGetFolderInfo() throws Exception {
-        final Map<String, Object> headers = new HashMap<String, Object>();
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.folderId", testFolder.getID());
         // parameter type is String[]
-        headers.put("CamelBox.fields", new String[] {"name"});
+        headers.put("CamelBox.fields", new String[] { "name" });
 
         final com.box.sdk.BoxFolder.Info result = requestBodyAndHeaders("direct://GETFOLDERINFO", null, headers);
 
-        assertNotNull("getFolderInfo result", result);
-        assertNotNull("getFolderInfo result.getName()", result.getName());
-        assertEquals("getFolderInfo info name", CAMEL_TEST_FOLDER, result.getName());
+        assertNotNull(result, "getFolderInfo result");
+        assertNotNull(result.getName(), "getFolderInfo result.getName()");
+        assertEquals(CAMEL_TEST_FOLDER, result.getName(), "getFolderInfo info name");
         LOG.debug("getFolderInfo: " + result);
     }
 
     @Test
     public void testGetFolderItems() throws Exception {
-        final Map<String, Object> headers = new HashMap<String, Object>();
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.folderId", CAMEL_TEST_ROOT_FOLDER_ID);
         // parameter type is Long
@@ -189,7 +189,7 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
         @SuppressWarnings("rawtypes")
         final java.util.Collection result = requestBodyAndHeaders("direct://GETFOLDERITEMS", null, headers);
 
-        assertNotNull("getFolderItems result", result);
+        assertNotNull(result, "getFolderItems result");
         LOG.debug("getFolderItems: " + result);
     }
 
@@ -197,13 +197,13 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
     public void testGetRootFolder() throws Exception {
         final com.box.sdk.BoxFolder result = requestBody("direct://GETROOTFOLDER", null);
 
-        assertNotNull("getRootFolder result", result);
+        assertNotNull(result, "getRootFolder result");
         LOG.debug("getRootFolder: " + result);
     }
 
     @Test
     public void testMoveFolder() throws Exception {
-        final Map<String, Object> headers = new HashMap<String, Object>();
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.folderId", testFolder.getID());
         // parameter type is String
@@ -213,14 +213,14 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
 
         final com.box.sdk.BoxFolder result = requestBodyAndHeaders("direct://MOVEFOLDER", null, headers);
 
-        assertNotNull("moveFolder result", result);
-        assertEquals("moveFolder folder name", CAMEL_TEST_MOVE_FOLDER, result.getInfo().getName());
+        assertNotNull(result, "moveFolder result");
+        assertEquals(CAMEL_TEST_MOVE_FOLDER, result.getInfo().getName(), "moveFolder folder name");
         LOG.debug("moveFolder: " + result);
     }
 
     @Test
     public void testRenameFolder() throws Exception {
-        final Map<String, Object> headers = new HashMap<String, Object>();
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.folderId", testFolder.getID());
         // parameter type is String
@@ -228,8 +228,8 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
 
         final com.box.sdk.BoxFolder result = requestBodyAndHeaders("direct://RENAMEFOLDER", null, headers);
 
-        assertNotNull("renameFolder result", result);
-        assertEquals("moveFolder folder name", CAMEL_TEST_RENAME_FOLDER, result.getInfo().getName());
+        assertNotNull(result, "renameFolder result");
+        assertEquals(CAMEL_TEST_RENAME_FOLDER, result.getInfo().getName(), "moveFolder folder name");
         LOG.debug("renameFolder: " + result);
     }
 
@@ -237,7 +237,7 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
     public void testUpdateInfo() throws Exception {
         final BoxFolder.Info testFolderInfo = testFolder.getInfo();
 
-        final Map<String, Object> headers = new HashMap<String, Object>();
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.folderId", testFolder.getID());
         // parameter type is com.box.sdk.BoxFolder.Info
@@ -246,9 +246,8 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
 
         final com.box.sdk.BoxFolder result = requestBodyAndHeaders("direct://UPDATEFOLDERINFO", null, headers);
 
-        assertNotNull("updateInfo result", result);
-        assertEquals("update folder info description", CAMEL_TEST_FOLDER_DESCRIPTION,
-                result.getInfo().getDescription());
+        assertNotNull(result, "updateInfo result");
+        assertEquals(CAMEL_TEST_FOLDER_DESCRIPTION, result.getInfo().getDescription(), "update folder info description");
         LOG.debug("updateInfo: " + result);
     }
 
@@ -293,12 +292,12 @@ public class BoxFoldersManagerIntegrationTest extends AbstractBoxTestSupport {
         };
     }
 
-    @Before
+    @BeforeEach
     public void setupTest() throws Exception {
         createTestFolder();
     }
 
-    @After
+    @AfterEach
     public void teardownTest() {
         deleteTestFolder();
     }

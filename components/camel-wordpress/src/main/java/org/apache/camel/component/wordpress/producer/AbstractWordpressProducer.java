@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,10 +17,10 @@
 package org.apache.camel.component.wordpress.producer;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.component.wordpress.WordpressComponentConfiguration;
+import org.apache.camel.component.wordpress.WordpressConfiguration;
 import org.apache.camel.component.wordpress.WordpressEndpoint;
 import org.apache.camel.component.wordpress.api.WordpressServiceProvider;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,34 +28,35 @@ public abstract class AbstractWordpressProducer<T> extends DefaultProducer {
 
     protected static final Logger LOG = LoggerFactory.getLogger(WordpressPostProducer.class);
 
-    private WordpressComponentConfiguration configuration;
+    private WordpressConfiguration configuration;
 
     public AbstractWordpressProducer(WordpressEndpoint endpoint) {
         super(endpoint);
-        this.configuration = endpoint.getConfig();
+        this.configuration = endpoint.getConfiguration();
         if (!WordpressServiceProvider.getInstance().hasAuthentication()) {
-            LOG.warn("Wordpress Producer hasn't authentication. This may lead to errors during route execution. Wordpress writing operations need authentication.");
+            LOG.warn(
+                    "Wordpress Producer hasn't authentication. This may lead to errors during route execution. Wordpress writing operations need authentication.");
         }
     }
 
-    public WordpressComponentConfiguration getConfiguration() {
+    public WordpressConfiguration getConfiguration() {
         return configuration;
     }
 
     @Override
     public WordpressEndpoint getEndpoint() {
-        return (WordpressEndpoint)super.getEndpoint();
+        return (WordpressEndpoint) super.getEndpoint();
     }
 
     @Override
     public final void process(Exchange exchange) throws Exception {
         if (this.getConfiguration().getId() == null) {
-            exchange.getOut().setBody(this.processInsert(exchange));
+            exchange.getMessage().setBody(this.processInsert(exchange));
         } else {
             if (this.getEndpoint().getOperationDetail() == null) {
-                exchange.getOut().setBody(this.processUpdate(exchange));
+                exchange.getMessage().setBody(this.processUpdate(exchange));
             } else {
-                exchange.getOut().setBody(this.processDelete(exchange));
+                exchange.getMessage().setBody(this.processDelete(exchange));
             }
         }
     }

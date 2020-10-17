@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,15 +19,15 @@ package org.apache.camel.component.hazelcast.ringbuffer;
 import java.util.Map;
 
 import com.hazelcast.core.HazelcastInstance;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.hazelcast.HazelcastDefaultComponent;
 import org.apache.camel.component.hazelcast.HazelcastDefaultEndpoint;
+import org.apache.camel.spi.annotations.Component;
 
+@Component("hazelcast-ringbuffer")
 public class HazelcastRingbufferComponent extends HazelcastDefaultComponent {
 
     public HazelcastRingbufferComponent() {
-        super();
     }
 
     public HazelcastRingbufferComponent(final CamelContext context) {
@@ -35,7 +35,9 @@ public class HazelcastRingbufferComponent extends HazelcastDefaultComponent {
     }
 
     @Override
-    protected HazelcastDefaultEndpoint doCreateEndpoint(String uri, String remaining, Map<String, Object> parameters, HazelcastInstance hzInstance) throws Exception {
+    protected HazelcastDefaultEndpoint doCreateEndpoint(
+            String uri, String remaining, Map<String, Object> parameters, HazelcastInstance hzInstance)
+            throws Exception {
         HazelcastRingbufferEndpoint answer = new HazelcastRingbufferEndpoint(hzInstance, uri, this, remaining);
         return answer;
     }

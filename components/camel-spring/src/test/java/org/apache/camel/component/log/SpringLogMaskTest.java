@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,23 +18,21 @@ package org.apache.camel.component.log;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.Constants;
 import org.apache.camel.spi.MaskingFormatter;
 import org.apache.camel.spring.SpringCamelContext;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-/**
- * @version 
- */
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class SpringLogMaskTest {
 
     @Test
     public void testLogMask() throws Exception {
-        final AbstractXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("org/apache/camel/component/log/SpringLogMaskTest-context.xml");
-        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext);
+        final AbstractXmlApplicationContext applicationContext
+                = new ClassPathXmlApplicationContext("org/apache/camel/component/log/SpringLogMaskTest-context.xml");
+        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext, true);
         context.start();
         MockEndpoint mock = context.getEndpoint("mock:mask", MockEndpoint.class);
         ProducerTemplate template = context.createProducerTemplate();
@@ -46,8 +44,9 @@ public class SpringLogMaskTest {
 
     @Test
     public void testLogMaskDisabled() throws Exception {
-        final AbstractXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("org/apache/camel/component/log/SpringLogMaskTest-context.xml");
-        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext);
+        final AbstractXmlApplicationContext applicationContext
+                = new ClassPathXmlApplicationContext("org/apache/camel/component/log/SpringLogMaskTest-context.xml");
+        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext, true);
         context.start();
         MockEndpoint mock = context.getEndpoint("mock:no-mask", MockEndpoint.class);
         ProducerTemplate template = context.createProducerTemplate();
@@ -59,24 +58,26 @@ public class SpringLogMaskTest {
 
     @Test
     public void testCustomLogMask() throws Exception {
-        final AbstractXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("org/apache/camel/component/log/SpringCustomLogMaskTest-context.xml");
-        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext);
-        MockMaskingFormatter customFormatter = applicationContext.getBean(Constants.CUSTOM_LOG_MASK_REF, MockMaskingFormatter.class);
+        final AbstractXmlApplicationContext applicationContext
+                = new ClassPathXmlApplicationContext("org/apache/camel/component/log/SpringCustomLogMaskTest-context.xml");
+        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext, true);
+        MockMaskingFormatter customFormatter
+                = applicationContext.getBean(MaskingFormatter.CUSTOM_LOG_MASK_REF, MockMaskingFormatter.class);
         context.start();
         ProducerTemplate template = context.createProducerTemplate();
         template.sendBodyAndHeader("direct:mock", "password=passw0rd@", "headerPassword", "#header-password$");
         context.stop();
-        Assert.assertTrue(customFormatter.received.contains("password=passw0rd@"));
+        assertTrue(customFormatter.received.contains("password=passw0rd@"));
     }
 
     public static class MockMaskingFormatter implements MaskingFormatter {
         private String received;
+
         @Override
         public String format(String source) {
             received = source;
             return source;
         }
     }
-
 
 }

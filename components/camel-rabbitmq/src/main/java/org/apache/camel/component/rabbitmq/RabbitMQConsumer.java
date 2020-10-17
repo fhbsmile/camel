@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,12 +25,17 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.rabbitmq.client.Connection;
-
 import org.apache.camel.Processor;
 import org.apache.camel.Suspendable;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
+import org.apache.camel.support.service.ServiceHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RabbitMQConsumer.class);
+
     private ExecutorService executor;
     private Connection conn;
     private int closeTimeout = 30 * 1000;
@@ -44,7 +49,7 @@ public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
     /**
      * Running consumers
      */
-    private final List<RabbitConsumer> consumers = new ArrayList<RabbitConsumer>();
+    private final List<RabbitConsumer> consumers = new ArrayList<>();
 
     public RabbitMQConsumer(RabbitMQEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
@@ -53,40 +58,36 @@ public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
 
     @Override
     public RabbitMQEndpoint getEndpoint() {
-        return (RabbitMQEndpoint)super.getEndpoint();
+        return (RabbitMQEndpoint) super.getEndpoint();
     }
 
     /**
      * Open connection
      */
     private void openConnection() throws IOException, TimeoutException {
-        log.trace("Creating connection...");
+        LOG.trace("Creating connection...");
         this.conn = getEndpoint().connect(executor);
-        log.debug("Created connection: {}", conn);
+        LOG.debug("Created connection: {}", conn);
     }
 
     /**
      * Returns the exiting open connection or opens a new one
-     * @throws IOException
-     * @throws TimeoutException
      */
     protected synchronized Connection getConnection() throws IOException, TimeoutException {
-        if (this.conn == null) {
+        if (this.conn == null || !this.conn.isOpen()) {
+            LOG.debug("The existing connection is closed or not opened yet.");
             openConnection();
             return this.conn;
-        } else if (this.conn.isOpen() || (!this.conn.isOpen() && isAutomaticRecoveryEnabled())) {
-            return this.conn;
         } else {
-            log.debug("The existing connection is closed");
             openConnection();
             return this.conn;
         }
     }
 
     private boolean isAutomaticRecoveryEnabled() {
-        return this.endpoint.getAutomaticRecoveryEnabled() != null
-            && this.endpoint.getAutomaticRecoveryEnabled();
+        return this.endpoint.getAutomaticRecoveryEnabled() != null && this.endpoint.getAutomaticRecoveryEnabled();
     }
+
     /**
      * Create the consumers but don't start yet
      */
@@ -101,14 +102,18 @@ public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
      * Start the consumers (already created)
      */
     private void startConsumers() {
-
         // Try starting consumers (which will fail if RabbitMQ can't connect)
-        try {
-            for (RabbitConsumer consumer : this.consumers) {
-                consumer.start();
+        Throwable fail = null;
+        // attempt to start all consumers if possible
+        for (RabbitConsumer consumer : this.consumers) {
+            try {
+                ServiceHelper.startService(consumer);
+            } catch (Throwable e) {
+                fail = e;
             }
-        } catch (Exception e) {
-            log.info("Connection failed, will start background thread to retry!", e);
+        }
+        if (fail != null) {
+            LOG.info("Connection failed starting consumers, will start background thread to retry!", fail);
             reconnect();
         }
     }
@@ -127,7 +132,8 @@ public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
         }
         // Open connection, and start message listener in background
         Integer networkRecoveryInterval = getEndpoint().getNetworkRecoveryInterval();
-        final long connectionRetryInterval = networkRecoveryInterval != null && networkRecoveryInterval > 0 ? networkRecoveryInterval : 100L;
+        final long connectionRetryInterval
+                = networkRecoveryInterval != null && networkRecoveryInterval > 0 ? networkRecoveryInterval : 100L;
         startConsumerCallable = new StartConsumerCallable(connectionRetryInterval);
         executor.submit(startConsumerCallable);
     }
@@ -141,14 +147,14 @@ public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
         }
         for (RabbitConsumer consumer : this.consumers) {
             try {
-                consumer.stop();
-            } catch (TimeoutException e) {
-                log.warn("Timeout occurred while stopping consumer. This exception is ignored", e);
+                ServiceHelper.stopAndShutdownService(consumer);
+            } catch (Exception e) {
+                LOG.warn("Error occurred while stopping consumer. This exception is ignored", e);
             }
         }
         this.consumers.clear();
         if (conn != null) {
-            log.debug("Closing connection: {} with timeout: {} ms.", conn, closeTimeout);
+            LOG.debug("Closing connection: {} with timeout: {} ms.", conn, closeTimeout);
             conn.close(closeTimeout);
             conn = null;
         }
@@ -168,7 +174,7 @@ public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
     @Override
     protected void doStart() throws Exception {
         executor = endpoint.createExecutor();
-        log.debug("Using executor {}", executor);
+        LOG.debug("Using executor {}", executor);
         createConsumers();
         startConsumers();
     }
@@ -187,11 +193,8 @@ public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
         }
     }
 
-
-
     /**
-     * Task in charge of opening connection and adding listener when consumer is
-     * started and broker is not available.
+     * Task in charge of opening connection and adding listener when consumer is started and broker is not available.
      */
     private class StartConsumerCallable implements Callable<Void> {
         private final long connectionRetryInterval;
@@ -217,7 +220,7 @@ public class RabbitMQConsumer extends DefaultConsumer implements Suspendable {
                     }
                     connectionFailed = false;
                 } catch (Exception e) {
-                    log.info("Connection failed, will retry in " + connectionRetryInterval + "ms", e);
+                    LOG.info("Connection failed, will retry in {} ms", connectionRetryInterval, e);
                     Thread.sleep(connectionRetryInterval);
                 }
             }

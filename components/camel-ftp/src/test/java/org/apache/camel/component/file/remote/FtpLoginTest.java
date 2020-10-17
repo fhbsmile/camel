@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,12 @@ import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.Producer;
 import org.apache.camel.component.file.GenericFileOperationFailedException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Unit test for login failure due bad password and login with accepted password
@@ -41,7 +46,7 @@ public class FtpLoginTest extends FtpServerTestSupport {
 
         // assert file NOT created
         File file = new File(FTP_ROOT_DIR + "/login/report.txt");
-        assertFalse("The file should NOT exists", file.exists());
+        assertFalse(file.exists(), "The file should NOT exists");
     }
 
     @Test
@@ -50,11 +55,12 @@ public class FtpLoginTest extends FtpServerTestSupport {
 
         // assert file created
         File file = new File(FTP_ROOT_DIR + "/login/report.txt");
-        assertTrue("The file should exists", file.exists());
+        assertTrue(file.exists(), "The file should exists");
     }
 
     private void uploadFile(String username, String password) throws Exception {
-        Endpoint endpoint = context.getEndpoint("ftp://" + username + "@localhost:" + getPort() + "/login?password=" + password);
+        Endpoint endpoint
+                = context.getEndpoint("ftp://" + username + "@localhost:" + getPort() + "/login?password=" + password);
 
         Exchange exchange = endpoint.createExchange();
         exchange.getIn().setBody("Hello World from FTPServer");

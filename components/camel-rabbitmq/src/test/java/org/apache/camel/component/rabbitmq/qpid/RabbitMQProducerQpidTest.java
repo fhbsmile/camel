@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,29 +19,36 @@ package org.apache.camel.component.rabbitmq.qpid;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.camel.component.rabbitmq.RabbitMQProducerIntTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.apache.camel.component.rabbitmq.integration.RabbitMQProducerIntTest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 
 public class RabbitMQProducerQpidTest extends RabbitMQProducerIntTest {
-    @BeforeClass
+    @Override
+    public boolean isStartDocker() {
+        return false;
+    }
+
+    @BeforeAll
     public static void startBroker() throws Exception {
         systemLauncher.startup(createQpidSystemConfig());
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopBroker() {
         systemLauncher.shutdown();
     }
-    
-    @Ignore
+
+    @Disabled
     @Override
-    public void producedMessageIsReceivedWhenPublisherAcknowledgementsAreEnabledAndBadRoutingKeyIsUsed() throws InterruptedException, IOException, TimeoutException {
+    public void producedMessageIsReceivedWhenPublisherAcknowledgementsAreEnabledAndBadRoutingKeyIsUsed()
+            throws InterruptedException, IOException, TimeoutException {
     }
-    
-    @Ignore
+
+    @Disabled
     @Override
-    public void shouldSuccessfullyProduceMessageWhenGuaranteedDeliveryIsActivatedOnABadRouteButMessageIsNotMandatory() throws InterruptedException, IOException, TimeoutException {
+    public void shouldSuccessfullyProduceMessageWhenGuaranteedDeliveryIsActivatedOnABadRouteButMessageIsNotMandatory()
+            throws InterruptedException, IOException, TimeoutException {
     }
 }

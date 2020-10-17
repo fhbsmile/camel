@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -34,14 +34,17 @@ import org.apache.camel.component.crypto.cms.sig.SignedDataCreator;
 import org.apache.camel.component.crypto.cms.sig.SignedDataCreatorConfiguration;
 import org.apache.camel.component.crypto.cms.sig.SignedDataVerifierConfiguration;
 import org.apache.camel.component.crypto.cms.sig.SignedDataVerifierFromHeader;
-import org.apache.camel.impl.UriEndpointComponent;
 import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 import org.apache.camel.util.ObjectHelper;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CryptoCmsComponent extends UriEndpointComponent {
+@Deprecated
+@Component("crypto-cms")
+public class CryptoCmsComponent extends DefaultComponent {
 
     private static final Logger LOG = LoggerFactory.getLogger(CryptoCmsComponent.class);
 
@@ -52,20 +55,14 @@ public class CryptoCmsComponent extends UriEndpointComponent {
     private EnvelopedDataDecryptorConfiguration envelopedDataDecryptorConfiguration;
 
     public CryptoCmsComponent() {
-        super(CryptoCmsEndpoint.class);
     }
 
     public CryptoCmsComponent(CamelContext context) {
-        super(context, CryptoCmsEndpoint.class);
+        super(context);
     }
 
     @Override
-    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception { // NOPMD
-                                                                                                                       // called
-                                                                                                                       // method
-                                                                                                                       // setProperties
-                                                                                                                       // throws
-                                                                                                                       // Exception
+    protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         ObjectHelper.notNull(getCamelContext(), "CamelContext");
 
         String scheme;
@@ -76,10 +73,11 @@ public class CryptoCmsComponent extends UriEndpointComponent {
             name = u.getPath();
         } catch (Exception e) {
             throw new MalformedURLException(// NOPMD -- the stack trace does not
-                                            // help in this case.
-                                            String.format("An invalid crypto-cms uri was provided '%s'."
-                                                          + " Check that the uri matches the format crypto-cms:sign://<name>, crypto-cms:verify://<name>, "
-                                                          + "crypto-cms:encrypt://<name>, or crypto-cms:decrpyt://<name>", uri));
+                    // help in this case.
+                    String.format("An invalid crypto-cms uri was provided '%s'."
+                                  + " Check that the uri matches the format crypto-cms:sign://<name>, crypto-cms:verify://<name>, "
+                                  + "crypto-cms:encrypt://<name>, or crypto-cms:decrpyt://<name>",
+                            uri));
         }
         Processor processor;
         CryptoOperation operation;
@@ -110,7 +108,8 @@ public class CryptoCmsComponent extends UriEndpointComponent {
             setProperties(config, parameters);
             processor = new EnvelopedDataDecryptor(config);
         } else {
-            String error = "Endpoint uri " + uri + " is wrong configured. Operation " + scheme + " is not supported. Supported operations are: sign, verify, encrypt, decrypt";
+            String error = "Endpoint uri " + uri + " is wrong configured. Operation " + scheme
+                           + " is not supported. Supported operations are: sign, verify, encrypt, decrypt";
             LOG.error(error);
             throw new IllegalStateException(error);
         }
@@ -121,8 +120,8 @@ public class CryptoCmsComponent extends UriEndpointComponent {
     }
 
     /**
-     * To configure the shared SignedDataVerifierConfiguration, which determines
-     * the uri parameters for the verify operation.
+     * To configure the shared SignedDataVerifierConfiguration, which determines the uri parameters for the verify
+     * operation.
      */
     public void setSignedDataVerifierConfiguration(SignedDataVerifierConfiguration signedDataVerifierConfiguration) {
         this.signedDataVerifierConfiguration = signedDataVerifierConfiguration;
@@ -143,10 +142,11 @@ public class CryptoCmsComponent extends UriEndpointComponent {
     }
 
     /**
-     * To configure the shared EnvelopedDataDecryptorConfiguration, which
-     * determines the uri parameters for the decrypt operation.
+     * To configure the shared EnvelopedDataDecryptorConfiguration, which determines the uri parameters for the decrypt
+     * operation.
      */
-    public void setEnvelopedDataDecryptorConfiguration(EnvelopedDataDecryptorConfiguration envelopedDataDecryptorConfiguration) {
+    public void setEnvelopedDataDecryptorConfiguration(
+            EnvelopedDataDecryptorConfiguration envelopedDataDecryptorConfiguration) {
         this.envelopedDataDecryptorConfiguration = envelopedDataDecryptorConfiguration;
     }
 

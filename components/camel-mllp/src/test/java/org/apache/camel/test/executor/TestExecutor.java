@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.test.executor;
 
 import java.util.List;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -43,7 +41,7 @@ public class TestExecutor {
         log.info("{} Runnables were active", runnables == null ? 0 : runnables.size());
         for (Runnable runnable : runnables) {
             if (runnable instanceof TestRunnable) {
-                log.info(((TestRunnable)runnable).status());
+                log.info(((TestRunnable) runnable).status());
             } else {
                 log.warn("Runnable is not instance of TestRunnable: {}", runnable.getClass().getName());
             }

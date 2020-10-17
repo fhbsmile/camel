@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.cluster.CamelClusterMember;
 import org.apache.camel.component.kubernetes.KubernetesConfiguration;
@@ -34,12 +33,12 @@ import org.apache.camel.component.kubernetes.KubernetesHelper;
 import org.apache.camel.component.kubernetes.cluster.lock.KubernetesClusterEvent;
 import org.apache.camel.component.kubernetes.cluster.lock.KubernetesLeadershipController;
 import org.apache.camel.component.kubernetes.cluster.lock.KubernetesLockConfiguration;
-import org.apache.camel.impl.cluster.AbstractCamelClusterView;
+import org.apache.camel.support.cluster.AbstractCamelClusterView;
 import org.apache.camel.util.ObjectHelper;
 
 /**
- * The cluster view on a specific Camel cluster namespace (not to be confused with Kubernetes namespaces).
- * Namespaces are represented as keys in a Kubernetes ConfigMap (values are the current leader pods).
+ * The cluster view on a specific Camel cluster namespace (not to be confused with Kubernetes namespaces). Namespaces
+ * are represented as keys in a Kubernetes ConfigMap (values are the current leader pods).
  */
 public class KubernetesClusterView extends AbstractCamelClusterView {
 
@@ -61,7 +60,9 @@ public class KubernetesClusterView extends AbstractCamelClusterView {
 
     private KubernetesLeadershipController controller;
 
-    public KubernetesClusterView(CamelContext camelContext, KubernetesClusterService cluster, KubernetesConfiguration configuration, KubernetesLockConfiguration lockConfiguration) {
+    public KubernetesClusterView(CamelContext camelContext, KubernetesClusterService cluster,
+                                 KubernetesConfiguration configuration,
+                                 KubernetesLockConfiguration lockConfiguration) {
         super(cluster, lockConfiguration.getGroupName());
         this.camelContext = ObjectHelper.notNull(camelContext, "camelContext");
         this.configuration = ObjectHelper.notNull(configuration, "configuration");
@@ -93,11 +94,13 @@ public class KubernetesClusterView extends AbstractCamelClusterView {
             controller = new KubernetesLeadershipController(camelContext, kubernetesClient, this.lockConfiguration, event -> {
                 if (event instanceof KubernetesClusterEvent.KubernetesClusterLeaderChangedEvent) {
                     // New leader
-                    Optional<String> leader = KubernetesClusterEvent.KubernetesClusterLeaderChangedEvent.class.cast(event).getData();
+                    Optional<String> leader
+                            = KubernetesClusterEvent.KubernetesClusterLeaderChangedEvent.class.cast(event).getData();
                     currentLeader = leader.map(this::toMember);
                     fireLeadershipChangedEvent(currentLeader);
                 } else if (event instanceof KubernetesClusterEvent.KubernetesClusterMemberListChangedEvent) {
-                    Set<String> members = KubernetesClusterEvent.KubernetesClusterMemberListChangedEvent.class.cast(event).getData();
+                    Set<String> members
+                            = KubernetesClusterEvent.KubernetesClusterMemberListChangedEvent.class.cast(event).getData();
                     Set<String> oldMembers = currentMembers.stream().map(CamelClusterMember::getId).collect(Collectors.toSet());
                     currentMembers = members.stream().map(this::toMember).collect(Collectors.toList());
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+
 import org.apache.camel.dataformat.bindy.Format;
 import org.apache.camel.dataformat.bindy.FormattingOptions;
 import org.apache.camel.dataformat.bindy.PatternFormat;
@@ -35,7 +36,8 @@ public class DateFormatFactory extends AbstractFormatFactory {
 
     @Override
     public Format<?> build(FormattingOptions formattingOptions) {
-        return new DatePatternFormat(formattingOptions.getPattern(),
+        return new DatePatternFormat(
+                formattingOptions.getPattern(),
                 formattingOptions.getTimezone(),
                 formattingOptions.getLocale());
     }
@@ -54,11 +56,13 @@ public class DateFormatFactory extends AbstractFormatFactory {
             }
         }
 
+        @Override
         public String format(Date object) throws Exception {
             ObjectHelper.notNull(this.pattern, "pattern");
             return this.getDateFormat().format(object);
         }
 
+        @Override
         public Date parse(String string) throws Exception {
 
             Date date;
@@ -98,6 +102,7 @@ public class DateFormatFactory extends AbstractFormatFactory {
             return result;
         }
 
+        @Override
         public String getPattern() {
             return pattern;
         }

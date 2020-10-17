@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,12 +16,13 @@
  */
 package org.apache.camel.component.irc;
 
+import org.apache.camel.Category;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.support.DefaultEndpoint;
 import org.apache.camel.util.ObjectHelper;
 import org.apache.camel.util.UnsafeUriCharactersEncoder;
 import org.schwering.irc.lib.IRCConnection;
@@ -32,17 +33,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The irc component implements an <a href="https://en.wikipedia.org/wiki/Internet_Relay_Chat">IRC</a> (Internet Relay Chat) transport.
+ * Send and receive messages to/from and IRC chat.
  */
 @UriEndpoint(
-    firstVersion = "1.1.0", 
-    scheme = "irc", 
-    title = "IRC", 
-    syntax = "irc:hostname:port", 
-    alternativeSyntax = "irc:username:password@hostname:port", 
-    consumerClass = IrcConsumer.class, 
-    label = "chat")
+             firstVersion = "1.1.0",
+             scheme = "irc",
+             title = "IRC",
+             syntax = "irc:hostname:port",
+             alternativeSyntax = "irc:username:password@hostname:port",
+             category = { Category.CHAT })
 public class IrcEndpoint extends DefaultEndpoint {
+
     private static final Logger LOG = LoggerFactory.getLogger(IrcEndpoint.class);
 
     @UriParam
@@ -56,10 +57,7 @@ public class IrcEndpoint extends DefaultEndpoint {
         this.configuration = configuration;
     }
 
-    public boolean isSingleton() {
-        return true;
-    }
-
+    @Override
     public Exchange createExchange(ExchangePattern pattern) {
         Exchange exchange = super.createExchange(pattern);
         exchange.setProperty(Exchange.BINDING, getBinding());
@@ -129,16 +127,19 @@ public class IrcEndpoint extends DefaultEndpoint {
         return exchange;
     }
 
+    @Override
     public IrcProducer createProducer() throws Exception {
-        return new IrcProducer(this, component.getIRCConnection(configuration));
+        return new IrcProducer(this);
     }
 
+    @Override
     public IrcConsumer createConsumer(Processor processor) throws Exception {
         IrcConsumer answer = new IrcConsumer(this, processor, component.getIRCConnection(configuration));
         configureConsumer(answer);
         return answer;
     }
 
+    @Override
     public IrcComponent getComponent() {
         return component;
     }
@@ -178,9 +179,9 @@ public class IrcEndpoint extends DefaultEndpoint {
 
         // hackish but working approach to prevent an endless loop. Abort after 4 nick attempts.
         if (nick.endsWith("----")) {
-            LOG.error("Unable to set nick: " + nick + " disconnecting");
+            LOG.error("Unable to set nick: {} disconnecting", nick);
         } else {
-            LOG.warn("Unable to set nick: " + nick + " Retrying with " + nick + "-");
+            LOG.warn("Unable to set nick: {} Retrying with {} -", nick, nick);
             connection.doNick(nick);
             // if the nick failure was doing startup channels weren't joined. So join
             // the channels now. It's a no-op if the channels are already joined.
@@ -189,7 +190,7 @@ public class IrcEndpoint extends DefaultEndpoint {
     }
 
     public void joinChannels() {
-        for (IrcChannel channel : configuration.getChannels()) {
+        for (IrcChannel channel : configuration.getChannelList()) {
             joinChannel(channel);
         }
     }
@@ -224,4 +225,3 @@ public class IrcEndpoint extends DefaultEndpoint {
         }
     }
 }
-

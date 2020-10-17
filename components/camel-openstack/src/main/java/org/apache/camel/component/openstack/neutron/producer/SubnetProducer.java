@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,6 +26,7 @@ import org.apache.camel.component.openstack.common.OpenstackConstants;
 import org.apache.camel.component.openstack.neutron.NeutronConstants;
 import org.apache.camel.component.openstack.neutron.NeutronEndpoint;
 import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.StringHelper;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.ActionResponse;
@@ -44,20 +45,20 @@ public class SubnetProducer extends AbstractOpenstackProducer {
     public void process(Exchange exchange) throws Exception {
         final String operation = getOperation(exchange);
         switch (operation) {
-        case OpenstackConstants.CREATE:
-            doCreate(exchange);
-            break;
-        case OpenstackConstants.GET:
-            doGet(exchange);
-            break;
-        case OpenstackConstants.GET_ALL:
-            doGetAll(exchange);
-            break;
-        case OpenstackConstants.DELETE:
-            doDelete(exchange);
-            break;
-        default:
-            throw new IllegalArgumentException("Unsupported operation " + operation);
+            case OpenstackConstants.CREATE:
+                doCreate(exchange);
+                break;
+            case OpenstackConstants.GET:
+                doGet(exchange);
+                break;
+            case OpenstackConstants.GET_ALL:
+                doGetAll(exchange);
+                break;
+            case OpenstackConstants.DELETE:
+                doDelete(exchange);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
@@ -69,8 +70,9 @@ public class SubnetProducer extends AbstractOpenstackProducer {
 
     private void doGet(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String id = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.SUBNET_ID, String.class), String.class);
-        ObjectHelper.notEmpty(id, "Subnet ID");
+        final String id
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.SUBNET_ID, String.class), String.class);
+        StringHelper.notEmpty(id, "Subnet ID");
         final Subnet out = os.networking().subnet().get(id);
         exchange.getIn().setBody(out);
     }
@@ -82,12 +84,12 @@ public class SubnetProducer extends AbstractOpenstackProducer {
 
     private void doDelete(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String id = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.SUBNET_ID, String.class), String.class);
-        ObjectHelper.notEmpty(id, "Subnet ID");
+        final String id
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(NeutronConstants.SUBNET_ID, String.class), String.class);
+        StringHelper.notEmpty(id, "Subnet ID");
         final ActionResponse response = os.networking().subnet().delete(id);
-        checkFailure(response, msg, "Delete network " + id);
+        checkFailure(response, exchange, "Delete network " + id);
     }
-
 
     private Subnet messageToSubnet(Message message) {
         Subnet subnet = message.getBody(Subnet.class);
@@ -95,10 +97,10 @@ public class SubnetProducer extends AbstractOpenstackProducer {
             Map headers = message.getHeaders();
             SubnetBuilder builder = Builders.subnet();
 
-            ObjectHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
+            StringHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
             builder.name(message.getHeader(OpenstackConstants.NAME, String.class));
 
-            ObjectHelper.notEmpty(message.getHeader(NeutronConstants.NETWORK_ID, String.class), "Network ID");
+            StringHelper.notEmpty(message.getHeader(NeutronConstants.NETWORK_ID, String.class), "Network ID");
             builder.networkId(message.getHeader(NeutronConstants.NETWORK_ID, String.class));
 
             ObjectHelper.notNull(message.getHeader(NeutronConstants.IP_VERSION, IPVersionType.class), "IP version");

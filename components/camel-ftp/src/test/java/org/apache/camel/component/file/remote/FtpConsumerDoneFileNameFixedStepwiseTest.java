@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,11 +16,9 @@
  */
 package org.apache.camel.component.file.remote;
 
-/**
- * @version 
- */
 public class FtpConsumerDoneFileNameFixedStepwiseTest extends FtpConsumerDoneFileNameFixedTest {
 
+    @Override
     protected String getFtpUrl() {
         return "ftp://admin@localhost:" + getPort() + "/done?password=admin&initialDelay=0&delay=100&stepwise=true";
     }

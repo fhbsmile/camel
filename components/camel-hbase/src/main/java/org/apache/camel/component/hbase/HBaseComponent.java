@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,18 +21,17 @@ import java.util.concurrent.Executors;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
 import org.apache.camel.spi.Metadata;
-import org.apache.camel.util.IntrospectionSupport;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
+import org.apache.camel.util.PropertiesHelper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 
-/**
- * Represents the component that manages {@link HBaseEndpoint}.
- */
-public class HBaseComponent extends UriEndpointComponent {
+@Component("hbase")
+public class HBaseComponent extends DefaultComponent {
 
     private Connection connection;
 
@@ -42,11 +41,10 @@ public class HBaseComponent extends UriEndpointComponent {
     private int poolMaxSize = 10;
 
     public HBaseComponent() {
-        super(HBaseEndpoint.class);
     }
 
     public HBaseComponent(CamelContext context) {
-        super(context, HBaseEndpoint.class);
+        super(context);
     }
 
     @Override
@@ -61,25 +59,28 @@ public class HBaseComponent extends UriEndpointComponent {
             }
         }
 
-        connection = ConnectionFactory.createConnection(
-            configuration,
-            Executors.newFixedThreadPool(poolMaxSize)
-        );
+        connection = ConnectionFactory.createConnection(configuration, Executors.newFixedThreadPool(poolMaxSize));
     }
 
     @Override
     protected void doStop() throws Exception {
         if (connection != null) {
+            // this will also shutdown the thread pool
             connection.close();
         }
     }
 
+    @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        HBaseEndpoint endpoint = new HBaseEndpoint(uri, this, connection, remaining);
-        Map<String, Object> mapping = IntrospectionSupport.extractProperties(parameters, "row.");
+        HBaseEndpoint endpoint = new HBaseEndpoint(uri, this, remaining);
+        Map<String, Object> mapping = PropertiesHelper.extractProperties(parameters, "row.");
         endpoint.setRowMapping(mapping);
         setProperties(endpoint, parameters);
         return endpoint;
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 
     public Configuration getConfiguration() {
@@ -98,8 +99,7 @@ public class HBaseComponent extends UriEndpointComponent {
     }
 
     /**
-     * Maximum number of references to keep for each table in the HTable pool.
-     * The default value is 10.
+     * Maximum number of references to keep for each table in the HTable pool. The default value is 10.
      */
     public void setPoolMaxSize(int poolMaxSize) {
         this.poolMaxSize = poolMaxSize;

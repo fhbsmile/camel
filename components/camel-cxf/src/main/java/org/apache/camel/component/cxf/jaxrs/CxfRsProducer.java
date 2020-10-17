@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -39,17 +39,17 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import org.apache.camel.AsyncCallback;
-import org.apache.camel.AsyncProcessor;
 import org.apache.camel.CamelExchangeException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.component.cxf.CxfEndpointUtils;
 import org.apache.camel.component.cxf.CxfOperationException;
 import org.apache.camel.component.cxf.common.message.CxfConstants;
-import org.apache.camel.http.common.cookie.CookieHandler;
-import org.apache.camel.impl.DefaultProducer;
-import org.apache.camel.util.IOHelper;
-import org.apache.camel.util.LRUSoftCache;
+import org.apache.camel.http.base.cookie.CookieHandler;
+import org.apache.camel.support.DefaultAsyncProducer;
+import org.apache.camel.support.ExchangeHelper;
+import org.apache.camel.support.LRUCache;
+import org.apache.camel.support.LRUCacheFactory;
 import org.apache.camel.util.ObjectHelper;
 import org.apache.cxf.Bus;
 import org.apache.cxf.jaxrs.JAXRSServiceFactoryBean;
@@ -60,36 +60,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * CxfRsProducer binds a Camel exchange to a CXF exchange, acts as a CXF
- * JAXRS client, it will turn the normal Object invocation to a RESTful request
- * according to resource annotation.  Any response will be bound to Camel exchange.
+ * CxfRsProducer binds a Camel exchange to a CXF exchange, acts as a CXF JAXRS client, it will turn the normal Object
+ * invocation to a RESTful request according to resource annotation. Any response will be bound to Camel exchange.
  */
-public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
+public class CxfRsProducer extends DefaultAsyncProducer {
 
     private static final Logger LOG = LoggerFactory.getLogger(CxfRsProducer.class);
 
     private boolean throwException;
-    
+
     // using a cache of factory beans instead of setting the address of a single cfb
     // to avoid concurrent issues
     private ClientFactoryBeanCache clientFactoryBeanCache;
-    
+
     public CxfRsProducer(CxfRsEndpoint endpoint) {
         super(endpoint);
         this.throwException = endpoint.isThrowExceptionOnFailure();
         clientFactoryBeanCache = new ClientFactoryBeanCache(endpoint.getMaxClientCacheSize());
     }
-    
+
+    @Override
     protected void doStart() throws Exception {
         clientFactoryBeanCache.start();
         super.doStart();
     }
-    
+
+    @Override
     protected void doStop() throws Exception {
         super.doStop();
         clientFactoryBeanCache.stop();
     }
 
+    @Override
     public void process(Exchange exchange) throws Exception {
         Message inMessage = exchange.getIn();
         Boolean httpClientAPI = inMessage.getHeader(CxfConstants.CAMEL_CXF_RS_USING_HTTP_API, Boolean.class);
@@ -104,6 +106,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         }
     }
 
+    @Override
     public boolean process(Exchange exchange, AsyncCallback callback) {
         try {
             Message inMessage = exchange.getIn();
@@ -129,7 +132,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
     protected void invokeAsyncHttpClient(Exchange exchange, final AsyncCallback callback) throws Exception {
         Message inMessage = exchange.getIn();
         JAXRSClientFactoryBean cfb = clientFactoryBeanCache.get(CxfEndpointUtils
-            .getEffectiveAddress(exchange, ((CxfRsEndpoint) getEndpoint()).getAddress()));
+                .getEffectiveAddress(exchange, ((CxfRsEndpoint) getEndpoint()).getAddress()));
         Bus bus = ((CxfRsEndpoint) getEndpoint()).getBus();
         // We need to apply the bus setting from the CxfRsEndpoint which is not use the default bus
         if (bus != null) {
@@ -174,11 +177,12 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         Entity<Object> entity = binding.bindCamelMessageToRequestEntity(body, inMessage, exchange);
 
         // handle cookies
-        CookieHandler cookieHandler = ((CxfRsEndpoint)getEndpoint()).getCookieHandler();
+        CookieHandler cookieHandler = ((CxfRsEndpoint) getEndpoint()).getCookieHandler();
         loadCookies(exchange, client, cookieHandler);
-        
+
         // invoke the client
-        client.async().method(httpMethod, entity, new CxfInvocationCallback(client, exchange, cxfRsEndpoint, responseClass, callback, genericType));
+        client.async().method(httpMethod, entity,
+                new CxfInvocationCallback(client, exchange, cxfRsEndpoint, responseClass, callback, genericType));
     }
 
     protected void invokeAsyncProxyClient(Exchange exchange, final AsyncCallback callback) throws Exception {
@@ -188,8 +192,8 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         Client target;
 
         JAXRSClientFactoryBean cfb = clientFactoryBeanCache.get(CxfEndpointUtils
-            .getEffectiveAddress(exchange, ((CxfRsEndpoint)getEndpoint()).getAddress()));
-        Bus bus = ((CxfRsEndpoint)getEndpoint()).getBus();
+                .getEffectiveAddress(exchange, ((CxfRsEndpoint) getEndpoint()).getAddress()));
+        Bus bus = ((CxfRsEndpoint) getEndpoint()).getBus();
         // We need to apply the bus setting from the CxfRsEndpoint which is not use the default bus
         if (bus != null) {
             cfb.setBus(bus);
@@ -199,6 +203,8 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         } else {
             target = cfb.createWithValues(varValues);
         }
+
+        ((CxfRsEndpoint) getEndpoint()).getChainedCxfRsEndpointConfigurer().configureClient(target);
 
         setupClientHeaders(target, exchange);
 
@@ -214,16 +220,16 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         Method method = findRightMethod(sfb.getResourceClasses(), methodName, getParameterTypes(parameters));
 
         CxfRsEndpoint cxfRsEndpoint = (CxfRsEndpoint) getEndpoint();
-        final CxfProxyInvocationCallback invocationCallback = new CxfProxyInvocationCallback(target, exchange, cxfRsEndpoint, callback);
+        final CxfProxyInvocationCallback invocationCallback
+                = new CxfProxyInvocationCallback(target, exchange, cxfRsEndpoint, callback);
         WebClient.getConfig(target).getRequestContext().put(InvocationCallback.class.getName(), invocationCallback);
-        
+
         // handle cookies
-        CookieHandler cookieHandler = ((CxfRsEndpoint)getEndpoint()).getCookieHandler();
+        CookieHandler cookieHandler = ((CxfRsEndpoint) getEndpoint()).getCookieHandler();
         loadCookies(exchange, target, cookieHandler);
-        
+
         method.invoke(target, parameters);
     }
-
 
     @SuppressWarnings("unchecked")
     protected void setupClientQueryAndHeaders(WebClient client, Exchange exchange) throws Exception {
@@ -231,51 +237,54 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         CxfRsEndpoint cxfRsEndpoint = (CxfRsEndpoint) getEndpoint();
         // check if there is a query map in the message header
         Map<String, String> maps = inMessage.getHeader(CxfConstants.CAMEL_CXF_RS_QUERY_MAP, Map.class);
-        if (maps == null) {
-            // Get the map from HTTP_QUERY header
+        if (maps != null) {
+            insertQueryParametersFromMap(client, maps);
+        } else {
             String queryString = inMessage.getHeader(Exchange.HTTP_QUERY, String.class);
             if (queryString != null) {
-                maps = getQueryParametersFromQueryString(queryString,
-                                                         IOHelper.getCharsetName(exchange));
+                // Insert QueryParameters from HTTP_QUERY header
+                insertQueryParametersFromQueryString(client, queryString, ExchangeHelper.getCharsetName(exchange));
+            } else {
+                insertQueryParametersFromMap(client, cxfRsEndpoint.getParameters());
             }
         }
-        if (maps == null) {
-            maps = cxfRsEndpoint.getParameters();
-        }
+
+        setupClientHeaders(client, exchange);
+    }
+
+    private void insertQueryParametersFromMap(WebClient client, Map<String, String> maps) {
         if (maps != null) {
             for (Map.Entry<String, String> entry : maps.entrySet()) {
                 client.query(entry.getKey(), entry.getValue());
             }
         }
-        
-        setupClientHeaders(client, exchange);
-        
     }
-    
+
     protected void setupClientMatrix(WebClient client, Exchange exchange) throws Exception {
-        
-        org.apache.cxf.message.Message cxfMessage = (org.apache.cxf.message.Message) exchange.getIn().getHeader("CamelCxfMessage");
+
+        org.apache.cxf.message.Message cxfMessage
+                = (org.apache.cxf.message.Message) exchange.getIn().getHeader("CamelCxfMessage");
         if (cxfMessage != null) {
-            String requestURL = (String)cxfMessage.get("org.apache.cxf.request.uri"); 
+            String requestURL = (String) cxfMessage.get("org.apache.cxf.request.uri");
             String matrixParam = null;
-            int matrixStart = requestURL.indexOf(";");
-            int matrixEnd = requestURL.indexOf("?") > -1 ? requestURL.indexOf("?") : requestURL.length();
+            int matrixStart = requestURL.indexOf(';');
+            int matrixEnd = requestURL.indexOf('?') > -1 ? requestURL.indexOf('?') : requestURL.length();
             Map<String, String> maps = null;
             if (requestURL != null && matrixStart > 0) {
                 matrixParam = requestURL.substring(matrixStart + 1, matrixEnd);
                 if (matrixParam != null) {
-                    maps = getMatrixParametersFromMatrixString(matrixParam, IOHelper.getCharsetName(exchange));
+                    maps = getMatrixParametersFromMatrixString(matrixParam, ExchangeHelper.getCharsetName(exchange));
                 }
             }
             if (maps != null) {
                 for (Map.Entry<String, String> entry : maps.entrySet()) {
                     client.matrix(entry.getKey(), entry.getValue());
-                    LOG.debug("Matrix param " + entry.getKey() + " :: " + entry.getValue());
+                    LOG.debug("Matrix param {} :: {}", entry.getKey(), entry.getValue());
                 }
             }
         }
     }
-    
+
     protected void setupClientHeaders(Client client, Exchange exchange) throws Exception {
         Message inMessage = exchange.getIn();
         CxfRsEndpoint cxfRsEndpoint = (CxfRsEndpoint) getEndpoint();
@@ -287,8 +296,8 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
     protected void invokeHttpClient(Exchange exchange) throws Exception {
         Message inMessage = exchange.getIn();
         JAXRSClientFactoryBean cfb = clientFactoryBeanCache.get(CxfEndpointUtils
-            .getEffectiveAddress(exchange, ((CxfRsEndpoint)getEndpoint()).getAddress()));
-        Bus bus = ((CxfRsEndpoint)getEndpoint()).getBus();
+                .getEffectiveAddress(exchange, ((CxfRsEndpoint) getEndpoint()).getAddress()));
+        Bus bus = ((CxfRsEndpoint) getEndpoint()).getBus();
         // We need to apply the bus setting from the CxfRsEndpoint which is not use the default bus
         if (bus != null) {
             cfb.setBus(bus);
@@ -321,13 +330,13 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         CxfRsBinding binding = cxfRsEndpoint.getBinding();
 
         Object body = getBody(exchange, inMessage, httpMethod, cxfRsEndpoint, binding);
-        
-        setupClientMatrix(client, exchange); 
+
+        setupClientMatrix(client, exchange);
 
         setupClientQueryAndHeaders(client, exchange);
 
         // handle cookies
-        CookieHandler cookieHandler = ((CxfRsEndpoint)getEndpoint()).getCookieHandler();
+        CookieHandler cookieHandler = ((CxfRsEndpoint) getEndpoint()).getCookieHandler();
         loadCookies(exchange, client, cookieHandler);
 
         // invoke the client
@@ -340,9 +349,10 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
                     // Get the collection member type first
                     Type[] actualTypeArguments = ((ParameterizedType) genericType).getActualTypeArguments();
                     response = client.invokeAndGetCollection(httpMethod, body, (Class<?>) actualTypeArguments[0]);
-                    
+
                 } else {
-                    throw new CamelExchangeException("Header " + CxfConstants.CAMEL_CXF_RS_RESPONSE_GENERIC_TYPE + " not found in message", exchange);
+                    throw new CamelExchangeException(
+                            "Header " + CxfConstants.CAMEL_CXF_RS_RESPONSE_GENERIC_TYPE + " not found in message", exchange);
                 }
             } else {
                 response = client.invoke(httpMethod, body, responseClass);
@@ -355,7 +365,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
         if (throwException) {
             if (response instanceof Response) {
-                Integer respCode = ((Response) response).getStatus();
+                int respCode = ((Response) response).getStatus();
                 if (respCode > 207) {
                     throw populateCxfRsProducerException(exchange, (Response) response, respCode);
                 }
@@ -371,7 +381,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         } else {
             // just close the input stream of the response object
             if (response instanceof Response) {
-                ((Response)response).close();
+                ((Response) response).close();
             }
         }
     }
@@ -379,7 +389,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
     private void saveCookies(Exchange exchange, Client client, CookieHandler cookieHandler) {
         if (cookieHandler != null) {
             CookieStore cookieStore = cookieHandler.getCookieStore(exchange);
-            for (NewCookie newCookie: client.getResponse().getCookies().values()) {
+            for (NewCookie newCookie : client.getResponse().getCookies().values()) {
                 HttpCookie cookie = new HttpCookie(newCookie.getName(), newCookie.getValue());
                 cookie.setComment(newCookie.getComment());
                 cookie.setDomain(newCookie.getDomain());
@@ -395,7 +405,8 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
 
     private void loadCookies(Exchange exchange, Client client, CookieHandler cookieHandler) throws IOException {
         if (cookieHandler != null) {
-            for (Map.Entry<String, List<String>> cookie : cookieHandler.loadCookies(exchange, client.getCurrentURI()).entrySet()) {
+            for (Map.Entry<String, List<String>> cookie : cookieHandler.loadCookies(exchange, client.getCurrentURI())
+                    .entrySet()) {
                 if (cookie.getValue().size() > 0) {
                     client.header(cookie.getKey(), cookie.getValue());
                 }
@@ -408,10 +419,10 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         Object[] varValues = inMessage.getHeader(CxfConstants.CAMEL_CXF_RS_VAR_VALUES, Object[].class);
         String methodName = inMessage.getHeader(CxfConstants.OPERATION_NAME, String.class);
         Client target = null;
-        
+
         JAXRSClientFactoryBean cfb = clientFactoryBeanCache.get(CxfEndpointUtils
-                                   .getEffectiveAddress(exchange, ((CxfRsEndpoint)getEndpoint()).getAddress()));
-        Bus bus = ((CxfRsEndpoint)getEndpoint()).getBus();
+                .getEffectiveAddress(exchange, ((CxfRsEndpoint) getEndpoint()).getAddress()));
+        Bus bus = ((CxfRsEndpoint) getEndpoint()).getBus();
         // We need to apply the bus setting from the CxfRsEndpoint which is not use the default bus
         if (bus != null) {
             cfb.setBus(bus);
@@ -421,9 +432,11 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         } else {
             target = cfb.createWithValues(varValues);
         }
-        
+
+        ((CxfRsEndpoint) getEndpoint()).getChainedCxfRsEndpointConfigurer().configureClient(target);
+
         setupClientHeaders(target, exchange);
-        
+
         // find out the method which we want to invoke
         JAXRSServiceFactoryBean sfb = cfb.getServiceFactory();
         sfb.getResourceClasses();
@@ -436,7 +449,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         Method method = findRightMethod(sfb.getResourceClasses(), methodName, getParameterTypes(parameters));
 
         // handle cookies
-        CookieHandler cookieHandler = ((CxfRsEndpoint)getEndpoint()).getCookieHandler();
+        CookieHandler cookieHandler = ((CxfRsEndpoint) getEndpoint()).getCookieHandler();
         loadCookies(exchange, target, cookieHandler);
 
         // Will send out the message to
@@ -447,7 +460,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         saveCookies(exchange, target, cookieHandler);
         if (throwException) {
             if (response instanceof Response) {
-                Integer respCode = ((Response) response).getStatus();
+                int respCode = ((Response) response).getStatus();
                 if (respCode > 207) {
                     throw populateCxfRsProducerException(exchange, (Response) response, respCode);
                 }
@@ -455,7 +468,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         }
         CxfRsEndpoint cxfRsEndpoint = (CxfRsEndpoint) getEndpoint();
         CxfRsBinding binding = cxfRsEndpoint.getBinding();
-        
+
         if (exchange.getPattern().isOutCapable()) {
             LOG.trace("Response body = {}", response);
             exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());
@@ -465,37 +478,37 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         } else {
             // just close the input stream of the response object
             if (response instanceof Response) {
-                ((Response)response).close();
+                ((Response) response).close();
             }
         }
     }
-    
-    protected ClientFactoryBeanCache getClientFactoryBeanCache() { 
+
+    protected ClientFactoryBeanCache getClientFactoryBeanCache() {
         return clientFactoryBeanCache;
     }
-    
-    private Map<String, String> getQueryParametersFromQueryString(String queryString, String charset) throws UnsupportedEncodingException {
-        Map<String, String> answer  = new LinkedHashMap<String, String>();
+
+    private void insertQueryParametersFromQueryString(WebClient client, String queryString, String charset)
+            throws UnsupportedEncodingException {
         for (String param : queryString.split("&")) {
             String[] pair = param.split("=", 2);
             if (pair.length == 2) {
                 String name = URLDecoder.decode(pair[0], charset);
                 String value = URLDecoder.decode(pair[1], charset);
-                answer.put(name, value);
+                client.query(name, value);
             } else {
                 throw new IllegalArgumentException("Invalid parameter, expected to be a pair but was " + param);
             }
         }
-        return answer;
     }
 
-    private Method findRightMethod(List<Class<?>> resourceClasses, String methodName,
-                                   Class<?>[] parameterTypes) throws NoSuchMethodException {
+    private Method findRightMethod(
+            List<Class<?>> resourceClasses, String methodName,
+            Class<?>[] parameterTypes)
+            throws NoSuchMethodException {
         for (Class<?> clazz : resourceClasses) {
             try {
                 Method[] m = clazz.getMethods();
-            iterate_on_methods:
-                for (Method method : m) {
+                iterate_on_methods: for (Method method : m) {
                     if (!method.getName().equals(methodName)) {
                         continue;
                     }
@@ -504,7 +517,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
                         continue;
                     }
                     for (int i = 0; i < parameterTypes.length; i++) {
-                        if (!params[i].isAssignableFrom(parameterTypes[i])) {
+                        if (parameterTypes[i] != null && !params[i].isAssignableFrom(parameterTypes[i])) {
                             continue iterate_on_methods;
                         }
                     }
@@ -514,7 +527,8 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
                 // keep looking
             }
         }
-        throw new NoSuchMethodException("Cannot find method with name: " + methodName
+        throw new NoSuchMethodException(
+                "Cannot find method with name: " + methodName
                                         + " having parameters assignable from: "
                                         + arrayToString(parameterTypes));
     }
@@ -522,19 +536,24 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
     private Class<?>[] getParameterTypes(Object[] objects) {
         // We need to handle the void parameter situation.
         if (objects == null) {
-            return new Class[]{};
+            return new Class[] {};
         }
         Class<?>[] answer = new Class[objects.length];
         int i = 0;
         for (Object obj : objects) {
-            answer[i] = obj.getClass();
+            if (obj == null) {
+                answer[i] = null;
+            } else {
+                answer[i] = obj.getClass();
+            }
             i++;
         }
         return answer;
     }
 
-    private Map<String, String> getMatrixParametersFromMatrixString(String matrixString, String charset) throws UnsupportedEncodingException {
-        Map<String, String> answer  = new LinkedHashMap<String, String>();
+    private Map<String, String> getMatrixParametersFromMatrixString(String matrixString, String charset)
+            throws UnsupportedEncodingException {
+        Map<String, String> answer = new LinkedHashMap<>();
         for (String param : matrixString.split(";")) {
             String[] pair = param.split("=", 2);
             if (pair.length == 2) {
@@ -547,7 +566,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         }
         return answer;
     }
-    
+
     private String arrayToString(Object[] array) {
         StringBuilder buffer = new StringBuilder("[");
         for (Object obj : array) {
@@ -585,13 +604,12 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
     }
 
     /**
-     * Convert the given HTTP response code to its corresponding status text or
-     * response category. This is useful to avoid creating NPEs if this producer
-     * is presented with an HTTP response code that the JAX-RS API doesn't know.
+     * Convert the given HTTP response code to its corresponding status text or response category. This is useful to
+     * avoid creating NPEs if this producer is presented with an HTTP response code that the JAX-RS API doesn't know.
      *
-     * @param responseCode the HTTP response code to be converted to status text
-     * @return the status text for the code, or, if JAX-RS doesn't know the code,
-     *         the status category as text
+     * @param  responseCode the HTTP response code to be converted to status text
+     * @return              the status text for the code, or, if JAX-RS doesn't know the code, the status category as
+     *                      text
      */
     String statusTextFromResponseCode(int responseCode) {
         Response.Status status = Response.Status.fromStatusCode(responseCode);
@@ -600,11 +618,11 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
     }
 
     /**
-     * Return the category of the given HTTP response code, as text. Invalid
-     * codes will result in appropriate text; this method never returns null.
+     * Return the category of the given HTTP response code, as text. Invalid codes will result in appropriate text; this
+     * method never returns null.
      *
-     * @param responseCode HTTP response code whose category is to be returned
-     * @return the category of the give response code; never {@code null}.
+     * @param  responseCode HTTP response code whose category is to be returned
+     * @return              the category of the give response code; never {@code null}.
      */
     private String responseCategoryFromCode(int responseCode) {
         return Response.Status.Family.familyOf(responseCode).name();
@@ -612,7 +630,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
 
     protected Map<String, String> parseResponseHeaders(Object response, Exchange camelExchange) {
 
-        Map<String, String> answer = new HashMap<String, String>();
+        Map<String, String> answer = new HashMap<>();
         if (response instanceof Response) {
 
             for (Map.Entry<String, List<Object>> entry : ((Response) response).getMetadata().entrySet()) {
@@ -624,7 +642,9 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         return answer;
     }
 
-    private Object getBody(Exchange exchange, Message inMessage, String httpMethod, CxfRsEndpoint cxfRsEndpoint, CxfRsBinding binding) throws Exception {
+    private Object getBody(
+            Exchange exchange, Message inMessage, String httpMethod, CxfRsEndpoint cxfRsEndpoint, CxfRsBinding binding)
+            throws Exception {
         Object body = null;
         if (!"GET".equals(httpMethod)) {
             // need to check the request object if the http Method is not GET      
@@ -633,12 +653,13 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
             } else {
                 body = binding.bindCamelMessageBodyToRequestBody(inMessage, exchange);
                 if (LOG.isTraceEnabled()) {
-                    LOG.trace("Request body = " + body);
+                    LOG.trace("Request body = {}", body);
                 }
             }
         }
         return body;
     }
+
     private final class CxfInvocationCallback implements InvocationCallback<Response> {
 
         private final Exchange exchange;
@@ -648,7 +669,8 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         private final Type genericType;
         private final Client client;
 
-        private CxfInvocationCallback(Client client, Exchange exchange, CxfRsEndpoint cxfRsEndpoint, Class<?> responseClass, AsyncCallback callback, Type genericType) {
+        private CxfInvocationCallback(Client client, Exchange exchange, CxfRsEndpoint cxfRsEndpoint, Class<?> responseClass,
+                                      AsyncCallback callback, Type genericType) {
             this.exchange = exchange;
             this.cxfRsEndpoint = cxfRsEndpoint;
             this.responseClass = responseClass;
@@ -656,7 +678,6 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
             this.genericType = genericType;
             this.client = client;
         }
-
 
         @Override
         public void completed(Response response) {
@@ -675,7 +696,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
                 exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());
                 final CxfRsBinding binding = cxfRsEndpoint.getBinding();
                 exchange.getOut().getHeaders().putAll(binding.bindResponseHeadersToCamelHeaders(response, exchange));
-                
+
                 if (genericType != null && !genericType.equals(Void.TYPE)) {
                     GenericType genericType = new GenericType(this.genericType);
                     exchange.getOut().setBody(binding.bindResponseToCamelBody(response.readEntity(genericType), exchange));
@@ -721,7 +742,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
                     handleError(response);
                 }
             } else {
-                exchange.setException(throwable);    
+                exchange.setException(throwable);
             }
         }
 
@@ -729,7 +750,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
             //Throw exception on a response > 207
             //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
             if (response != null && throwException) {
-                Integer respCode = response.getStatus();
+                int respCode = response.getStatus();
                 if (respCode > 207) {
                     return true;
                 }
@@ -749,7 +770,8 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
         private final AsyncCallback callback;
         private final Client client;
 
-        private CxfProxyInvocationCallback(Client client, Exchange exchange, CxfRsEndpoint cxfRsEndpoint, AsyncCallback callback) {
+        private CxfProxyInvocationCallback(Client client, Exchange exchange, CxfRsEndpoint cxfRsEndpoint,
+                                           AsyncCallback callback) {
             this.exchange = exchange;
             this.cxfRsEndpoint = cxfRsEndpoint;
             this.callback = callback;
@@ -825,7 +847,7 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
             //Throw exception on a response > 207
             //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
             if (response != null && throwException) {
-                Integer respCode = response.getStatus();
+                int respCode = response.getStatus();
                 if (respCode > 207) {
                     return true;
                 }
@@ -838,16 +860,18 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
      * Cache contains {@link org.apache.cxf.jaxrs.client.JAXRSClientFactoryBean}
      */
     class ClientFactoryBeanCache {
-        private LRUSoftCache<String, JAXRSClientFactoryBean> cache;    
-        
+        private Map<String, JAXRSClientFactoryBean> cache;
+
         ClientFactoryBeanCache(final int maxCacheSize) {
-            this.cache = new LRUSoftCache<String, JAXRSClientFactoryBean>(maxCacheSize);
+            this.cache = LRUCacheFactory.newLRUSoftCache(maxCacheSize);
         }
-        
+
         public void start() throws Exception {
-            cache.resetStatistics();
+            if (cache instanceof LRUCache) {
+                ((LRUCache) cache).resetStatistics();
+            }
         }
-        
+
         public void stop() throws Exception {
             cache.clear();
         }
@@ -856,14 +880,14 @@ public class CxfRsProducer extends DefaultProducer implements AsyncProcessor {
             JAXRSClientFactoryBean retVal = null;
             synchronized (cache) {
                 retVal = cache.get(address);
-                
+
                 if (retVal == null) {
-                    retVal = ((CxfRsEndpoint)getEndpoint()).createJAXRSClientFactoryBean(address);
-                    
+                    retVal = ((CxfRsEndpoint) getEndpoint()).createJAXRSClientFactoryBean(address);
+
                     cache.put(address, retVal);
-                    
+
                     LOG.trace("Created client factory bean and add to cache for address '{}'", address);
-                    
+
                 } else {
                     LOG.trace("Retrieved client factory bean from cache for address '{}'", address);
                 }

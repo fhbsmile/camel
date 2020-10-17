@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,23 +21,33 @@ import java.util.List;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.AvailablePortFinder;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
  */
 public class WsProducerConsumerTest extends CamelTestSupport {
+
     protected static final String TEST_MESSAGE = "Hello World!";
     protected static final int PORT = AvailablePortFinder.getNextAvailable();
+
+    private static final Logger LOG = LoggerFactory.getLogger(WsProducerConsumerTest.class);
+
     protected Server server;
-   
+
     protected List<Object> messages;
-    
+
     public void startTestServer() throws Exception {
         // start a simple websocket echo service
         server = new Server(PORT);
@@ -49,23 +59,25 @@ public class WsProducerConsumerTest extends CamelTestSupport {
         ctx.addServlet(TestServletFactory.class.getName(), "/*");
 
         server.setHandler(ctx);
-        
+
         server.start();
-        assertTrue(server.isStarted());      
+        assertTrue(server.isStarted());
     }
-    
+
     public void stopTestServer() throws Exception {
         server.stop();
         server.destroy();
     }
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
         startTestServer();
         super.setUp();
     }
 
     @Override
+    @AfterEach
     public void tearDown() throws Exception {
         super.tearDown();
         stopTestServer();
@@ -92,10 +104,10 @@ public class WsProducerConsumerTest extends CamelTestSupport {
 
         resetMocks();
 
-        log.info("Restarting bar route");
-        context.stopRoute("bar");
+        LOG.info("Restarting bar route");
+        context.getRouteController().stopRoute("bar");
         Thread.sleep(500);
-        context.startRoute("bar");
+        context.getRouteController().startRoute("bar");
 
         mock.expectedBodiesReceived(TEST_MESSAGE);
 
@@ -115,10 +127,10 @@ public class WsProducerConsumerTest extends CamelTestSupport {
 
         resetMocks();
 
-        log.info("Restarting foo route");
-        context.stopRoute("foo");
+        LOG.info("Restarting foo route");
+        context.getRouteController().stopRoute("foo");
         Thread.sleep(500);
-        context.startRoute("foo");
+        context.getRouteController().startRoute("foo");
 
         mock.expectedBodiesReceived(TEST_MESSAGE);
 
@@ -133,13 +145,13 @@ public class WsProducerConsumerTest extends CamelTestSupport {
         rbs[0] = new RouteBuilder() {
             public void configure() {
                 from("direct:input").routeId("foo")
-                    .to("ahc-ws://localhost:" + PORT);
+                        .to("ahc-ws://localhost:" + PORT);
             }
         };
         rbs[1] = new RouteBuilder() {
             public void configure() {
                 from("ahc-ws://localhost:" + PORT).routeId("bar")
-                    .to("mock:result");
+                        .to("mock:result");
             }
         };
         return rbs;

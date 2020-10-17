@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,8 +24,10 @@ import org.apache.camel.CamelContextAware;
 import org.apache.camel.CamelException;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.DataFormat;
+import org.apache.camel.spi.DataFormatContentTypeHeader;
 import org.apache.camel.spi.DataFormatName;
-import org.apache.camel.support.ServiceSupport;
+import org.apache.camel.spi.annotations.Dataformat;
+import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.ObjectHelper;
 import org.apache.camel.util.StringHelper;
 import org.apache.commons.io.IOUtils;
@@ -36,7 +38,9 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.protocol.TSimpleJSONProtocol;
 
-public class ThriftDataFormat extends ServiceSupport implements DataFormat, DataFormatName, CamelContextAware {
+@Dataformat("thrift")
+public class ThriftDataFormat extends ServiceSupport
+        implements DataFormat, DataFormatName, DataFormatContentTypeHeader, CamelContextAware {
 
     public static final String CONTENT_TYPE_FORMAT_BINARY = "binary";
     public static final String CONTENT_TYPE_FORMAT_JSON = "json";
@@ -71,10 +75,12 @@ public class ThriftDataFormat extends ServiceSupport implements DataFormat, Data
         return "thrift";
     }
 
+    @Override
     public CamelContext getCamelContext() {
         return camelContext;
     }
 
+    @Override
     public void setCamelContext(CamelContext camelContext) {
         this.camelContext = camelContext;
     }
@@ -87,9 +93,10 @@ public class ThriftDataFormat extends ServiceSupport implements DataFormat, Data
     @SuppressWarnings("rawtypes")
     public void setDefaultInstance(Object instance) {
         if (instance instanceof TBase) {
-            this.defaultInstance = (TBase)instance;
+            this.defaultInstance = (TBase) instance;
         } else {
-            throw new IllegalArgumentException("The argument for setDefaultInstance should be subClass of org.apache.thrift.TBase");
+            throw new IllegalArgumentException(
+                    "The argument for setDefaultInstance should be subClass of org.apache.thrift.TBase");
         }
     }
 
@@ -121,22 +128,23 @@ public class ThriftDataFormat extends ServiceSupport implements DataFormat, Data
      * @see org.apache.camel.spi.DataFormat#marshal(org.apache.camel.Exchange,
      * java.lang.Object, java.io.OutputStream)
      */
+    @Override
     @SuppressWarnings("rawtypes")
     public void marshal(final Exchange exchange, final Object graph, final OutputStream outputStream) throws Exception {
         String contentTypeHeader = CONTENT_TYPE_HEADER_NATIVE;
         TSerializer serializer;
-        
+
         if (contentTypeFormat.equals(CONTENT_TYPE_FORMAT_JSON)) {
             serializer = new TSerializer(new TJSONProtocol.Factory());
-            IOUtils.write(serializer.toString((TBase)graph, "UTF-8"), outputStream, "UTF-8");
+            IOUtils.write(serializer.toString((TBase) graph, "UTF-8"), outputStream, "UTF-8");
             contentTypeHeader = CONTENT_TYPE_HEADER_JSON;
         } else if (contentTypeFormat.equals(CONTENT_TYPE_FORMAT_SIMPLE_JSON)) {
             serializer = new TSerializer(new TSimpleJSONProtocol.Factory());
-            IOUtils.write(serializer.toString((TBase)graph, "UTF-8"), outputStream, "UTF-8");
+            IOUtils.write(serializer.toString((TBase) graph, "UTF-8"), outputStream, "UTF-8");
             contentTypeHeader = CONTENT_TYPE_HEADER_JSON;
         } else if (contentTypeFormat.equals(CONTENT_TYPE_FORMAT_BINARY)) {
             serializer = new TSerializer(new TBinaryProtocol.Factory());
-            IOUtils.write(serializer.serialize((TBase)graph), outputStream);
+            IOUtils.write(serializer.serialize((TBase) graph), outputStream);
         } else {
             throw new CamelException("Invalid thrift content type format: " + contentTypeFormat);
         }
@@ -155,10 +163,11 @@ public class ThriftDataFormat extends ServiceSupport implements DataFormat, Data
      * @see org.apache.camel.spi.DataFormat#unmarshal(org.apache.camel.Exchange,
      * java.io.InputStream)
      */
+    @Override
     public Object unmarshal(final Exchange exchange, final InputStream inputStream) throws Exception {
         TDeserializer deserializer;
         ObjectHelper.notNull(defaultInstance, "defaultInstance or instanceClassName must be set", this);
-        
+
         if (contentTypeFormat.equals(CONTENT_TYPE_FORMAT_JSON)) {
             deserializer = new TDeserializer(new TJSONProtocol.Factory());
             deserializer.deserialize(defaultInstance, IOUtils.toByteArray(inputStream));
@@ -175,16 +184,19 @@ public class ThriftDataFormat extends ServiceSupport implements DataFormat, Data
     }
 
     @SuppressWarnings("rawtypes")
-    protected TBase loadDefaultInstance(final String className, final CamelContext context) throws CamelException, ClassNotFoundException {
+    protected TBase loadDefaultInstance(final String className, final CamelContext context)
+            throws CamelException, ClassNotFoundException {
         Class<?> instanceClass = context.getClassResolver().resolveMandatoryClass(className);
         if (TBase.class.isAssignableFrom(instanceClass)) {
             try {
-                return (TBase)instanceClass.newInstance();
+                return (TBase) instanceClass.newInstance();
             } catch (final Exception ex) {
-                throw new CamelException("Can't set the defaultInstance of ThriftDataFormat with " + className + ", caused by " + ex);
+                throw new CamelException(
+                        "Can't set the defaultInstance of ThriftDataFormat with " + className + ", caused by " + ex);
             }
         } else {
-            throw new CamelException("Can't set the defaultInstance of ThriftDataFormat with " + className
+            throw new CamelException(
+                    "Can't set the defaultInstance of ThriftDataFormat with " + className
                                      + ", as the class is not a subClass of org.apache.thrift.TBase");
         }
     }

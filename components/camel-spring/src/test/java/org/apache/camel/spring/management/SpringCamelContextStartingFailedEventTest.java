@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,11 +17,13 @@
 package org.apache.camel.spring.management;
 
 import org.apache.camel.FailedToCreateRouteException;
-import org.apache.camel.ResolveEndpointFailedException;
-import org.apache.camel.RuntimeCamelException;
+import org.apache.camel.NoSuchEndpointException;
 import org.apache.camel.spring.SpringTestSupport;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SpringCamelContextStartingFailedEventTest extends SpringTestSupport {
 
@@ -30,13 +32,15 @@ public class SpringCamelContextStartingFailedEventTest extends SpringTestSupport
         return true;
     }
 
+    @Override
     protected AbstractXmlApplicationContext createApplicationContext() {
         try {
-            new ClassPathXmlApplicationContext("org/apache/camel/spring/management/SpringCamelContextStartingFailedEventTest.xml");
+            new ClassPathXmlApplicationContext(
+                    "org/apache/camel/spring/management/SpringCamelContextStartingFailedEventTest.xml");
             fail("Should thrown an exception");
-        } catch (RuntimeCamelException e) {
-            FailedToCreateRouteException ftcre = assertIsInstanceOf(FailedToCreateRouteException.class, e.getCause());
-            assertIsInstanceOf(ResolveEndpointFailedException.class, ftcre.getCause());
+        } catch (Exception e) {
+            FailedToCreateRouteException ftcre = assertIsInstanceOf(FailedToCreateRouteException.class, e);
+            assertIsInstanceOf(NoSuchEndpointException.class, ftcre.getCause());
             // expected
         }
 
@@ -44,6 +48,7 @@ public class SpringCamelContextStartingFailedEventTest extends SpringTestSupport
         return new ClassPathXmlApplicationContext("/org/apache/camel/spring/disableJmxConfig.xml");
     }
 
+    @Test
     public void testReady() {
         // noop
     }

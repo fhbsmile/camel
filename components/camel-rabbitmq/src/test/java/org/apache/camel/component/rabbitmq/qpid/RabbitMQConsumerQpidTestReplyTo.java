@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,27 +16,32 @@
  */
 package org.apache.camel.component.rabbitmq.qpid;
 
-import org.apache.camel.component.rabbitmq.RabbitMQConsumerIntTestReplyTo;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.apache.camel.component.rabbitmq.integration.RabbitMQConsumerIntTestReplyTo;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 public class RabbitMQConsumerQpidTestReplyTo extends RabbitMQConsumerIntTestReplyTo {
-    @BeforeClass
+    @Override
+    public boolean isStartDocker() {
+        return false;
+    }
+
+    @BeforeAll
     public static void startBroker() throws Exception {
         systemLauncher.startup(createQpidSystemConfig());
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopBroker() {
         systemLauncher.shutdown();
     }
-    
+
     @Override
-    @Before
+    @BeforeEach
     public void setUpRabbitMQ() throws Exception {
         super.setUpRabbitMQ();
-        
+
         channel.queueDeclare(QUEUE, false, false, true, null);
     }
 }

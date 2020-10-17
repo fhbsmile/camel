@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,9 +19,10 @@ package org.apache.camel.component.spark;
 import java.util.List;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 
 import static org.apache.camel.component.spark.SparkConstants.SPARK_DATAFRAME_CALLBACK_HEADER;
 import static org.apache.camel.component.spark.SparkConstants.SPARK_DATAFRAME_HEADER;
@@ -35,10 +36,12 @@ public class DataFrameSparkProducer extends DefaultProducer {
 
     @Override
     public void process(Exchange exchange) throws Exception {
-        DataFrame dataFrame = resolveDataFrame(exchange);
+        Dataset<Row> dataFrame = resolveDataFrame(exchange);
         DataFrameCallback dataFrameCallback = resolveDataFrameCallback(exchange);
         Object body = exchange.getIn().getBody();
-        Object result = body instanceof List ? dataFrameCallback.onDataFrame(dataFrame, ((List) body).toArray(new Object[0])) : dataFrameCallback.onDataFrame(dataFrame, body);
+        Object result = body instanceof List
+                ? dataFrameCallback.onDataFrame(dataFrame, ((List) body).toArray(new Object[0]))
+                : dataFrameCallback.onDataFrame(dataFrame, body);
         collectResults(exchange, result);
     }
 
@@ -63,9 +66,9 @@ public class DataFrameSparkProducer extends DefaultProducer {
         }
     }
 
-    protected DataFrame resolveDataFrame(Exchange exchange) {
+    protected Dataset<Row> resolveDataFrame(Exchange exchange) {
         if (exchange.getIn().getHeader(SPARK_DATAFRAME_HEADER) != null) {
-            return (DataFrame) exchange.getIn().getHeader(SPARK_DATAFRAME_HEADER);
+            return (Dataset<Row>) exchange.getIn().getHeader(SPARK_DATAFRAME_HEADER);
         } else if (getEndpoint().getDataFrame() != null) {
             return getEndpoint().getDataFrame();
         } else {
@@ -75,7 +78,7 @@ public class DataFrameSparkProducer extends DefaultProducer {
 
     protected DataFrameCallback resolveDataFrameCallback(Exchange exchange) {
         if (exchange.getIn().getHeader(SPARK_DATAFRAME_CALLBACK_HEADER) != null) {
-            return  (DataFrameCallback) exchange.getIn().getHeader(SPARK_DATAFRAME_CALLBACK_HEADER);
+            return (DataFrameCallback) exchange.getIn().getHeader(SPARK_DATAFRAME_CALLBACK_HEADER);
         } else if (getEndpoint().getDataFrameCallback() != null) {
             return getEndpoint().getDataFrameCallback();
         } else {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,7 @@ package org.apache.camel.component.mongodb;
 
 public class CamelMongoDbException extends RuntimeException {
 
-    private static final long serialVersionUID = 7834484945432331909L;
+    private static final long serialVersionUID = 7834484945432331919L;
 
     public CamelMongoDbException(String message, Throwable cause) {
         super(message, cause);

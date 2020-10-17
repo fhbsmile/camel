@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,8 +23,10 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 
+import javax.xml.XMLConstants;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
@@ -33,7 +35,7 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.exception.TikaException;
@@ -53,16 +55,24 @@ public class TikaProducer extends DefaultProducer {
     private final Parser parser;
 
     private final Detector detector;
-    
+
     private final String encoding;
 
     public TikaProducer(TikaEndpoint endpoint) {
+        this(endpoint, null);
+    }
+
+    public TikaProducer(TikaEndpoint endpoint, Parser parser) {
         super(endpoint);
         this.tikaConfiguration = endpoint.getTikaConfiguration();
         this.encoding = this.tikaConfiguration.getTikaParseOutputEncoding();
         TikaConfig config = this.tikaConfiguration.getTikaConfig();
-        this.parser = new AutoDetectParser(config);
         this.detector = config.getDetector();
+        if (parser == null) {
+            this.parser = new AutoDetectParser(this.tikaConfiguration.getTikaConfig());
+        } else {
+            this.parser = parser;
+        }
     }
 
     @Override
@@ -70,18 +80,17 @@ public class TikaProducer extends DefaultProducer {
         TikaOperation operation = this.tikaConfiguration.getOperation();
         Object result;
         switch (operation) {
-        case detect:
-            result = doDetect(exchange);
-            break;
-        case parse:
-            result = doParse(exchange);
-            break;
-        default:
-            throw new IllegalArgumentException(String.format("Unknown operation %s", tikaConfiguration.getOperation()));
+            case detect:
+                result = doDetect(exchange);
+                break;
+            case parse:
+                result = doParse(exchange);
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unknown operation %s", tikaConfiguration.getOperation()));
         }
         // propagate headers
         exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-        exchange.getOut().setAttachments(exchange.getIn().getAttachments());
         // and set result
         exchange.getOut().setBody(result);
     }
@@ -127,28 +136,31 @@ public class TikaProducer extends DefaultProducer {
 
         TikaParseOutputFormat outputFormat = configuration.getTikaParseOutputFormat();
         switch (outputFormat) {
-        case xml:
-            result = getTransformerHandler(outputStream, "xml", true);
-            break;
-        case text:
-            result = new BodyContentHandler(new OutputStreamWriter(outputStream, this.encoding));
-            break;
-        case textMain:
-            result = new BoilerpipeContentHandler(new OutputStreamWriter(outputStream, this.encoding));
-            break;
-        case html:
-            result = new ExpandedTitleContentHandler(getTransformerHandler(outputStream, "html", true));
-            break;
-        default:
-            throw new IllegalArgumentException(
-                    String.format("Unknown format %s", tikaConfiguration.getTikaParseOutputFormat()));
+            case xml:
+                result = getTransformerHandler(outputStream, "xml", true);
+                break;
+            case text:
+                result = new BodyContentHandler(new OutputStreamWriter(outputStream, this.encoding));
+                break;
+            case textMain:
+                result = new BoilerpipeContentHandler(new OutputStreamWriter(outputStream, this.encoding));
+                break;
+            case html:
+                result = new ExpandedTitleContentHandler(getTransformerHandler(outputStream, "html", true));
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        String.format("Unknown format %s", tikaConfiguration.getTikaParseOutputFormat()));
         }
         return result;
     }
 
-    private TransformerHandler getTransformerHandler(OutputStream output, String method,
-            boolean prettyPrint) throws TransformerConfigurationException, UnsupportedEncodingException {
-        SAXTransformerFactory factory = (SAXTransformerFactory) SAXTransformerFactory.newInstance();
+    private TransformerHandler getTransformerHandler(
+            OutputStream output, String method,
+            boolean prettyPrint)
+            throws TransformerConfigurationException, UnsupportedEncodingException {
+        SAXTransformerFactory factory = (SAXTransformerFactory) TransformerFactory.newInstance();
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, Boolean.TRUE);
         TransformerHandler handler = factory.newTransformerHandler();
         handler.getTransformer().setOutputProperty(OutputKeys.METHOD, method);
         handler.getTransformer().setOutputProperty(OutputKeys.INDENT, prettyPrint ? "yes" : "no");

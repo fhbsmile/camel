@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,9 +23,14 @@ import org.apache.camel.component.box.internal.BoxApiCollection;
 import org.apache.camel.component.box.internal.BoxApiName;
 import org.apache.camel.component.box.internal.BoxConnectionHelper;
 import org.apache.camel.spi.Metadata;
-import org.apache.camel.util.component.AbstractApiComponent;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.component.AbstractApiComponent;
 
+@Component("box")
 public class BoxComponent extends AbstractApiComponent<BoxApiName, BoxConfiguration, BoxApiCollection> {
+
+    @Metadata
+    BoxConfiguration configuration; // needed for documentation generation
 
     @Metadata(label = "advanced")
     BoxAPIConnection boxConnection;
@@ -39,8 +44,8 @@ public class BoxComponent extends AbstractApiComponent<BoxApiName, BoxConfigurat
     }
 
     @Override
-    protected BoxApiName getApiName(String apiNameStr) throws IllegalArgumentException {
-        return BoxApiName.fromValue(apiNameStr);
+    protected BoxApiName getApiName(String apiNameStr) {
+        return getCamelContext().getTypeConverter().convertTo(BoxApiName.class, apiNameStr);
     }
 
     /**
@@ -69,7 +74,8 @@ public class BoxComponent extends AbstractApiComponent<BoxApiName, BoxConfigurat
     }
 
     @Override
-    protected Endpoint createEndpoint(String uri, String methodName, BoxApiName apiName,
+    protected Endpoint createEndpoint(
+            String uri, String methodName, BoxApiName apiName,
             BoxConfiguration endpointConfiguration) {
         endpointConfiguration.setApiName(apiName);
         endpointConfiguration.setMethodName(methodName);
@@ -81,8 +87,8 @@ public class BoxComponent extends AbstractApiComponent<BoxApiName, BoxConfigurat
         super.doStart();
 
         if (boxConnection == null) {
-            if (configuration != null) {
-                boxConnection = BoxConnectionHelper.createConnection(configuration);
+            if (getConfiguration() != null) {
+                boxConnection = BoxConnectionHelper.createConnection(getConfiguration());
             } else {
                 throw new IllegalArgumentException("Unable to connect, Box component configuration is missing");
             }

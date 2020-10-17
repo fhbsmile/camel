@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,11 +16,13 @@
  */
 package org.apache.camel.component.telegram.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * An outgoing text message.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OutgoingTextMessage extends OutgoingMessage {
 
     private static final long serialVersionUID = -8684079202025229263L;
@@ -33,7 +35,20 @@ public class OutgoingTextMessage extends OutgoingMessage {
     @JsonProperty("disable_web_page_preview")
     private Boolean disableWebPagePreview;
 
+    @JsonProperty("reply_markup")
+    private ReplyMarkup replyMarkup;
+
     public OutgoingTextMessage() {
+
+    }
+
+    public OutgoingTextMessage(String text, String parseMode, Boolean disableWebPagePreview,
+                               ReplyMarkup replyMarkup) {
+
+        this.text = text;
+        this.parseMode = parseMode;
+        this.disableWebPagePreview = disableWebPagePreview;
+        this.replyMarkup = replyMarkup;
     }
 
     public String getText() {
@@ -60,15 +75,53 @@ public class OutgoingTextMessage extends OutgoingMessage {
         this.disableWebPagePreview = disableWebPagePreview;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("OutgoingTextMessage{");
-        sb.append("text='").append(text).append('\'');
-        sb.append(", parseMode='").append(parseMode).append('\'');
-        sb.append(", disableWebPagePreview=").append(disableWebPagePreview);
-        sb.append('}');
-        sb.append(' ');
-        sb.append(super.toString());
-        return sb.toString();
+    public ReplyMarkup getReplyMarkup() {
+        return replyMarkup;
+    }
+
+    public void setReplyMarkup(ReplyMarkup replyMarkup) {
+        this.replyMarkup = replyMarkup;
+    }
+
+    public static Builder builder() {
+
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private String text;
+        private String parseMode;
+        private Boolean disableWebPagePreview;
+        private ReplyMarkup replyMarkup;
+
+        public Builder text(String text) {
+
+            this.text = text;
+            return this;
+        }
+
+        public Builder parseMode(String parseMode) {
+
+            this.parseMode = parseMode;
+            return this;
+        }
+
+        public Builder disableWebPagePreview(Boolean disableWebPagePreview) {
+
+            this.disableWebPagePreview = disableWebPagePreview;
+            return this;
+        }
+
+        public Builder replyMarkup(ReplyMarkup replyMarkup) {
+
+            this.replyMarkup = replyMarkup;
+            return this;
+        }
+
+        public OutgoingTextMessage build() {
+
+            return new OutgoingTextMessage(text, parseMode, disableWebPagePreview, replyMarkup);
+        }
     }
 }

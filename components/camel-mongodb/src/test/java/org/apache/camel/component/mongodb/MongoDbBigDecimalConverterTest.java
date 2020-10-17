@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,9 +19,13 @@ package org.apache.camel.component.mongodb;
 import java.math.BigDecimal;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import org.apache.camel.builder.RouteBuilder;
-import org.junit.Test;
+import org.bson.Document;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MongoDbBigDecimalConverterTest extends AbstractMongoDbTest {
 
@@ -34,14 +38,15 @@ public class MongoDbBigDecimalConverterTest extends AbstractMongoDbTest {
 
         public BigDecimal bNumber = new BigDecimal(12345L);
     }
+
     @Test
     public void testBigDecimalAutoConversion() {
-        assertEquals(0, testCollection.count());
+        assertEquals(0, testCollection.countDocuments());
         NumberClass testClass = new NumberClass();
         Object result = template.requestBody("direct:insert", testClass);
-        assertTrue(result instanceof BasicDBObject);
-        DBObject b = testCollection.find(new BasicDBObject("_id", testClass._id)).first();
-        assertNotNull("No record with 'testInsertString' _id", b);
+        assertTrue(result instanceof Document);
+        Document b = testCollection.find(new BasicDBObject("_id", testClass._id)).first();
+        assertNotNull(b, "No record with 'testInsertString' _id");
 
         assertTrue(testClass.aNumber.equals(new BigDecimal((double) b.get("aNumber"))));
         assertEquals(testClass.bNumber, new BigDecimal((double) b.get("bNumber")));
@@ -52,9 +57,8 @@ public class MongoDbBigDecimalConverterTest extends AbstractMongoDbTest {
         return new RouteBuilder() {
             public void configure() {
                 from("direct:insert")
-                    .to("mongodb:myDb?database={{mongodb.testDb}}&collection={{mongodb.testCollection}}&operation=insert&writeConcern=SAFE");
+                        .to("mongodb:myDb?database={{mongodb.testDb}}&collection={{mongodb.testCollection}}&operation=insert");
             }
         };
     }
 }
-

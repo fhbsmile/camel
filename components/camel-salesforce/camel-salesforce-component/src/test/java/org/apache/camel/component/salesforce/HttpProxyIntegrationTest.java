@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,29 +29,28 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.salesforce.api.dto.Version;
 import org.apache.camel.component.salesforce.api.dto.Versions;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.params.Parameter;
+import org.apache.camel.test.junit5.params.Parameterized;
+import org.apache.camel.test.junit5.params.Parameters;
+import org.apache.camel.test.junit5.params.Test;
 import org.eclipse.jetty.proxy.ConnectHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHENTICATE;
 import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test HTTP proxy configuration for Salesforce component.
  */
-@RunWith(Parameterized.class)
+@Parameterized
 public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpProxyIntegrationTest.class);
@@ -63,15 +62,15 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
     private static Server server;
     private static int httpProxyPort;
 
-    private static final AtomicBoolean WENT_TORUGH_PROXY = new AtomicBoolean();
+    private static final AtomicBoolean WENT_THROUGH_PROXY = new AtomicBoolean();
 
-    @Parameter(0)
-    public Consumer<SalesforceComponent> configurationMethod;
+    @Parameter
+    private Consumer<SalesforceComponent> configurationMethod;
 
     @Parameters
     public static Iterable<Consumer<SalesforceComponent>> methods() {
         return Arrays.asList(HttpProxyIntegrationTest::configureProxyViaComponentProperties,
-            HttpProxyIntegrationTest::configureProxyViaClientPropertiesMap);
+                HttpProxyIntegrationTest::configureProxyViaClientPropertiesMap);
     }
 
     @Test
@@ -79,7 +78,7 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
         doTestGetVersions("");
         doTestGetVersions("Xml");
 
-        assertTrue("Should have gone through the test proxy", WENT_TORUGH_PROXY.get());
+        assertTrue(WENT_THROUGH_PROXY.get(), "Should have gone through the test proxy");
     }
 
     @SuppressWarnings("unchecked")
@@ -97,7 +96,7 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
         LOG.debug("Versions: {}", versions);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setupServer() throws Exception {
         // start a local HTTP proxy using Jetty server
         server = new Server();
@@ -107,8 +106,8 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
         connector.setHost(HTTP_PROXY_HOST);
         server.addConnector(connector);
 
-        final String authenticationString = "Basic "
-            + B64Code.encode(HTTP_PROXY_USER_NAME + ":" + HTTP_PROXY_PASSWORD, StringUtil.__ISO_8859_1);
+        final String authenticationString
+                = "Basic " + B64Code.encode(HTTP_PROXY_USER_NAME + ":" + HTTP_PROXY_PASSWORD, StringUtil.__ISO_8859_1);
 
         ConnectHandler connectHandler = new ConnectHandler() {
             @Override
@@ -122,7 +121,7 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
                     return false;
                 }
                 LOG.info("Request contains required header " + PROXY_AUTHORIZATION);
-                WENT_TORUGH_PROXY.set(true);
+                WENT_THROUGH_PROXY.set(true);
                 return true;
             }
         };
@@ -142,7 +141,7 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
         final SalesforceComponent salesforce = (SalesforceComponent) context().getComponent("salesforce");
 
         // set HTTP client properties
-        final HashMap<String, Object> properties = new HashMap<String, Object>();
+        final HashMap<String, Object> properties = new HashMap<>();
         properties.put("timeout", "60000");
         properties.put("removeIdleDestinations", "true");
         salesforce.setHttpClientProperties(properties);
@@ -150,9 +149,8 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
         configurationMethod.accept(salesforce);
     }
 
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-        CamelTestSupport.tearDownAfterClass();
+    @Override
+    public void cleanupResources() throws Exception {
         // stop the proxy server after component
         LOG.info("Stopping proxy server...");
         server.stop();
@@ -166,12 +164,10 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
             public void configure() throws Exception {
 
                 // testGetVersion
-                from("direct:getVersions")
-                    .to("salesforce:getVersions");
+                from("direct:getVersions").to("salesforce:getVersions");
 
                 // allow overriding format per endpoint
-                from("direct:getVersionsXml")
-                    .to("salesforce:getVersions?format=XML");
+                from("direct:getVersionsXml").to("salesforce:getVersions?format=XML");
 
             }
         };
@@ -180,7 +176,7 @@ public class HttpProxyIntegrationTest extends AbstractSalesforceTestBase {
     private static void configureProxyViaComponentProperties(final SalesforceComponent salesforce) {
         salesforce.setHttpProxyHost(HTTP_PROXY_HOST);
         salesforce.setHttpProxyPort(httpProxyPort);
-        salesforce.setIsHttpProxySecure(false);
+        salesforce.setHttpProxySecure(false);
         salesforce.setHttpProxyUsername(HTTP_PROXY_USER_NAME);
         salesforce.setHttpProxyPassword(HTTP_PROXY_PASSWORD);
         salesforce.setHttpProxyAuthUri(String.format("http://%s:%s", HTTP_PROXY_HOST, httpProxyPort));

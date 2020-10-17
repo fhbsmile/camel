@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,11 +28,14 @@ public class GoogleBigQueryConfiguration {
     private GoogleBigQueryConnectionFactory connectionFactory;
     @UriParam(description = "Field name to use as insert id")
     private String useAsInsertId;
-    @UriPath(label = "common", description = "Google Cloud Project Id") @Metadata(required = "true")
+    @UriPath(label = "common", description = "Google Cloud Project Id")
+    @Metadata(required = true)
     private String projectId;
-    @UriPath(label = "common", description = "BigQuery Dataset Id") @Metadata(required = "true")
+    @UriPath(label = "common", description = "BigQuery Dataset Id")
+    @Metadata(required = true)
     private String datasetId;
-    @UriPath(label = "common", description = "BigQuery table id") @Metadata(required = "false")
+    @UriPath(label = "common", description = "BigQuery table id")
+    @Metadata(required = false)
     private String tableId;
 
     public void parseRemaining(String remaining) {

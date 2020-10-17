@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.camel.spring;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -28,10 +29,10 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Service;
 import org.apache.camel.core.xml.CamelJMXAgentDefinition;
-import org.apache.camel.impl.CamelPostProcessorHelper;
-import org.apache.camel.impl.DefaultCamelBeanPostProcessor;
+import org.apache.camel.impl.engine.CamelPostProcessorHelper;
+import org.apache.camel.impl.engine.DefaultCamelBeanPostProcessor;
 import org.apache.camel.spi.Metadata;
-import org.apache.camel.util.ServiceHelper;
+import org.apache.camel.support.service.ServiceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanInstantiationException;
@@ -39,16 +40,19 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.Ordered;
 
 /**
- * Spring specific {@link DefaultCamelBeanPostProcessor} which uses Spring {@link BeanPostProcessor} to post process beans.
+ * Spring specific {@link DefaultCamelBeanPostProcessor} which uses Spring {@link BeanPostProcessor} to post process
+ * beans.
  *
  * @see DefaultCamelBeanPostProcessor
  */
 @Metadata(label = "spring,configuration")
 @XmlRootElement(name = "beanPostProcessor")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationContextAware {
+public class CamelBeanPostProcessor
+        implements org.apache.camel.spi.CamelBeanPostProcessor, BeanPostProcessor, ApplicationContextAware, Ordered {
     private static final Logger LOG = LoggerFactory.getLogger(CamelBeanPostProcessor.class);
     @XmlTransient
     Set<String> prototypeBeans = new LinkedHashSet<>();
@@ -58,6 +62,8 @@ public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationCon
     private ApplicationContext applicationContext;
     @XmlTransient
     private String camelId;
+    @XmlTransient
+    private boolean bindToRegistrySupported;
 
     // must use a delegate, as we cannot extend DefaultCamelBeanPostProcessor, as this will cause the
     // XSD schema generator to include the DefaultCamelBeanPostProcessor as a type, which we do not want to
@@ -67,7 +73,8 @@ public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationCon
         public CamelContext getOrLookupCamelContext() {
             if (camelContext == null) {
                 if (camelId != null) {
-                    LOG.trace("Looking up CamelContext by id: {} from Spring ApplicationContext: {}", camelId, applicationContext);
+                    LOG.trace("Looking up CamelContext by id: {} from Spring ApplicationContext: {}", camelId,
+                            applicationContext);
                     camelContext = applicationContext.getBean(camelId, CamelContext.class);
                 } else {
                     // lookup by type and grab the single CamelContext if exists
@@ -94,6 +101,12 @@ public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationCon
         }
 
         @Override
+        protected boolean bindToRegistrySupported() {
+            // do not support @BindToRegistry as spring and spring-boot has its own set of annotations for this
+            return false;
+        }
+
+        @Override
         public CamelPostProcessorHelper getPostProcessorHelper() {
             // lets lazily create the post processor
             if (camelPostProcessorHelper == null) {
@@ -109,8 +122,10 @@ public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationCon
                     }
 
                     @Override
-                    protected RuntimeException createProxyInstantiationRuntimeException(Class<?> type, Endpoint endpoint, Exception e) {
-                        return new BeanInstantiationException(type, "Could not instantiate proxy of type " + type.getName() + " on endpoint " + endpoint, e);
+                    protected RuntimeException createProxyInstantiationRuntimeException(
+                            Class<?> type, Endpoint endpoint, Exception e) {
+                        return new BeanInstantiationException(
+                                type, "Could not instantiate proxy of type " + type.getName() + " on endpoint " + endpoint, e);
                     }
 
                     @Override
@@ -125,7 +140,8 @@ public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationCon
                     }
 
                     @Override
-                    protected void startService(Service service, CamelContext context, Object bean, String beanName) throws Exception {
+                    protected void startService(Service service, CamelContext context, Object bean, String beanName)
+                            throws Exception {
                         if (isSingleton(bean, beanName)) {
                             getCamelContext().addService(service);
                         } else {
@@ -133,8 +149,10 @@ public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationCon
                             ServiceHelper.startService(service);
                             if (prototypeBeans.add(beanName)) {
                                 // do not spam the log with WARN so do this only once per bean name
-                                CamelBeanPostProcessor.LOG.warn("The bean with id [" + beanName + "] is prototype scoped and cannot stop the injected service when bean is destroyed: "
-                                    + service + ". You may want to stop the service manually from the bean.");
+                                CamelBeanPostProcessor.LOG
+                                        .warn("The bean with id [{}] is prototype scoped and cannot stop the injected "
+                                              + " service when bean is destroyed: {}. You may want to stop the service "
+                                              + "manually from the bean.", beanName, service);
                             }
                         }
                     }
@@ -173,6 +191,11 @@ public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationCon
         }
     }
 
+    @Override
+    public int getOrder() {
+        return LOWEST_PRECEDENCE;
+    }
+
     // Properties
     // -------------------------------------------------------------------------
 
@@ -197,4 +220,21 @@ public class CamelBeanPostProcessor implements BeanPostProcessor, ApplicationCon
         this.camelId = camelId;
     }
 
+    public boolean isBindToRegistrySupported() {
+        return bindToRegistrySupported;
+    }
+
+    public void setBindToRegistrySupported(boolean bindToRegistrySupported) {
+        this.bindToRegistrySupported = bindToRegistrySupported;
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        delegate.setEnabled(enabled);
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return delegate.isEnabled();
+    }
 }

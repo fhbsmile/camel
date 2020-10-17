@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,8 +24,8 @@ import java.util.Properties;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.support.ResourceHelper;
 import org.apache.camel.util.ObjectHelper;
-import org.apache.camel.util.ResourceHelper;
 import org.infinispan.AdvancedCache;
 import org.infinispan.Cache;
 import org.infinispan.client.hotrod.RemoteCache;
@@ -81,7 +81,7 @@ public final class InfinispanUtil {
     }
 
     @SuppressWarnings("unchecked")
-    public static <K, V>  RemoteCache<K, V> asRemote(BasicCache<K, V> cache) {
+    public static <K, V> RemoteCache<K, V> asRemote(BasicCache<K, V> cache) {
         return RemoteCache.class.cast(cache);
     }
 
@@ -92,7 +92,7 @@ public final class InfinispanUtil {
 
     public static <K, V> BasicCache<K, V> ignoreReturnValuesCache(BasicCache<K, V> cache) {
         if (isEmbedded(cache)) {
-            return ((Cache<K, V>) cache).getAdvancedCache().withFlags(Flag.IGNORE_RETURN_VALUES);
+            return ((Cache<K, V>) cache).getAdvancedCache().withFlags(new Flag[] { Flag.IGNORE_RETURN_VALUES });
         } else {
             return cache;
         }

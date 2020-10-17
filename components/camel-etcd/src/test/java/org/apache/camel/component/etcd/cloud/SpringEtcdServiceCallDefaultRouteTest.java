@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,29 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.component.etcd.cloud;
 
-import java.net.URI;
-
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import mousio.etcd4j.EtcdClient;
-import org.apache.camel.component.etcd.EtcdConfiguration;
-import org.apache.camel.component.etcd.EtcdHelper;
-import org.apache.camel.test.spring.CamelSpringTestSupport;
-import org.junit.Test;
+import org.apache.camel.component.etcd.support.SpringEtcdTestSupport;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-public class SpringEtcdServiceCallDefaultRouteTest extends CamelSpringTestSupport {
-    private static final ObjectMapper MAPPER = EtcdHelper.createObjectMapper();
-    private static final EtcdConfiguration CONFIGURATION = new EtcdConfiguration();
-    private static final EtcdClient CLIENT = new EtcdClient(URI.create("http://localhost:2379"));
-
+public class SpringEtcdServiceCallDefaultRouteTest extends SpringEtcdTestSupport {
     @Override
     protected AbstractApplicationContext createApplicationContext() {
-        return new ClassPathXmlApplicationContext("org/apache/camel/component/etcd/cloud/SpringEtcdServiceCallDefaultRouteTest.xml");
+        return new ClassPathXmlApplicationContext(
+                "org/apache/camel/component/etcd/cloud/SpringEtcdServiceCallDefaultRouteTest.xml");
     }
 
     // *************************************************************************
@@ -46,24 +37,26 @@ public class SpringEtcdServiceCallDefaultRouteTest extends CamelSpringTestSuppor
     @Override
     public void doPreSetup() throws Exception {
         JsonNode service1 = MAPPER.createObjectNode()
-            .put("name", "http-service")
-            .put("address", "127.0.0.1")
-            .put("port", "9091");
+                .put("name", "http-service")
+                .put("address", "127.0.0.1")
+                .put("port", "9091");
         JsonNode service2 = MAPPER.createObjectNode()
-            .put("name", "http-service")
-            .put("address", "127.0.0.1")
-            .put("port", "9092");
+                .put("name", "http-service")
+                .put("address", "127.0.0.1")
+                .put("port", "9092");
 
-        CLIENT.put(CONFIGURATION.getServicePath() + "service-1", MAPPER.writeValueAsString(service1)).send().get();
-        CLIENT.put(CONFIGURATION.getServicePath() + "service-2", MAPPER.writeValueAsString(service2)).send().get();
+        EtcdClient client = getClient();
+        client.put(CONFIGURATION.getServicePath() + "service-1", MAPPER.writeValueAsString(service1)).send().get();
+        client.put(CONFIGURATION.getServicePath() + "service-2", MAPPER.writeValueAsString(service2)).send().get();
 
         super.doPreSetup();
     }
 
     @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
-        CLIENT.deleteDir(CONFIGURATION.getServicePath()).recursive().send().get();
+    protected void cleanupResources() throws Exception {
+        getClient().deleteDir(CONFIGURATION.getServicePath()).recursive().send().get();
+
+        super.cleanupResources();
     }
 
     // *************************************************************************

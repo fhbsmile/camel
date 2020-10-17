@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,18 +21,21 @@ import java.util.Map;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.SSLContextParametersAware;
-import org.apache.camel.impl.DefaultComponent;
 import org.apache.camel.spi.Metadata;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
+import org.apache.camel.support.jsse.SSLContextParameters;
 
 /**
  * Represents the component that manages {@link ThriftEndpoint}.
  */
+@Component("thrift")
 public class ThriftComponent extends DefaultComponent implements SSLContextParametersAware {
-    
+
     @Metadata(label = "security", defaultValue = "false")
     private boolean useGlobalSslContextParameters;
 
+    @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         ThriftConfiguration config = new ThriftConfiguration();
 
@@ -42,10 +45,9 @@ public class ThriftComponent extends DefaultComponent implements SSLContextParam
             sslParameters = retrieveGlobalSslContextParameters();
             config.setSslParameters(sslParameters);
         }
-        
-        setProperties(config, parameters);
+        ThriftEndpoint endpoint = new ThriftEndpoint(uri, this, config);
+        setProperties(endpoint, parameters);
 
-        Endpoint endpoint = new ThriftEndpoint(uri, this, config);
         return endpoint;
     }
 
@@ -54,7 +56,9 @@ public class ThriftComponent extends DefaultComponent implements SSLContextParam
      * 
      * @return the parsed and valid configuration to use
      */
-    protected ThriftConfiguration parseConfiguration(ThriftConfiguration configuration, String remaining, Map<String, Object> parameters) throws Exception {
+    protected ThriftConfiguration parseConfiguration(
+            ThriftConfiguration configuration, String remaining, Map<String, Object> parameters)
+            throws Exception {
         configuration.parseURI(new URI(remaining), parameters, this);
         return configuration;
     }

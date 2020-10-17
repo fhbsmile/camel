@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,11 +22,10 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class SftpSimpleConsumeStreamingTest extends SftpServerTestSupport {
 
     @Test
@@ -45,7 +44,7 @@ public class SftpSimpleConsumeStreamingTest extends SftpServerTestSupport {
         mock.expectedHeaderReceived(Exchange.FILE_NAME, "hello.txt");
         mock.expectedBodiesReceived(expected);
 
-        context.startRoute("foo");
+        context.getRouteController().startRoute("foo");
 
         assertMockEndpointsSatisfied();
         GenericFile<?> remoteFile = mock.getExchanges().get(0).getIn().getBody(GenericFile.class);
@@ -57,9 +56,9 @@ public class SftpSimpleConsumeStreamingTest extends SftpServerTestSupport {
         return new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from("sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR + "?username=admin&password=admin&delay=10s&disconnect=true&streamDownload=true")
-                    .routeId("foo").noAutoStartup()
-                    .to("mock:result");
+                from("sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR
+                     + "?username=admin&password=admin&delay=10000&disconnect=true&streamDownload=true").routeId("foo")
+                             .noAutoStartup().to("mock:result");
             }
         };
     }

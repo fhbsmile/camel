@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,22 +26,22 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.component.http.HttpEndpoint;
-import org.apache.camel.component.http.HttpMethods;
 import org.apache.camel.http.common.HttpHelper;
+import org.apache.camel.http.common.HttpMethods;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpHelperTest {
 
     @Test
     public void testAppendHeader() throws Exception {
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         HttpHelper.appendHeader(headers, "foo", "a");
         HttpHelper.appendHeader(headers, "bar", "b");
         HttpHelper.appendHeader(headers, "baz", "c");
@@ -54,7 +54,7 @@ public class HttpHelperTest {
 
     @Test
     public void testAppendHeaderMultipleValues() throws Exception {
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         HttpHelper.appendHeader(headers, "foo", "a");
         HttpHelper.appendHeader(headers, "bar", "b");
         HttpHelper.appendHeader(headers, "bar", "c");
@@ -74,6 +74,7 @@ public class HttpHelperTest {
         String url = HttpHelper.createURL(
                 createExchangeWithOptionalCamelHttpUriHeader("http://apache.org", null),
                 createHttpEndpoint(false, "http://camel.apache.org"));
+
         assertEquals("http://apache.org", url);
     }
 
@@ -82,6 +83,7 @@ public class HttpHelperTest {
         String url = HttpHelper.createURL(
                 createExchangeWithOptionalCamelHttpUriHeader("http://apache.org", null),
                 createHttpEndpoint(true, "http://camel.apache.org"));
+
         assertEquals("http://camel.apache.org", url);
     }
 
@@ -90,6 +92,7 @@ public class HttpHelperTest {
         String url = HttpHelper.createURL(
                 createExchangeWithOptionalCamelHttpUriHeader(null, null),
                 createHttpEndpoint(false, "http://camel.apache.org"));
+
         assertEquals("http://camel.apache.org", url);
     }
 
@@ -98,6 +101,7 @@ public class HttpHelperTest {
         String url = HttpHelper.createURL(
                 createExchangeWithOptionalCamelHttpUriHeader(null, "search"),
                 createHttpEndpoint(true, "http://www.google.com"));
+
         assertEquals("http://www.google.com/search", url);
     }
 
@@ -106,39 +110,58 @@ public class HttpHelperTest {
         String url = HttpHelper.createURL(
                 createExchangeWithOptionalCamelHttpUriHeader(null, "/search"),
                 createHttpEndpoint(true, "http://www.google.com/"));
+
         assertEquals("http://www.google.com/search", url);
     }
 
     @Test
-    public void createURIShouldKeepQueryParametersGivenInUrlParameter() throws URISyntaxException {
-        URI uri = HttpHelper.createURI(
-                createExchangeWithOptionalCamelHttpUriHeader(null, null),
-                "http://apache.org/?q=%E2%82%AC", createHttpEndpoint(false, "http://apache.org"));
-        assertEquals("http://apache.org/?q=%E2%82%AC", uri.toString());
+    public void createMethodAlwaysUseUserChoosenMethod() throws URISyntaxException {
+        HttpMethods method = HttpHelper.createMethod(
+                createExchangeWithOptionalHttpQueryAndHttpMethodHeader("q=camel", HttpMethods.POST),
+                createHttpEndpoint(true, "http://www.google.com/search"),
+                false);
+
+        assertEquals(HttpMethods.POST, method);
     }
 
     @Test
-    public void createURIShouldEncodeExchangeHttpQuery() throws URISyntaxException {
-        URI uri = HttpHelper.createURI(
-                createExchangeWithOptionalHttpQueryAndHttpMethodHeader("q= ", null),
-                "http://apache.org/?q=%E2%82%AC", createHttpEndpoint(false, "http://apache.org"));
-        assertEquals("http://apache.org/?q=%20", uri.toString());
+    public void createMethodUseGETIfQueryIsProvidedInHeader() throws URISyntaxException {
+        HttpMethods method = HttpHelper.createMethod(
+                createExchangeWithOptionalHttpQueryAndHttpMethodHeader("q=camel", null),
+                createHttpEndpoint(true, "http://www.google.com/search"),
+                false);
+
+        assertEquals(HttpMethods.GET, method);
     }
 
     @Test
-    public void createURIShouldNotDoubleEncodeExchangeHttpQuery() throws URISyntaxException {
-        URI uri = HttpHelper.createURI(
-                createExchangeWithOptionalHttpQueryAndHttpMethodHeader("q=%E2%82%AC", null),
-                "http://apache.org/?q=%E2%82%AC", createHttpEndpoint(false, "http://apache.org"));
-        assertEquals("http://apache.org/?q=%E2%82%AC", uri.toString());
-    }
-
-    @Test
-    public void createURIShouldKeepQueryParametersGivenInEndPointUri() throws URISyntaxException {
-        URI uri = HttpHelper.createURI(
+    public void createMethodUseGETIfQueryIsProvidedInEndpointURI() throws URISyntaxException {
+        HttpMethods method = HttpHelper.createMethod(
                 createExchangeWithOptionalHttpQueryAndHttpMethodHeader(null, null),
-                "http://apache.org/", createHttpEndpoint(false, "http://apache.org/?q=%E2%82%AC"));
-        assertEquals("http://apache.org/?q=%E2%82%AC", uri.toString());
+                createHttpEndpoint(true, "http://www.google.com/search?q=test"),
+                false);
+
+        assertEquals(HttpMethods.GET, method);
+    }
+
+    @Test
+    public void createMethodUseGETIfNoneQueryOrPayloadIsProvided() throws URISyntaxException {
+        HttpMethods method = HttpHelper.createMethod(
+                createExchangeWithOptionalHttpQueryAndHttpMethodHeader(null, null),
+                createHttpEndpoint(true, "http://www.google.com/search"),
+                false);
+
+        assertEquals(HttpMethods.GET, method);
+    }
+
+    @Test
+    public void createMethodUsePOSTIfNoneQueryButPayloadIsProvided() throws URISyntaxException {
+        HttpMethods method = HttpHelper.createMethod(
+                createExchangeWithOptionalHttpQueryAndHttpMethodHeader(null, null),
+                createHttpEndpoint(true, "http://www.google.com/search"),
+                true);
+
+        assertEquals(HttpMethods.POST, method);
     }
 
     @Test
@@ -148,6 +171,7 @@ public class HttpHelperTest {
                 createHttpEndpoint(true, "http://www.google.com"));
         assertEquals("http://www.google.com/", url);
     }
+
     @Test
     public void createURLShouldAddPathAndQueryParamsAndSlash() throws Exception {
         String url = HttpHelper.createURL(
@@ -155,6 +179,7 @@ public class HttpHelperTest {
                 createHttpEndpoint(true, "http://www.google.com/context?test=true"));
         assertEquals("http://www.google.com/context/search?test=true", url);
     }
+
     @Test
     public void createURLShouldAddPathAndQueryParamsAndRemoveDuplicateSlash() throws Exception {
         String url = HttpHelper.createURL(
@@ -201,7 +226,8 @@ public class HttpHelperTest {
         return exchange;
     }
 
-    private Exchange createExchangeWithOptionalCamelHttpUriHeader(String endpointURI, String httpPath) throws URISyntaxException {
+    private Exchange createExchangeWithOptionalCamelHttpUriHeader(String endpointURI, String httpPath)
+            throws URISyntaxException {
         CamelContext context = new DefaultCamelContext();
         DefaultExchange exchange = new DefaultExchange(context);
         Message inMsg = exchange.getIn();

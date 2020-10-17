@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -62,6 +62,5 @@ public final class HazelcastComponentHelper {
         String operationName = exchange.getIn().getHeader(HazelcastConstants.OPERATION, String.class);
         return ObjectHelper.isEmpty(operationName) ? defaultOperation : HazelcastOperation.getHazelcastOperation(operationName);
     }
-
 
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.component.consul.cloud;
 
 import java.util.ArrayList;
@@ -26,12 +25,12 @@ import com.orbitz.consul.model.agent.Registration;
 import org.apache.camel.RoutesBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.consul.ConsulTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.AvailablePortFinder;
+import org.junit.jupiter.api.Test;
 
 public class ConsulDefaultServiceCallRouteTest extends ConsulTestSupport {
     private static final String SERVICE_NAME = "http-service";
     private static final int SERVICE_COUNT = 5;
-    private static final int SERVICE_PORT_BASE = 8080;
 
     private AgentClient client;
     private List<Registration> registrations;
@@ -43,18 +42,16 @@ public class ConsulDefaultServiceCallRouteTest extends ConsulTestSupport {
 
     @Override
     protected void doPreSetup() throws Exception {
+        super.doPreSetup();
+
         client = getConsul().agentClient();
 
         registrations = new ArrayList<>(SERVICE_COUNT);
         expectedBodies = new ArrayList<>(SERVICE_COUNT);
 
         for (int i = 0; i < SERVICE_COUNT; i++) {
-            Registration r = ImmutableRegistration.builder()
-                .id("service-" + i)
-                .name(SERVICE_NAME)
-                .address("127.0.0.1")
-                .port(SERVICE_PORT_BASE + i)
-                .build();
+            Registration r = ImmutableRegistration.builder().id("service-" + i).name(SERVICE_NAME).address("127.0.0.1")
+                    .port(AvailablePortFinder.getNextAvailable()).build();
 
             client.register(r);
 
@@ -64,8 +61,8 @@ public class ConsulDefaultServiceCallRouteTest extends ConsulTestSupport {
     }
 
     @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
+    public void doPostTearDown() throws Exception {
+        super.doPostTearDown();
 
         registrations.forEach(r -> client.deregister(r.getId()));
     }
@@ -89,24 +86,17 @@ public class ConsulDefaultServiceCallRouteTest extends ConsulTestSupport {
     // *************************************************************************
 
     @Override
-    protected RoutesBuilder createRouteBuilder() throws Exception {
+    protected RoutesBuilder createRouteBuilder() {
         return new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from("direct:start")
-                    .serviceCall()
-                        .name(SERVICE_NAME)
-                        .component("jetty")
-                        .defaultLoadBalancer()
-                        .consulServiceDiscovery()
-                        .endParent()
-                    .to("log:org.apache.camel.component.consul.cloud?level=INFO&showAll=true&multiline=true")
-                    .to("mock:result");
+                from("direct:start").serviceCall().name(SERVICE_NAME).component("http").defaultLoadBalancer()
+                        .consulServiceDiscovery().url(consulUrl()).endParent()
+                        .to("log:org.apache.camel.component.consul.cloud?level=INFO&showAll=true&multiline=true")
+                        .to("mock:result");
 
-                registrations.forEach(r ->
-                    fromF("jetty:http://%s:%d", r.getAddress().get(), r.getPort().get())
-                        .transform().simple("${in.body} on " + r.getPort().get())
-                );
+                registrations.forEach(r -> fromF("jetty:http://%s:%d", r.getAddress().get(), r.getPort().get()).transform()
+                        .simple("${in.body} on " + r.getPort().get()));
             }
         };
     }

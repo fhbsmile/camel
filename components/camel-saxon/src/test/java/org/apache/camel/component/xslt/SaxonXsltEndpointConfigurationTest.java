@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,24 +20,31 @@ import java.util.Map;
 
 import net.sf.saxon.Configuration;
 import org.apache.camel.Endpoint;
-import org.apache.camel.test.spring.CamelSpringTestSupport;
-import org.junit.Test;
+import org.apache.camel.component.xslt.saxon.XsltSaxonComponent;
+import org.apache.camel.component.xslt.saxon.XsltSaxonEndpoint;
+import org.apache.camel.test.spring.junit5.CamelSpringTestSupport;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SaxonXsltEndpointConfigurationTest extends CamelSpringTestSupport {
     @Test
     public void testConfiguration() throws Exception {
         Configuration configuration = context.getRegistry().lookupByNameAndType("saxon-configuration", Configuration.class);
         Map<String, Object> properties = context.getRegistry().lookupByNameAndType("saxon-properties", Map.class);
-        XsltComponent component = context.getComponent("xslt", XsltComponent.class);
-        XsltEndpoint endpoint = null;
+        XsltSaxonComponent component = context.getComponent("xslt-saxon", XsltSaxonComponent.class);
+        XsltSaxonEndpoint endpoint = null;
 
         assertNotNull(configuration);
         assertNotNull(properties);
 
         for (Endpoint ep : context.getEndpoints()) {
-            if (ep instanceof XsltEndpoint) {
-                endpoint = (XsltEndpoint)ep;
+            if (ep instanceof XsltSaxonEndpoint) {
+                endpoint = (XsltSaxonEndpoint) ep;
                 break;
             }
         }

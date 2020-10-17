@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,30 +16,29 @@
  */
 package org.apache.camel.component.crypto.cms.common;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
 
 @UriParams
-public class DefaultCryptoCmsUnMarshallerConfiguration extends DefaultCryptoCmsConfiguration implements CryptoCmsUnMarshallerConfiguration {
+public class DefaultCryptoCmsUnMarshallerConfiguration extends DefaultCryptoCmsConfiguration
+        implements CryptoCmsUnMarshallerConfiguration {
 
-    @UriParam(label = "decrypt_verify", defaultValue = "false")
-    private Boolean fromBase64 = Boolean.FALSE;
+    @UriParam(label = "decrypt_verify")
+    private boolean fromBase64;
 
     public DefaultCryptoCmsUnMarshallerConfiguration() {
-        super();
     }
 
     @Override
-    public Boolean isFromBase64(Exchange exchange) {
+    public boolean isFromBase64() {
         return fromBase64;
     }
 
     /**
-     * If <tt>true</tt> then the CMS message is base 64 encoded and must be
-     * decoded during the processing. Default value is <code>false</code>.
+     * If <tt>true</tt> then the CMS message is base 64 encoded and must be decoded during the processing. Default value
+     * is <code>false</code>.
      */
-    public void setFromBase64(Boolean base64) {
+    public void setFromBase64(boolean base64) {
         this.fromBase64 = base64;
     }
 }

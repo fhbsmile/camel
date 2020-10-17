@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.util.Optional;
 import org.apache.camel.Consumer;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Processor;
+import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.StartupListener;
 import org.apache.camel.SuspendableService;
 import org.apache.camel.api.management.ManagedAttribute;
@@ -29,19 +30,17 @@ import org.apache.camel.cluster.CamelClusterEventListener;
 import org.apache.camel.cluster.CamelClusterMember;
 import org.apache.camel.cluster.CamelClusterService;
 import org.apache.camel.cluster.CamelClusterView;
-import org.apache.camel.impl.DefaultConsumer;
-import org.apache.camel.util.ObjectHelper;
-import org.apache.camel.util.ServiceHelper;
+import org.apache.camel.support.DefaultConsumer;
+import org.apache.camel.support.service.ServiceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A consumer which is only really active when the {@link CamelClusterView} has
- * the leadership.
+ * A consumer which is only really active when the {@link CamelClusterView} has the leadership.
  */
 @ManagedResource(description = "Managed Master Consumer")
 public class MasterConsumer extends DefaultConsumer {
-    private static final transient Logger LOGGER = LoggerFactory.getLogger(MasterConsumer.class);
+    private static final transient Logger LOG = LoggerFactory.getLogger(MasterConsumer.class);
 
     private final CamelClusterService clusterService;
     private final MasterEndpoint masterEndpoint;
@@ -65,7 +64,8 @@ public class MasterConsumer extends DefaultConsumer {
     protected void doStart() throws Exception {
         super.doStart();
 
-        LOGGER.debug("Using ClusterService instance {} (id={}, type={})", clusterService, clusterService.getId(), clusterService.getClass().getName());
+        LOG.debug("Using ClusterService instance {} (id={}, type={})", clusterService, clusterService.getId(),
+                clusterService.getClass().getName());
 
         view = clusterService.getView(masterEndpoint.getNamespace());
         view.addEventListener(leadershipListener);
@@ -91,7 +91,7 @@ public class MasterConsumer extends DefaultConsumer {
     @Override
     protected void doResume() throws Exception {
         if (delegatedConsumer instanceof SuspendableService) {
-            ((SuspendableService)delegatedConsumer).resume();
+            ((SuspendableService) delegatedConsumer).resume();
         }
         super.doResume();
     }
@@ -99,7 +99,7 @@ public class MasterConsumer extends DefaultConsumer {
     @Override
     protected void doSuspend() throws Exception {
         if (delegatedConsumer instanceof SuspendableService) {
-            ((SuspendableService)delegatedConsumer).suspend();
+            ((SuspendableService) delegatedConsumer).suspend();
         }
         super.doSuspend();
     }
@@ -107,8 +107,8 @@ public class MasterConsumer extends DefaultConsumer {
     @ManagedAttribute(description = "Are we the master")
     public boolean isMaster() {
         return view != null
-            ? view.getLocalMember().isLeader()
-            : false;
+                ? view.getLocalMember().isLeader()
+                : false;
     }
 
     // **************************************
@@ -132,7 +132,7 @@ public class MasterConsumer extends DefaultConsumer {
         ServiceHelper.startService(delegatedEndpoint);
         ServiceHelper.startService(delegatedConsumer);
 
-        LOGGER.info("Leadership taken: consumer started: {}", delegatedEndpoint);
+        LOG.info("Leadership taken: consumer started: {}", delegatedEndpoint);
     }
 
     private synchronized void onLeadershipLost() throws Exception {
@@ -141,7 +141,7 @@ public class MasterConsumer extends DefaultConsumer {
 
         delegatedConsumer = null;
 
-        LOGGER.info("Leadership lost: consumer stopped: {}", delegatedEndpoint);
+        LOG.info("Leadership lost: consumer stopped: {}", delegatedEndpoint);
     }
 
     // **************************************
@@ -162,7 +162,7 @@ public class MasterConsumer extends DefaultConsumer {
                     onLeadershipLost();
                 }
             } catch (Exception e) {
-                throw ObjectHelper.wrapRuntimeCamelException(e);
+                throw RuntimeCamelException.wrapRuntimeCamelException(e);
             }
         }
     }

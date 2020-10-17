@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,53 +29,49 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.component.google.pubsub.PubsubTestSupport;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SingleExchangeRoundtripTest extends PubsubTestSupport {
 
     private static final String TOPIC_NAME = "singleSend";
     private static final String SUBSCRIPTION_NAME = "singleReceive";
 
-    @EndpointInject(uri = "direct:from")
+    @EndpointInject("direct:from")
     private Endpoint directIn;
 
-    @EndpointInject(uri = "google-pubsub:{{project.id}}:" + TOPIC_NAME)
+    @EndpointInject("google-pubsub:{{project.id}}:" + TOPIC_NAME)
     private Endpoint pubsubTopic;
 
-    @EndpointInject(uri = "mock:sendResult")
+    @EndpointInject("mock:sendResult")
     private MockEndpoint sendResult;
 
-    @EndpointInject(uri = "google-pubsub:{{project.id}}:" + SUBSCRIPTION_NAME)
+    @EndpointInject("google-pubsub:{{project.id}}:" + SUBSCRIPTION_NAME + "?synchronousPull=true")
     private Endpoint pubsubSubscription;
 
-    @EndpointInject(uri = "mock:receiveResult")
+    @EndpointInject("mock:receiveResult")
     private MockEndpoint receiveResult;
 
-    @Produce(uri = "direct:from")
+    @Produce("direct:from")
     private ProducerTemplate producer;
 
-    @BeforeClass
-    public static void createTopicSubscription() throws Exception {
+    @Override
+    public void createTopicSubscription() {
         createTopicSubscriptionPair(TOPIC_NAME, SUBSCRIPTION_NAME);
     }
 
     @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             public void configure() {
-                from(directIn)
-                        .routeId("Single_Send")
-                        .to(pubsubTopic)
-                        .to(sendResult);
+                from(directIn).routeId("Single_Send").to(pubsubTopic).to(sendResult);
 
-                from(pubsubSubscription)
-                        .routeId("Single_Receive")
-                        .to("direct:one");
+                from(pubsubSubscription).routeId("Single_Receive").to("direct:one");
 
-                from("direct:one")
-                        .to(receiveResult);
+                from("direct:one").to(receiveResult);
             }
         };
     }
@@ -100,33 +96,29 @@ public class SingleExchangeRoundtripTest extends PubsubTestSupport {
         producer.send(exchange);
 
         List<Exchange> sentExchanges = sendResult.getExchanges();
-        assertEquals("Sent exchanges", 1, sentExchanges.size());
+        assertEquals(1, sentExchanges.size(), "Sent exchanges");
 
         Exchange sentExchange = sentExchanges.get(0);
 
-        assertEquals("Sent ID",
-                     exchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID),
-                     sentExchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID));
+        assertEquals(exchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID),
+                sentExchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID), "Sent ID");
 
         receiveResult.assertIsSatisfied(5000);
 
         List<Exchange> receivedExchanges = receiveResult.getExchanges();
 
-        assertNotNull("Received exchanges", receivedExchanges);
+        assertNotNull(receivedExchanges, "Received exchanges");
 
         Exchange receivedExchange = receivedExchanges.get(0);
 
-        assertNotNull("PUBSUB Message ID Property",
-                      receivedExchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID));
-        assertNotNull("PUBSUB Ack ID Property",
-                      receivedExchange.getIn().getHeader(GooglePubsubConstants.ACK_ID));
-        assertNotNull("PUBSUB Published Time",
-                      receivedExchange.getIn().getHeader(GooglePubsubConstants.PUBLISH_TIME));
+        assertNotNull(receivedExchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID), "PUBSUB Message ID Property");
+        assertNotNull(receivedExchange.getIn().getHeader(GooglePubsubConstants.PUBLISH_TIME), "PUBSUB Published Time");
 
-        assertEquals("PUBSUB Header Attribute", attributeValue,
-                     ((Map) receivedExchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES)).get(attributeKey));
+        assertEquals(attributeValue,
+                ((Map) receivedExchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES)).get(attributeKey),
+                "PUBSUB Header Attribute");
 
         assertEquals(sentExchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID),
-                     receivedExchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID));
+                receivedExchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID));
     }
 }

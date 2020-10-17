@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,7 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.component.kubernetes.KubernetesConfiguration;
 import org.apache.camel.component.kubernetes.cluster.lock.KubernetesLockConfiguration;
-import org.apache.camel.impl.cluster.AbstractCamelClusterService;
+import org.apache.camel.support.cluster.AbstractCamelClusterService;
 import org.apache.camel.util.ObjectHelper;
 
 /**
@@ -58,9 +58,11 @@ public class KubernetesClusterService extends AbstractCamelClusterService<Kubern
         return new KubernetesClusterView(getCamelContext(), this, config, lockConfig);
     }
 
-    protected KubernetesConfiguration setConfigDefaults(KubernetesConfiguration configuration, KubernetesLockConfiguration lockConfiguration) {
+    protected KubernetesConfiguration setConfigDefaults(
+            KubernetesConfiguration configuration, KubernetesLockConfiguration lockConfiguration) {
         if (configuration.getConnectionTimeout() == null) {
-            // Set the connection timeout to be much lower than the renewal deadline,
+            // Set the connection timeout to be much lower than the renewal
+            // deadline,
             // to avoid losing the leadership in case of stale connections
             int timeout = (int) (lockConfiguration.getRenewDeadlineMillis() / 3);
             timeout = Math.max(timeout, 3000);
@@ -103,12 +105,17 @@ public class KubernetesClusterService extends AbstractCamelClusterService<Kubern
             throw new IllegalStateException("leaseDurationMillis must be > 0 (found: " + config.getLeaseDurationMillis() + ")");
         }
         if (config.getLeaseDurationMillis() <= config.getRenewDeadlineMillis()) {
-            throw new IllegalStateException("leaseDurationMillis must be greater than renewDeadlineMillis "
-                    + "(" + config.getLeaseDurationMillis() + " is not greater than " + config.getRenewDeadlineMillis() + ")");
+            throw new IllegalStateException(
+                    "leaseDurationMillis must be greater than renewDeadlineMillis " + "(" + config.getLeaseDurationMillis()
+                                            + " is not greater than "
+                                            + config.getRenewDeadlineMillis() + ")");
         }
         if (config.getRenewDeadlineMillis() <= config.getJitterFactor() * config.getRetryPeriodMillis()) {
-            throw new IllegalStateException("renewDeadlineMillis must be greater than jitterFactor*retryPeriodMillis "
-                    + "(" + config.getRenewDeadlineMillis() + " is not greater than " + config.getJitterFactor() + "*" + config.getRetryPeriodMillis() + ")");
+            throw new IllegalStateException(
+                    "renewDeadlineMillis must be greater than jitterFactor*retryPeriodMillis " + "("
+                                            + config.getRenewDeadlineMillis()
+                                            + " is not greater than " + config.getJitterFactor() + "*"
+                                            + config.getRetryPeriodMillis() + ")");
         }
 
         return config;
@@ -222,8 +229,8 @@ public class KubernetesClusterService extends AbstractCamelClusterService<Kubern
     }
 
     /**
-     * The time between two subsequent attempts to check and acquire the leadership.
-     * It is randomized using the jitter factor.
+     * The time between two subsequent attempts to check and acquire the leadership. It is randomized using the jitter
+     * factor.
      */
     public void setRetryPeriodMillis(long retryPeriodMillis) {
         lockConfiguration.setRetryPeriodMillis(retryPeriodMillis);

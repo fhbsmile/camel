@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,99 +18,80 @@ package org.apache.camel.coap;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.AvailablePortFinder;
-import org.apache.camel.test.junit4.CamelTestSupport;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
-import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class CoAPRestVerbTest extends CamelTestSupport {
-    static int coapport = AvailablePortFinder.getNextAvailable();
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class CoAPRestVerbTest extends CoAPTestSupport {
 
     @Test
-    public void testGetAll() throws Exception {
-        NetworkConfig.createStandardWithoutFile();
-
-        CoapClient client = new CoapClient("coap://localhost:" + coapport + "/users");
-        client.setTimeout(1000000);
-        CoapResponse rsp = client.get();
-
-        assertEquals("[{ \"id\":\"1\", \"name\":\"Scott\" },{ \"id\":\"2\", \"name\":\"Claus\" }]", rsp.getResponseText());
+    void testGetAll() throws Exception {
+        CoapClient client = createClient("/users");
+        CoapResponse response = client.get();
+        assertEquals("[{ \"id\":\"1\", \"name\":\"Scott\" },{ \"id\":\"2\", \"name\":\"Claus\" }]", response.getResponseText());
     }
 
     @Test
-    public void testGetOne() throws Exception {
-        NetworkConfig.createStandardWithoutFile();
-
-        CoapClient client = new CoapClient("coap://localhost:" + coapport + "/users/1");
-        client.setTimeout(1000000);
-        CoapResponse rsp = client.get();
-
-        assertEquals("{ \"id\":\"1\", \"name\":\"Scott\" }", rsp.getResponseText());
+    void testGetOne() throws Exception {
+        CoapClient client = createClient("/users/1");
+        CoapResponse response = client.get();
+        assertEquals("{ \"id\":\"1\", \"name\":\"Scott\" }", response.getResponseText());
     }
 
     @Test
-    public void testPost() throws Exception {
-        NetworkConfig.createStandardWithoutFile();
-
+    void testPost() throws Exception {
         final String body = "{ \"id\":\"1\", \"name\":\"Scott\" }";
 
         MockEndpoint mock = getMockEndpoint("mock:create");
         mock.expectedBodiesReceived(body);
 
-        CoapClient client = new CoapClient("coap://localhost:" + coapport + "/users");
-        client.setTimeout(1000000);
-        CoapResponse rsp = client.post(body, MediaTypeRegistry.APPLICATION_JSON);
+        CoapClient client = createClient("/users");
+        client.post(body, MediaTypeRegistry.APPLICATION_JSON);
 
         assertMockEndpointsSatisfied();
     }
 
     @Test
-    public void testPut() throws Exception {
-        NetworkConfig.createStandardWithoutFile();
-
+    void testPut() throws Exception {
         final String body = "{ \"id\":\"1\", \"name\":\"Scott\" }";
 
         MockEndpoint mock = getMockEndpoint("mock:update");
         mock.expectedBodiesReceived(body);
         mock.expectedHeaderReceived("id", "1");
 
-        CoapClient client = new CoapClient("coap://localhost:" + coapport + "/users/1");
-        client.setTimeout(1000000);
-        CoapResponse rsp = client.put(body, MediaTypeRegistry.APPLICATION_JSON);
+        CoapClient client = createClient("/users/1");
+        client.put(body, MediaTypeRegistry.APPLICATION_JSON);
 
         assertMockEndpointsSatisfied();
     }
 
     @Test
-    public void testDelete() throws Exception {
-        NetworkConfig.createStandardWithoutFile();
-
+    void testDelete() throws Exception {
         MockEndpoint mock = getMockEndpoint("mock:delete");
         mock.expectedHeaderReceived("id", "1");
 
-        CoapClient client = new CoapClient("coap://localhost:" + coapport + "/users/1");
-        client.setTimeout(1000000);
-        CoapResponse rsp = client.delete();
+        CoapClient client = createClient("/users/1");
+        client.delete();
 
         assertMockEndpointsSatisfied();
     }
 
     @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             @Override
-            public void configure() throws Exception {
-                restConfiguration().component("coap").host("localhost").port(coapport);
+            public void configure() {
+                restConfiguration().component("coap").host("localhost").port(PORT);
 
-                rest()
-                    .get("/users").route().transform().constant("[{ \"id\":\"1\", \"name\":\"Scott\" },{ \"id\":\"2\", \"name\":\"Claus\" }]").endRest()
-                    .get("/users/{id}").route().transform().simple("{ \"id\":\"${header.id}\", \"name\":\"Scott\" }").endRest()
-                    .post("/users").to("mock:create")
-                    .put("/users/{id}").to("mock:update")
-                    .delete("/users/{id}").to("mock:delete");
+                rest().get("/users").route().transform()
+                        .constant("[{ \"id\":\"1\", \"name\":\"Scott\" },{ \"id\":\"2\", \"name\":\"Claus\" }]").endRest()
+                        .get("/users/{id}")
+                        .route().transform().simple("{ \"id\":\"${header.id}\", \"name\":\"Scott\" }").endRest().post("/users")
+                        .to("mock:create").put("/users/{id}").to("mock:update")
+                        .delete("/users/{id}").to("mock:delete");
             }
         };
     }

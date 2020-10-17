@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,25 +18,27 @@ package org.apache.camel.component.slack;
 
 import java.util.Map;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 
-public class SlackComponent extends UriEndpointComponent {
+@Component("slack")
+public class SlackComponent extends DefaultComponent {
 
+    @Metadata(label = "webhook")
     private String webhookUrl;
 
     public SlackComponent() {
-        super(SlackEndpoint.class);
+        this(null);
     }
 
-    /**
-     * Create a slack endpoint
-     *
-     * @param uri         the full URI of the endpoint
-     * @param channelName the channel or username that the message should be sent to
-     * @param parameters  the optional parameters passed in
-     * @return the camel endpoint
-     */
+    public SlackComponent(CamelContext context) {
+        super(context);
+        registerExtension(new SlackComponentVerifierExtension());
+    }
+
     @Override
     protected Endpoint createEndpoint(String uri, String channelName, Map<String, Object> parameters) throws Exception {
         Endpoint endpoint = new SlackEndpoint(uri, channelName, this);

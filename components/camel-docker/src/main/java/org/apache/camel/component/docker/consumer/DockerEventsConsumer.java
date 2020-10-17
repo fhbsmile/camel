@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,6 @@
  */
 package org.apache.camel.component.docker.consumer;
 
-import java.util.Date;
-
 import com.github.dockerjava.api.command.EventsCmd;
 import com.github.dockerjava.api.model.Event;
 import com.github.dockerjava.core.command.EventsResultCallback;
@@ -30,45 +28,48 @@ import org.apache.camel.component.docker.DockerComponent;
 import org.apache.camel.component.docker.DockerConstants;
 import org.apache.camel.component.docker.DockerEndpoint;
 import org.apache.camel.component.docker.DockerHelper;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DockerEventsConsumer extends DefaultConsumer {
+
     private static final Logger LOG = LoggerFactory.getLogger(DockerEventsConsumer.class);
 
     private DockerEndpoint endpoint;
     private DockerComponent component;
     private EventsCmd eventsCmd;
-    
+
     public DockerEventsConsumer(DockerEndpoint endpoint, Processor processor) throws Exception {
         super(endpoint, processor);
         this.endpoint = endpoint;
-        this.component = (DockerComponent)endpoint.getComponent();
+        this.component = (DockerComponent) endpoint.getComponent();
 
     }
 
     @Override
     public DockerEndpoint getEndpoint() {
-        return (DockerEndpoint)super.getEndpoint();
+        return (DockerEndpoint) super.getEndpoint();
     }
 
     /**
      * Determine the point in time to begin streaming events
      */
     private long processInitialEvent() {
-        long currentTime = new Date().getTime();
-        Long initialRange = DockerHelper.getProperty(DockerConstants.DOCKER_INITIAL_RANGE, endpoint.getConfiguration(), null, Long.class);
+        long currentTime = System.currentTimeMillis();
+        Long initialRange
+                = DockerHelper.getProperty(DockerConstants.DOCKER_INITIAL_RANGE, endpoint.getConfiguration(), null, Long.class);
         if (initialRange != null) {
             currentTime = currentTime - initialRange;
         }
-        
+
         return currentTime;
     }
 
     @Override
     protected void doStart() throws Exception {
-        this.eventsCmd = DockerClientFactory.getDockerClient(component, endpoint.getConfiguration(), null).eventsCmd().withSince(String.valueOf(processInitialEvent()));
+        this.eventsCmd = DockerClientFactory.getDockerClient(component, endpoint.getConfiguration(), null).eventsCmd()
+                .withSince(String.valueOf(processInitialEvent()));
         this.eventsCmd.exec(new EventsCallback());
 
         super.doStart();
@@ -77,14 +78,15 @@ public class DockerEventsConsumer extends DefaultConsumer {
     @Override
     protected void doStop() throws Exception {
         this.eventsCmd.close();
-        
+
         super.doStop();
     }
 
     protected class EventsCallback extends EventsResultCallback {
 
+        @Override
         public void onNext(Event event) {
-            LOG.debug("Received Docker Event: " + event);
+            LOG.debug("Received Docker Event: {}", event);
 
             final Exchange exchange = getEndpoint().createExchange();
             Message message = exchange.getIn();

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,11 +23,9 @@ import java.util.TreeMap;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
+import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.saga.CamelSagaStep;
 
-/**
- *
- */
 public final class LRASagaStep {
 
     private Optional<Endpoint> compensation;
@@ -48,7 +46,11 @@ public final class LRASagaStep {
         t.timeoutInMilliseconds = step.getTimeoutInMilliseconds();
         t.options = new TreeMap<>();
         for (Map.Entry<String, Expression> entry : step.getOptions().entrySet()) {
-            t.options.put(entry.getKey(), entry.getValue().evaluate(exchange, String.class));
+            try {
+                t.options.put(entry.getKey(), entry.getValue().evaluate(exchange, String.class));
+            } catch (Exception ex) {
+                throw new RuntimeCamelException("Cannot evaluate saga option '" + entry.getKey() + "'", ex);
+            }
         }
         return t;
     }
@@ -72,10 +74,10 @@ public final class LRASagaStep {
     @Override
     public String toString() {
         return "LRASagaStep{"
-                + "compensation=" + compensation
-                + ", completion=" + completion
-                + ", options=" + options
-                + ", timeoutInMilliseconds=" + timeoutInMilliseconds
-                + '}';
+               + "compensation=" + compensation
+               + ", completion=" + completion
+               + ", options=" + options
+               + ", timeoutInMilliseconds=" + timeoutInMilliseconds
+               + '}';
     }
 }

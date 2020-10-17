@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -36,7 +36,7 @@ public class ClassLoadingAwareObjectInputStream extends ObjectInputStream {
     /**
      * Maps primitive type names to corresponding class objects.
      */
-    private static final HashMap<String, Class> PRIM_CLASSES = new HashMap<String, Class>(8, 1.0F);
+    private static final HashMap<String, Class> PRIM_CLASSES = new HashMap<>(8, 1.0F);
 
     private CamelContext camelContext;
     private final ClassLoader inLoader;
@@ -51,11 +51,13 @@ public class ClassLoadingAwareObjectInputStream extends ObjectInputStream {
         inLoader = camelContext.getApplicationContextClassLoader();
     }
 
+    @Override
     protected Class<?> resolveClass(ObjectStreamClass classDesc) throws IOException, ClassNotFoundException {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         return load(classDesc.getName(), cl, inLoader);
     }
 
+    @Override
     protected Class<?> resolveProxyClass(String[] interfaces) throws IOException, ClassNotFoundException {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         Class[] cinterfaces = new Class[interfaces.length];

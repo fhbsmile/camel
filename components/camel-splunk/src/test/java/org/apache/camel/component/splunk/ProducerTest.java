@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,7 +23,6 @@ import com.splunk.Index;
 import com.splunk.IndexCollection;
 import com.splunk.InputCollection;
 import com.splunk.TcpInput;
-
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Producer;
@@ -33,26 +32,28 @@ import org.apache.camel.component.splunk.event.SplunkEvent;
 import org.apache.camel.component.splunk.support.StreamDataWriter;
 import org.apache.camel.component.splunk.support.SubmitDataWriter;
 import org.apache.camel.component.splunk.support.TcpDataWriter;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
+import static org.apache.camel.test.junit5.TestSupport.assertIsInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class ProducerTest extends SplunkMockTestSupport {
 
-    @EndpointInject(uri = "splunk://stream")
+    @EndpointInject("splunk://stream")
     protected SplunkEndpoint streamEndpoint;
 
-    @EndpointInject(uri = "splunk://submit")
+    @EndpointInject("splunk://submit")
     protected SplunkEndpoint submitEndpoint;
 
-    @EndpointInject(uri = "splunk://tcp")
+    @EndpointInject("splunk://tcp")
     protected SplunkEndpoint tcpEndpoint;
 
     @Mock
@@ -67,7 +68,7 @@ public class ProducerTest extends SplunkMockTestSupport {
     @Mock
     private InputCollection inputCollection;
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException {
         when(service.getIndexes()).thenReturn(indexColl);
         when(service.getInputs()).thenReturn(inputCollection);
@@ -89,7 +90,7 @@ public class ProducerTest extends SplunkMockTestSupport {
         template.sendBody("direct:stream", splunkEvent);
         assertMockEndpointsSatisfied();
         Producer streamProducer = streamEndpoint.createProducer();
-        assertIsInstanceOf(StreamDataWriter.class, ((SplunkProducer)streamProducer).getDataWriter());
+        assertIsInstanceOf(StreamDataWriter.class, ((SplunkProducer) streamProducer).getDataWriter());
     }
 
     @Test
@@ -103,7 +104,7 @@ public class ProducerTest extends SplunkMockTestSupport {
         template.sendBody("direct:submit", splunkEvent);
         assertMockEndpointsSatisfied();
         Producer submitProducer = submitEndpoint.createProducer();
-        assertIsInstanceOf(SubmitDataWriter.class, ((SplunkProducer)submitProducer).getDataWriter());
+        assertIsInstanceOf(SubmitDataWriter.class, ((SplunkProducer) submitProducer).getDataWriter());
     }
 
     @Test
@@ -117,23 +118,30 @@ public class ProducerTest extends SplunkMockTestSupport {
         template.sendBody("direct:tcp", splunkEvent);
         assertMockEndpointsSatisfied();
         Producer tcpProducer = tcpEndpoint.createProducer();
-        assertIsInstanceOf(TcpDataWriter.class, ((SplunkProducer)tcpProducer).getDataWriter());
+        assertIsInstanceOf(TcpDataWriter.class, ((SplunkProducer) tcpProducer).getDataWriter());
     }
 
-    @Test(expected = CamelExecutionException.class)
+    @Test
     public void testBodyWithoutRawOption() throws Exception {
-        template.sendBody("direct:tcp", "foobar");
+        assertThrows(CamelExecutionException.class,
+                () -> template.sendBody("direct:tcp", "foobar"));
     }
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() {
-                from("direct:stream").to("splunk://stream?username=foo&password=bar&index=myindex&sourceType=StreamSourceType&source=StreamSource").to("mock:stream-result");
+                from("direct:stream").to(
+                        "splunk://stream?username=foo&password=bar&index=myindex&sourceType=StreamSourceType&source=StreamSource")
+                        .to("mock:stream-result");
 
-                from("direct:submit").to("splunk://submit?username=foo&password=bar&index=myindex&sourceType=testSource&source=test").to("mock:submitresult");
+                from("direct:submit")
+                        .to("splunk://submit?username=foo&password=bar&index=myindex&sourceType=testSource&source=test")
+                        .to("mock:submitresult");
 
-                from("direct:tcp").to("splunk://tcp?username=foo&password=bar&tcpReceiverPort=2222&index=myindex&sourceType=testSource&source=test").to("mock:tcpresult");
+                from("direct:tcp").to(
+                        "splunk://tcp?username=foo&password=bar&tcpReceiverPort=2222&index=myindex&sourceType=testSource&source=test")
+                        .to("mock:tcpresult");
             }
         };
     }

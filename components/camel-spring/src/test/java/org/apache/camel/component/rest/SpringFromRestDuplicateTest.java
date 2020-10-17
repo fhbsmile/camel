@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,8 +18,13 @@ package org.apache.camel.component.rest;
 
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.spring.SpringTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SpringFromRestDuplicateTest extends SpringTestSupport {
 
@@ -37,11 +42,13 @@ public class SpringFromRestDuplicateTest extends SpringTestSupport {
     }
 
     @Override
-    protected void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         // must override as there is no valid spring xml file
         createApplicationContext();
     }
 
+    @Test
     public void testDuplicate() throws Exception {
         // noop
     }

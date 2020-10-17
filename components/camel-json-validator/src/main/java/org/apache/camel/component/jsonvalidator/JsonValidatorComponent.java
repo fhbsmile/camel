@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,13 +19,16 @@ package org.apache.camel.component.jsonvalidator;
 import java.util.Map;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.DefaultComponent;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 
 /**
  * The JSON Schema Validator Component is for validating JSON against a schema.
  */
+@Component("json-validator")
 public class JsonValidatorComponent extends DefaultComponent {
 
+    @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         JsonValidatorEndpoint endpoint = new JsonValidatorEndpoint(uri, this, remaining);
         setProperties(endpoint, parameters);

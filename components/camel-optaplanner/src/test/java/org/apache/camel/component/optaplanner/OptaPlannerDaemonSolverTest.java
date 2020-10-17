@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,14 +22,18 @@ import java.util.Objects;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
 import org.optaplanner.core.impl.score.director.ScoreDirector;
 import org.optaplanner.core.impl.solver.ProblemFactChange;
 import org.optaplanner.examples.cloudbalancing.domain.CloudBalance;
 import org.optaplanner.examples.cloudbalancing.domain.CloudComputer;
 import org.optaplanner.examples.cloudbalancing.domain.CloudProcess;
 import org.optaplanner.examples.cloudbalancing.persistence.CloudBalancingGenerator;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * OptaPlanner unit test with Camel
@@ -59,15 +63,14 @@ public class OptaPlannerDaemonSolverTest extends CamelTestSupport {
         assertEquals(3, bestSolution.getComputerList().size());
     }
 
+    @Override
     protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             public void configure() {
-                from("direct:in").
-                        to("optaplanner:org/apache/camel/component/optaplanner/daemonSolverConfig.xml?async=true");
+                from("direct:in").to("optaplanner:org/apache/camel/component/optaplanner/daemonSolverConfig.xml?async=true");
 
-                from("optaplanner:org/apache/camel/component/optaplanner/daemonSolverConfig.xml").
-                        to("log:com.mycompany.order?showAll=true&multiline=true").
-                        to("mock:result");
+                from("optaplanner:org/apache/camel/component/optaplanner/daemonSolverConfig.xml")
+                        .to("log:com.mycompany.order?showAll=true&multiline=true").to("mock:result");
             }
         };
     }
@@ -90,7 +93,7 @@ public class OptaPlannerDaemonSolverTest extends CamelTestSupport {
                     scoreDirector.afterVariableChanged(process, "computer");
                 }
             }
-            cloudBalance.setComputerList(new ArrayList<CloudComputer>(cloudBalance.getComputerList()));
+            cloudBalance.setComputerList(new ArrayList<>(cloudBalance.getComputerList()));
             for (Iterator<CloudComputer> it = cloudBalance.getComputerList().iterator(); it.hasNext();) {
                 CloudComputer workingComputer = it.next();
                 if (Objects.equals(workingComputer, removingComputer)) {

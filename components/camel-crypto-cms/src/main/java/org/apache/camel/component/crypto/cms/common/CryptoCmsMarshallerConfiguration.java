@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,7 +31,6 @@ public abstract class CryptoCmsMarshallerConfiguration {
     private Boolean toBase64 = Boolean.FALSE;
 
     public CryptoCmsMarshallerConfiguration(CamelContext context) {
-        super();
         this.context = context;
     }
 
@@ -40,8 +39,8 @@ public abstract class CryptoCmsMarshallerConfiguration {
     }
 
     /**
-     * Indicates whether the Signed Data or Enveloped Data instance shall be
-     * base 64 encoded. Default value is <code>false</code>.
+     * Indicates whether the Signed Data or Enveloped Data instance shall be base 64 encoded. Default value is
+     * <code>false</code>.
      */
     public void setToBase64(Boolean toBase64) {
         this.toBase64 = toBase64;

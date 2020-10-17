@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.apache.camel.util.URISupport;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.SmackException;
@@ -51,7 +51,9 @@ import org.slf4j.LoggerFactory;
  * A {@link org.apache.camel.Consumer Consumer} which listens to XMPP packets
  */
 public class XmppConsumer extends DefaultConsumer implements IncomingChatMessageListener, MessageListener, StanzaListener {
+
     private static final Logger LOG = LoggerFactory.getLogger(XmppConsumer.class);
+
     private final XmppEndpoint endpoint;
     private MultiUserChat muc;
     private Chat privateChat;
@@ -93,20 +95,23 @@ public class XmppConsumer extends DefaultConsumer implements IncomingChatMessage
         }
 
         if (endpoint.getRoom() == null) {
-            privateChat = chatManager.chatWith(JidCreate.entityBareFrom(endpoint.getChatId()));
+            privateChat = chatManager.chatWith(JidCreate.entityBareFrom(endpoint.resolveParticipant(connection)));
         } else {
             // add the presence packet listener to the connection so we only get packets that concerns us
             // we must add the listener before creating the muc
 
             final AndFilter packetFilter = new AndFilter(new StanzaTypeFilter(Presence.class));
             connection.addSyncStanzaListener(this, packetFilter);
+            String roomPassword = endpoint.getRoomPassword();
             MultiUserChatManager mucm = MultiUserChatManager.getInstanceFor(connection);
             muc = mucm.getMultiUserChat(JidCreate.entityBareFrom(endpoint.resolveRoom(connection)));
             muc.addMessageListener(this);
-            MucEnterConfiguration mucc = muc.getEnterConfigurationBuilder(Resourcepart.from(endpoint.getNickname()))
-                    .requestNoHistory()
-                    .build();
-            muc.join(mucc);
+            MucEnterConfiguration.Builder mucc = muc.getEnterConfigurationBuilder(Resourcepart.from(endpoint.getNickname()))
+                    .requestNoHistory();
+            if (roomPassword != null) {
+                mucc.withPassword(roomPassword);
+            }
+            muc.join(mucc.build());
             LOG.info("Joined room: {} as: {}", muc.getRoom(), endpoint.getNickname());
         }
 
@@ -160,7 +165,8 @@ public class XmppConsumer extends DefaultConsumer implements IncomingChatMessage
 
     private ScheduledExecutorService getExecutor() {
         if (this.scheduledExecutor == null) {
-            scheduledExecutor = getEndpoint().getCamelContext().getExecutorServiceManager().newSingleThreadScheduledExecutor(this, "connectionPoll");
+            scheduledExecutor = getEndpoint().getCamelContext().getExecutorServiceManager()
+                    .newSingleThreadScheduledExecutor(this, "connectionPoll");
         }
         return scheduledExecutor;
     }
@@ -205,7 +211,8 @@ public class XmppConsumer extends DefaultConsumer implements IncomingChatMessage
 
     public void processMessage(Chat chat, Message message) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Received XMPP message for {} from {} : {}", new Object[] {endpoint.getUser(), endpoint.getParticipant(), message.getBody()});
+            LOG.debug("Received XMPP message for {} from {} : {}",
+                    endpoint.getUser(), endpoint.getParticipant(), message.getBody());
         }
 
         Exchange exchange = endpoint.createExchange(message);

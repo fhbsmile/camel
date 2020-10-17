@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,8 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 import org.apache.gora.persistency.Persistent;
 import org.apache.gora.store.DataStore;
 import org.apache.gora.store.DataStoreFactory;
@@ -29,7 +30,8 @@ import org.apache.hadoop.conf.Configuration;
 
 import static org.apache.camel.component.gora.GoraConstants.GORA_DEFAULT_DATASTORE_KEY;
 
-public class GoraComponent extends UriEndpointComponent {
+@Component("gora")
+public class GoraComponent extends DefaultComponent {
 
     /**
      * GORA datastore
@@ -47,35 +49,37 @@ public class GoraComponent extends UriEndpointComponent {
     private Configuration configuration;
 
     public GoraComponent() {
-        super(GoraEndpoint.class);
     }
 
     /**
-     *
      * Initialize class and create DataStore instance
      *
-     * @param config component configuration
+     * @param  config      component configuration
      * @throws IOException
      */
     private void init(final GoraConfiguration config) throws IOException {
         this.goraProperties = DataStoreFactory.createProps();
         this.dataStore = DataStoreFactory.getDataStore(goraProperties.getProperty(GORA_DEFAULT_DATASTORE_KEY,
-                                                                                  config.getDataStoreClass()),
-                                                        config.getKeyClass(),
-                                                        config.getValueClass(),
-                                                        this.configuration);
+                config.getDataStoreClass()),
+                config.getKeyClass(),
+                config.getValueClass(),
+                this.configuration);
     }
 
     @Override
-    protected Endpoint createEndpoint(final String uri,
-                                      final String remaining,
-                                      final Map<String, Object> parameters) throws Exception {
+    protected Endpoint createEndpoint(
+            final String uri,
+            final String remaining,
+            final Map<String, Object> parameters)
+            throws Exception {
 
-        final GoraConfiguration config = new GoraConfiguration();
-        setProperties(config, parameters);
+        GoraConfiguration config = new GoraConfiguration();
         config.setName(remaining);
+
+        GoraEndpoint endpoint = new GoraEndpoint(uri, this, config, dataStore);
+        setProperties(endpoint, parameters);
         init(config);
-        return new GoraEndpoint(uri, this, config, dataStore);
+        return endpoint;
     }
 
     /**
@@ -84,7 +88,7 @@ public class GoraComponent extends UriEndpointComponent {
     public DataStore<Object, Persistent> getDataStore() {
         return dataStore;
     }
-    
+
     @Override
     protected void doStart() throws Exception {
         if (configuration == null) {

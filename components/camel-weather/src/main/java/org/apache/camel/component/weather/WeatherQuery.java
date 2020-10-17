@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,17 +17,15 @@
 package org.apache.camel.component.weather;
 
 import org.apache.camel.component.weather.geolocation.GeoLocation;
-import org.apache.camel.component.weather.geolocation.GeoLocationProvider;
+
 import static org.apache.camel.component.weather.WeatherMode.JSON;
 import static org.apache.camel.util.ObjectHelper.isEmpty;
 
 /**
- * Logic for determining the query based on the provided
- * configuration.
+ * Logic for determining the query based on the provided configuration.
  */
 public class WeatherQuery {
     private final WeatherConfiguration weatherConfiguration;
-    private GeoLocationProvider geoLocationProvider;
 
     public WeatherQuery(WeatherConfiguration weatherConfiguration) {
         this.weatherConfiguration = weatherConfiguration;
@@ -39,19 +37,16 @@ public class WeatherQuery {
 
     public String getQuery(String location) throws Exception {
         String answer = "http://api.openweathermap.org/data/2.5/";
-        boolean point = false;
-
         if (weatherConfiguration.getLat() != null && weatherConfiguration.getLon() != null
                 && weatherConfiguration.getRightLon() == null && weatherConfiguration.getTopLat() == null) {
             location = createLatLonQueryString();
-            point = true;
         } else if (weatherConfiguration.getLat() != null && weatherConfiguration.getLon() != null
                 && weatherConfiguration.getRightLon() != null && weatherConfiguration.getTopLat() != null) {
             location = "bbox=" + weatherConfiguration.getLon() + ","
-                    + weatherConfiguration.getLat() + ","
-                    + weatherConfiguration.getRightLon() + ","
-                    + weatherConfiguration.getTopLat() + ","
-                    + weatherConfiguration.getZoom() + "&cluster=yes";
+                       + weatherConfiguration.getLat() + ","
+                       + weatherConfiguration.getRightLon() + ","
+                       + weatherConfiguration.getTopLat() + ","
+                       + weatherConfiguration.getZoom() + "&cluster=yes";
         } else if (!isEmpty(weatherConfiguration.getZip())) {
             location = "zip=" + weatherConfiguration.getZip();
         } else if (weatherConfiguration.getIds() != null && weatherConfiguration.getIds().size() > 0) {
@@ -149,10 +144,7 @@ public class WeatherQuery {
     }
 
     GeoLocation getCurrentGeoLocation() throws Exception {
-        return geoLocationProvider.getCurrentGeoLocation();
+        return weatherConfiguration.getGeoLocationProvider().getCurrentGeoLocation();
     }
 
-    void setGeoLocationProvider(GeoLocationProvider geoLocationProvider) {
-        this.geoLocationProvider = geoLocationProvider;
-    }
 }

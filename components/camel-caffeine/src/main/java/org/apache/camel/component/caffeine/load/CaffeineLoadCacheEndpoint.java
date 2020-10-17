@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,34 +20,37 @@ import java.util.concurrent.TimeUnit;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-
+import org.apache.camel.Category;
+import org.apache.camel.Component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.component.caffeine.CaffeineConfiguration;
 import org.apache.camel.component.caffeine.EvictionType;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.apache.camel.support.CamelContextHelper;
+import org.apache.camel.support.DefaultEndpoint;
 import org.apache.camel.util.ObjectHelper;
 
 /**
- * The caffeine-loadcache component is used for integration with Caffeine Load
- * Cache.
+ * Perform caching operations using Caffeine Cache with an attached CacheLoader.
  */
-@UriEndpoint(firstVersion = "2.20.0", scheme = "caffeine-loadcache", title = "Caffeine LoadCache", syntax = "caffeine-loadcache:cacheName", label = "cache,datagrid,clustering")
+@UriEndpoint(firstVersion = "2.20.0", scheme = "caffeine-loadcache", title = "Caffeine LoadCache",
+             syntax = "caffeine-loadcache:cacheName", category = { Category.CACHE, Category.DATAGRID, Category.CLUSTERING },
+             producerOnly = true)
 public class CaffeineLoadCacheEndpoint extends DefaultEndpoint {
     @UriPath(description = "the cache name")
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private final String cacheName;
     @UriParam
     private final CaffeineConfiguration configuration;
 
     private LoadingCache cache;
 
-    CaffeineLoadCacheEndpoint(String uri, CaffeineLoadCacheComponent component, String cacheName, CaffeineConfiguration configuration) throws Exception {
+    CaffeineLoadCacheEndpoint(String uri, Component component, String cacheName, CaffeineConfiguration configuration) {
         super(uri, component);
 
         this.cacheName = cacheName;
@@ -56,19 +59,13 @@ public class CaffeineLoadCacheEndpoint extends DefaultEndpoint {
 
     @Override
     public Producer createProducer() throws Exception {
-        return new CaffeineLoadCacheProducer(this, this.cacheName, configuration, cache);
-    }
-
-    @Override
-    public boolean isSingleton() {
-        return true;
+        return new CaffeineLoadCacheProducer(this, configuration, cache);
     }
 
     @Override
     protected void doStart() throws Exception {
-        if (ObjectHelper.isNotEmpty(configuration.getCache())) {
-            cache = (LoadingCache)configuration.getCache();
-        } else {
+        cache = CamelContextHelper.lookup(getCamelContext(), cacheName, LoadingCache.class);
+        if (cache == null) {
             Caffeine<Object, Object> builder = Caffeine.newBuilder();
             if (configuration.getEvictionType() == EvictionType.SIZE_BASED) {
                 builder.initialCapacity(configuration.getInitialCapacity());
@@ -81,7 +78,7 @@ public class CaffeineLoadCacheEndpoint extends DefaultEndpoint {
                 if (ObjectHelper.isEmpty(configuration.getStatsCounter())) {
                     builder.recordStats();
                 } else {
-                    builder.recordStats(() -> configuration.getStatsCounter());
+                    builder.recordStats(configuration::getStatsCounter);
                 }
             }
             if (ObjectHelper.isNotEmpty(configuration.getRemovalListener())) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -36,12 +36,11 @@ import org.apache.camel.component.aws.xray.TestDataBuilder.TestTrace;
 import org.apache.camel.component.aws.xray.json.JsonArray;
 import org.apache.camel.component.aws.xray.json.JsonObject;
 import org.apache.camel.component.aws.xray.json.JsonParser;
-import org.apache.commons.lang.StringUtils;
-import org.junit.rules.ExternalResource;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FakeAWSDaemon extends ExternalResource {
+public class FakeAWSDaemon {
 
     private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -49,14 +48,12 @@ public class FakeAWSDaemon extends ExternalResource {
     private UDPSocketListener socketListener = new UDPSocketListener(receivedTraces);
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-    @Override
-    protected void before() throws Throwable {
+    public void before() {
         LOG.info("Starting up Mock-AWS daemon");
         executorService.submit(socketListener);
     }
 
-    @Override
-    protected void after() {
+    public void after() {
         LOG.info("Shutting down Mock-AWS daemon");
         socketListener.close();
         executorService.shutdown();
@@ -180,7 +177,7 @@ public class FakeAWSDaemon extends ExternalResource {
         }
 
         private TestSubsegment convertSubsegment(JsonObject json) {
-            TestSubsegment subsegment = new TestSubsegment((String)json.get("name"));
+            TestSubsegment subsegment = new TestSubsegment((String) json.get("name"));
             if (json.has("subsegments")) {
                 List<TestSubsegment> subsegments = convertSubsegments((JsonArray) json.get("subsegments"));
                 for (TestSubsegment tss : subsegments) {
@@ -196,7 +193,7 @@ public class FakeAWSDaemon extends ExternalResource {
             if (json.has("annotations")) {
                 JsonObject annotations = (JsonObject) json.get("annotations");
                 for (String key : annotations.getKeys()) {
-                    entity.withAnnotation((String)key, annotations.get(key));
+                    entity.withAnnotation(key, annotations.get(key));
                 }
             }
         }

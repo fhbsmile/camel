@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,88 +16,74 @@
  */
 package org.apache.camel.component.nats;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.util.Properties;
-import java.util.concurrent.TimeoutException;
-
-import javax.net.ssl.SSLContext;
+import java.time.Duration;
 
 import io.nats.client.Connection;
-import io.nats.client.ConnectionFactory;
-
+import io.nats.client.Connection.Status;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class NatsProducer extends DefaultProducer {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(NatsProducer.class);
-    
+
     private Connection connection;
-    
+
     public NatsProducer(NatsEndpoint endpoint) {
         super(endpoint);
     }
-    
+
     @Override
     public NatsEndpoint getEndpoint() {
         return (NatsEndpoint) super.getEndpoint();
     }
-    
+
     @Override
     public void process(Exchange exchange) throws Exception {
-        NatsConfiguration config = getEndpoint().getNatsConfiguration();
-        String body = exchange.getIn().getMandatoryBody(String.class);
+        NatsConfiguration config = getEndpoint().getConfiguration();
+        byte[] body = exchange.getIn().getBody(byte[].class);
+        if (body == null) {
+            // fallback to use string
+            body = exchange.getIn().getMandatoryBody(String.class).getBytes();
+        }
 
         LOG.debug("Publishing to topic: {}", config.getTopic());
-        
+
         if (ObjectHelper.isNotEmpty(config.getReplySubject())) {
             String replySubject = config.getReplySubject();
-            connection.publish(config.getTopic(), replySubject, body.getBytes());
+            connection.publish(config.getTopic(), replySubject, body);
         } else {
-            connection.publish(config.getTopic(), body.getBytes());
+            connection.publish(config.getTopic(), body);
         }
     }
-    
+
     @Override
     protected void doStart() throws Exception {
         super.doStart();
         LOG.debug("Starting Nats Producer");
-        
+
         LOG.debug("Getting Nats Connection");
-        connection = getConnection();
+        connection = getEndpoint().getConfiguration().getConnection() != null
+                ? getEndpoint().getConfiguration().getConnection() : getEndpoint().getConnection();
     }
 
     @Override
     protected void doStop() throws Exception {
-        super.doStop();
         LOG.debug("Stopping Nats Producer");
-        
-        LOG.debug("Closing Nats Connection");
-        if (connection != null && !connection.isClosed()) {
-            if (getEndpoint().getNatsConfiguration().isFlushConnection()) {
-                LOG.debug("Flushing Nats Connection");
-                connection.flush(getEndpoint().getNatsConfiguration().getFlushTimeout());
-            }
-            connection.close();
-        }
-    }
-
-    private Connection getConnection() throws TimeoutException, IOException, GeneralSecurityException {
-        Properties prop = getEndpoint().getNatsConfiguration().createProperties();
-        ConnectionFactory factory = new ConnectionFactory(prop);
-        if (getEndpoint().getNatsConfiguration().getSslContextParameters() != null && getEndpoint().getNatsConfiguration().isSecure()) {
-            SSLContext sslCtx = getEndpoint().getNatsConfiguration().getSslContextParameters().createSSLContext(getEndpoint().getCamelContext()); 
-            factory.setSSLContext(sslCtx);
-            if (getEndpoint().getNatsConfiguration().isTlsDebug()) {
-                factory.setTlsDebug(getEndpoint().getNatsConfiguration().isTlsDebug());
+        if (ObjectHelper.isEmpty(getEndpoint().getConfiguration().getConnection())) {
+            LOG.debug("Closing Nats Connection");
+            if (connection != null && !connection.getStatus().equals(Status.CLOSED)) {
+                if (getEndpoint().getConfiguration().isFlushConnection()) {
+                    LOG.debug("Flushing Nats Connection");
+                    connection.flush(Duration.ofMillis(getEndpoint().getConfiguration().getFlushTimeout()));
+                }
+                connection.close();
             }
         }
-        connection = factory.createConnection();
-        return connection;
+        super.doStop();
     }
 
 }

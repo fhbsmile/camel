@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,11 +21,8 @@ import java.io.UnsupportedEncodingException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ServerConnector;
 
-/**
- * @version 
- */
 public class WsProducerUsingStreamingTest extends WsProducerTestBase {
-    
+
     @Override
     protected void setUpComponent() throws Exception {
     }
@@ -34,7 +31,7 @@ public class WsProducerUsingStreamingTest extends WsProducerTestBase {
     protected Connector getConnector() throws Exception {
         return new ServerConnector(server);
     }
-    
+
     @Override
     protected String getTextTestMessage() {
         return super.getTextTestMessage();

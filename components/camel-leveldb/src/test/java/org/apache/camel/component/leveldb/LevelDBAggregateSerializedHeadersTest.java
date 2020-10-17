@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,16 +19,18 @@ package org.apache.camel.component.leveldb;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.util.HeaderDto;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
 
 public class LevelDBAggregateSerializedHeadersTest extends CamelTestSupport {
 
@@ -36,7 +38,7 @@ public class LevelDBAggregateSerializedHeadersTest extends CamelTestSupport {
     private static final int SIZE = 500;
     private LevelDBAggregationRepository repo;
 
-    @Before
+    @BeforeEach
     @Override
     public void setUp() throws Exception {
         deleteDirectory("target/data");
@@ -58,7 +60,7 @@ public class LevelDBAggregateSerializedHeadersTest extends CamelTestSupport {
             HeaderDto headerDto = new HeaderDto("test", "company", 1);
             char id = 'A';
             LOG.debug("Sending {} with id {}", value, id);
-            Map<String, Object> headers = new HashMap<String, Object>();
+            Map<String, Object> headers = new HashMap<>();
             headers.put("id", headerDto);
             template.sendBodyAndHeaders("seda:start?size=" + SIZE, value, headers);
         }
@@ -74,19 +76,20 @@ public class LevelDBAggregateSerializedHeadersTest extends CamelTestSupport {
             @Override
             public void configure() throws Exception {
                 from("seda:start?size=" + SIZE)
-                    .to("log:input?groupSize=500")
-                    .aggregate(header("id"), new MyAggregationStrategy())
-                        .aggregationRepository(repo)
-                        .completionSize(SIZE)
-                        .to("log:output?showHeaders=true")
-                        .to("mock:result")
-                    .end();
+                        .to("log:input?groupSize=500")
+                        .aggregate(header("id"), new MyAggregationStrategy())
+                            .aggregationRepository(repo)
+                            .completionSize(SIZE)
+                            .to("log:output?showHeaders=true")
+                            .to("mock:result")
+                        .end();
             }
         };
     }
 
     public static class MyAggregationStrategy implements AggregationStrategy {
 
+        @Override
         public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
             if (oldExchange == null) {
                 return newExchange;

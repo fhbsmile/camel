@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -92,20 +92,25 @@ public class TimedLeaderNotifier implements Service {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
         if (this.executor == null) {
-            this.executor = camelContext.getExecutorServiceManager().newSingleThreadScheduledExecutor(this, "CamelKubernetesLeaderNotifier");
+            this.executor = camelContext.getExecutorServiceManager().newSingleThreadScheduledExecutor(this,
+                    "CamelKubernetesLeaderNotifier");
         }
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         if (this.executor != null) {
             ScheduledExecutorService executor = this.executor;
             this.executor = null;
 
             executor.shutdownNow();
-            executor.awaitTermination(1, TimeUnit.SECONDS);
+            try {
+                executor.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                // ignore
+            }
         }
     }
 

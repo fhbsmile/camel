@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,59 +16,49 @@
  */
 package org.apache.camel.processor.idempotent.cassandra;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import org.apache.camel.component.cassandra.BaseCassandraTest;
-import org.apache.camel.component.cassandra.CassandraUnitUtils;
-import org.cassandraunit.CassandraCQLUnit;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit test for {@link CassandraIdempotentRepository}
  */
 public class CassandraIdempotentRepositoryTest extends BaseCassandraTest {
 
-    @Rule
-    public CassandraCQLUnit cassandraRule = CassandraUnitUtils.cassandraCQLUnit("IdempotentDataSet.cql");
+    private CassandraIdempotentRepository idempotentRepository;
 
-    private Cluster cluster;
-    private Session session;
-    private CassandraIdempotentRepository<String> idempotentRepository;
+    @Override
+    protected void doPreSetup() throws Exception {
+        idempotentRepository = new CassandraIdempotentRepository(getSession());
+        idempotentRepository.start();
 
-    @Before
-    public void setUp() throws Exception {
-        if (canTest()) {
-            cluster = CassandraUnitUtils.cassandraCluster();
-            session = cluster.connect(CassandraUnitUtils.KEYSPACE);
-            idempotentRepository = new CassandraIdempotentRepository<String>(session);
-            idempotentRepository.start();
-        }
+        super.doPreSetup();
     }
 
-    @After
+    @Override
+    public void beforeEach(ExtensionContext context) throws Exception {
+        super.beforeEach(context);
+
+        executeScript("IdempotentDataSet.cql");
+    }
+
+    @Override
+    @AfterEach
     public void tearDown() throws Exception {
-        if (canTest()) {
-            idempotentRepository.stop();
-            session.close();
-            cluster.close();
-        }
+        super.tearDown();
+        idempotentRepository.stop();
     }
 
     private boolean exists(String key) {
-        return session.execute(
-                "select KEY from CAMEL_IDEMPOTENT where KEY=?", key)
-                .one() != null;
+        return getSession().execute(String.format("select KEY from CAMEL_IDEMPOTENT where KEY='%s'", key)).one() != null;
     }
 
     @Test
     public void testAddNotExists() {
-        if (!canTest()) {
-            return;
-        }
-
         // Given
         String key = "Add_NotExists";
         assertFalse(exists(key));
@@ -81,10 +71,6 @@ public class CassandraIdempotentRepositoryTest extends BaseCassandraTest {
 
     @Test
     public void testAddExists() {
-        if (!canTest()) {
-            return;
-        }
-
         // Given
         String key = "Add_Exists";
         assertTrue(exists(key));
@@ -97,10 +83,6 @@ public class CassandraIdempotentRepositoryTest extends BaseCassandraTest {
 
     @Test
     public void testContainsNotExists() {
-        if (!canTest()) {
-            return;
-        }
-
         // Given
         String key = "Contains_NotExists";
         assertFalse(exists(key));
@@ -112,10 +94,6 @@ public class CassandraIdempotentRepositoryTest extends BaseCassandraTest {
 
     @Test
     public void testContainsExists() {
-        if (!canTest()) {
-            return;
-        }
-
         // Given
         String key = "Contains_Exists";
         assertTrue(exists(key));
@@ -127,10 +105,6 @@ public class CassandraIdempotentRepositoryTest extends BaseCassandraTest {
 
     @Test
     public void testRemoveNotExists() {
-        if (!canTest()) {
-            return;
-        }
-
         // Given
         String key = "Remove_NotExists";
         assertFalse(exists(key));
@@ -142,10 +116,6 @@ public class CassandraIdempotentRepositoryTest extends BaseCassandraTest {
 
     @Test
     public void testRemoveExists() {
-        if (!canTest()) {
-            return;
-        }
-
         // Given
         String key = "Remove_Exists";
         assertTrue(exists(key));
@@ -154,13 +124,9 @@ public class CassandraIdempotentRepositoryTest extends BaseCassandraTest {
         // Then
         assertTrue(result);
     }
-    
+
     @Test
     public void testClear() {
-        if (!canTest()) {
-            return;
-        }
-
         // Given
         String key = "Remove_Exists";
         assertTrue(exists(key));

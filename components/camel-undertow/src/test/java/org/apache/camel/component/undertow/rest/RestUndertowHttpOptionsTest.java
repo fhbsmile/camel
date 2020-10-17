@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,30 +17,37 @@
 package org.apache.camel.component.undertow.rest;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.undertow.BaseUndertowTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RestUndertowHttpOptionsTest extends BaseUndertowTest {
 
     @Test
     public void testUndertowServerOptions() throws Exception {
-        Exchange exchange = template.request("undertow:http://localhost:" + getPort() + "/users/v1/customers", new Processor() {
-            @Override
-            public void process(Exchange exchange) throws Exception {
-                exchange.getIn().setHeader(Exchange.HTTP_METHOD, "OPTIONS");
-            }
-        });
+        Exchange exchange = template.request("undertow:http://localhost:" + getPort() + "/users/v1/customers",
+                exchange1 -> exchange1.getIn().setHeader(Exchange.HTTP_METHOD, "OPTIONS"));
 
-        assertEquals(200, exchange.getOut().getHeader(Exchange.HTTP_RESPONSE_CODE));
-        assertEquals("GET,OPTIONS", exchange.getOut().getHeader("ALLOW"));
-        assertEquals("", exchange.getOut().getBody(String.class));
+        assertEquals(200, exchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+        assertEquals("GET,OPTIONS", exchange.getMessage().getHeader("ALLOW"));
+        assertEquals("", exchange.getMessage().getBody(String.class));
 
-        exchange = fluentTemplate.to("undertow:http://localhost:" + getPort() + "/users/v1/123").withHeader(Exchange.HTTP_METHOD, "OPTIONS").send();
+        exchange = fluentTemplate.to("undertow:http://localhost:" + getPort() + "/users/v1/123")
+                .withHeader(Exchange.HTTP_METHOD, "OPTIONS").send();
         assertEquals(200, exchange.getIn().getHeader(Exchange.HTTP_RESPONSE_CODE));
         assertEquals("PUT,OPTIONS", exchange.getIn().getHeader("ALLOW"));
         assertEquals("", exchange.getIn().getBody(String.class));
+    }
+
+    @Test
+    public void testMultipleHttpOptions() {
+        Exchange exchange = template.request("undertow:http://localhost:" + getPort() + "/users/v1/options",
+                exchange1 -> exchange1.getIn().setHeader(Exchange.HTTP_METHOD, "OPTIONS"));
+        assertEquals(200, exchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+        assertEquals("GET,POST,OPTIONS", exchange.getMessage().getHeader("ALLOW"));
+        assertEquals("", exchange.getMessage().getBody(String.class));
     }
 
     @Override
@@ -53,10 +60,14 @@ public class RestUndertowHttpOptionsTest extends BaseUndertowTest {
 
                 // use the rest DSL to define the rest services
                 rest("/users/")
-                    .get("v1/customers")
+                        .get("v1/customers")
                         .to("mock:customers")
-                    .put("v1/{id}")
-                        .to("mock:id");
+                        .put("v1/{id}")
+                        .to("mock:id")
+                        .get("v1/options")
+                        .to("mock:options")
+                        .post("v1/options")
+                        .to("mock:options");
             }
         };
     }

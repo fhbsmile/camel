@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,22 +20,27 @@ import com.fasterxml.jackson.core.JsonParseException;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.http.common.HttpOperationFailedException;
+import org.apache.camel.http.base.HttpOperationFailedException;
 import org.apache.camel.model.rest.RestBindingMode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.apache.camel.test.junit5.TestSupport.assertIsInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class UndertowProducerThrowExceptionOnFailureTest extends BaseUndertowTest {
 
     @Test
     public void testFailWithoutException() throws Exception {
-        String out = template().requestBody("undertow:http://localhost:{{port}}/fail?throwExceptionOnFailure=false", null, String.class);
+        String out = template().requestBody("undertow:http://localhost:{{port}}/fail?throwExceptionOnFailure=false", null,
+                String.class);
         assertEquals("Fail", out);
     }
 
     @Test
     public void testFailWithException() throws Exception {
         try {
-            String out = template().requestBody("undertow:http://localhost:{{port}}/fail?throwExceptionOnFailure=true", null, String.class);
+            template().requestBody("undertow:http://localhost:{{port}}/fail?throwExceptionOnFailure=true", null, String.class);
             fail("Should throw an exception");
         } catch (CamelExecutionException e) {
             HttpOperationFailedException cause = assertIsInstanceOf(HttpOperationFailedException.class, e.getCause());
@@ -46,7 +51,7 @@ public class UndertowProducerThrowExceptionOnFailureTest extends BaseUndertowTes
     @Test
     public void testFailWithException2() throws Exception {
         try {
-            String out = fluentTemplate().to("undertow:http://localhost:{{port2}}/test/fail?throwExceptionOnFailure=true")
+            fluentTemplate().to("undertow:http://localhost:{{port2}}/test/fail?throwExceptionOnFailure=true")
                     .withHeader(Exchange.HTTP_METHOD, "PUT")
                     .withBody("This is not JSON format")
                     .request(String.class);

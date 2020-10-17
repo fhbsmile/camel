@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,27 +28,27 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryConstants;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class DynamicTableIdTest extends BigQueryTestSupport {
     private static final String TABLE_ID_1 = "dynamic_table_1";
     private static final String TABLE_ID_2 = "dynamic_table_2";
 
-    @EndpointInject(uri = "direct:in")
+    @EndpointInject("direct:in")
     private Endpoint directIn;
 
-    @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}")
+    @EndpointInject("google-bigquery:{{project.id}}:{{bigquery.datasetId}}")
     private Endpoint bigqueryEndpoint;
 
-    @EndpointInject(uri = "mock:sendResult")
+    @EndpointInject("mock:sendResult")
     private MockEndpoint sendResult;
 
-    @Produce(uri = "direct:in")
+    @Produce("direct:in")
     private ProducerTemplate producer;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         createBqTable(TABLE_ID_1);
         createBqTable(TABLE_ID_2);
@@ -87,7 +87,6 @@ public class DynamicTableIdTest extends BigQueryTestSupport {
         object2.put("col1", uuidCol12);
         object2.put("col2", uuidCol22);
         exchange2.getIn().setBody(object2);
-
 
         sendResult.expectedMessageCount(2);
         producer.send(exchange1);

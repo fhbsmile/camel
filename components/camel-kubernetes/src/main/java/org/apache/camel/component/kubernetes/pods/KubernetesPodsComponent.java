@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,10 +18,14 @@ package org.apache.camel.component.kubernetes.pods;
 
 import org.apache.camel.component.kubernetes.AbstractKubernetesComponent;
 import org.apache.camel.component.kubernetes.KubernetesConfiguration;
+import org.apache.camel.spi.annotations.Component;
 
+@Component("kubernetes-pods")
 public class KubernetesPodsComponent extends AbstractKubernetesComponent {
 
-    protected KubernetesPodsEndpoint doCreateEndpoint(String uri, String remaining, KubernetesConfiguration config) throws Exception {
+    @Override
+    protected KubernetesPodsEndpoint doCreateEndpoint(String uri, String remaining, KubernetesConfiguration config)
+            throws Exception {
         KubernetesPodsEndpoint endpoint = new KubernetesPodsEndpoint(uri, this, config);
         return endpoint;
     }

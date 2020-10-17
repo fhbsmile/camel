@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,10 +25,8 @@ import org.apache.camel.component.crypto.cms.exception.CryptoCmsException;
 public interface EnvelopedDataDecryptorConfiguration extends CryptoCmsUnMarshallerConfiguration {
 
     /**
-     * Returns the private keys with their public keys in the X.509 certificate
-     * which can be used for the decryption. The certificate is used for finding
-     * the corresponding Key Transport Recipient Info in the Enveloped Data
-     * object.
+     * Returns the private keys with their public keys in the X.509 certificate which can be used for the decryption.
+     * The certificate is used for finding the corresponding Key Transport Recipient Info in the Enveloped Data object.
      */
     Collection<PrivateKeyWithCertificate> getPrivateKeyCertificateCollection(Exchange exchange) throws CryptoCmsException;
 

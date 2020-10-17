@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,10 +18,10 @@ package org.apache.camel.component.xchange;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.component.xchange.XChangeConfiguration.XChangeMethod;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 
 public class XChangeAccountProducer extends DefaultProducer {
-    
+
     public XChangeAccountProducer(XChangeEndpoint endpoint) {
         super(endpoint);
     }
@@ -36,7 +36,7 @@ public class XChangeAccountProducer extends DefaultProducer {
 
         XChangeEndpoint endpoint = getEndpoint();
         XChangeMethod method = endpoint.getConfiguration().getMethod();
-        
+
         if (XChangeMethod.balances == method) {
             Object body = endpoint.getBalances();
             exchange.getMessage().setBody(body);
@@ -46,6 +46,6 @@ public class XChangeAccountProducer extends DefaultProducer {
         } else if (XChangeMethod.wallets == method) {
             Object body = endpoint.getWallets();
             exchange.getMessage().setBody(body);
-        } 
+        }
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -40,23 +42,24 @@ import org.slf4j.LoggerFactory;
 /**
  * A servlet to use as a Camel route as entry.
  */
-public class CamelServlet extends HttpServlet {
+public class CamelServlet extends HttpServlet implements HttpRegistryProvider {
     public static final String ASYNC_PARAM = "async";
+    public static final List<String> METHODS
+            = Arrays.asList("GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", "CONNECT", "PATCH");
 
     private static final long serialVersionUID = -7061982839117697829L;
-    private static final List<String> METHODS = Arrays.asList("GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", "CONNECT", "PATCH");
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     /**
-     *  We have to define this explicitly so the name can be set as we can not always be
-     *  sure that it is already set via the init method
+     * We have to define this explicitly so the name can be set as we can not always be sure that it is already set via
+     * the init method
      */
     private String servletName;
     private boolean async;
 
     private ServletResolveConsumerStrategy servletResolveConsumerStrategy = new HttpServletResolveConsumerStrategy();
-    private final ConcurrentMap<String, HttpConsumer> consumers = new ConcurrentHashMap<String, HttpConsumer>();
+    private final ConcurrentMap<String, HttpConsumer> consumers = new ConcurrentHashMap<>();
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -65,11 +68,11 @@ public class CamelServlet extends HttpServlet {
 
         final String asyncParam = config.getInitParameter(ASYNC_PARAM);
         this.async = asyncParam == null ? false : ObjectHelper.toBoolean(asyncParam);
-        log.trace("servlet '{}' initialized with: async={}", new Object[]{servletName, async});
+        log.trace("servlet '{}' initialized with: async={}", servletName, async);
     }
 
     @Override
-    protected final void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         if (isAsync()) {
             final AsyncContext context = req.startAsync();
             //run async
@@ -81,6 +84,7 @@ public class CamelServlet extends HttpServlet {
 
     /**
      * This is used to handle request asynchronously
+     * 
      * @param context the {@link AsyncContext}
      */
     protected void doServiceAsync(AsyncContext context) {
@@ -104,11 +108,11 @@ public class CamelServlet extends HttpServlet {
     }
 
     /**
-     * This is the logical implementation to handle request with {@link CamelServlet}
-     * This is where most exceptions should be handled
+     * This is the logical implementation to handle request with {@link CamelServlet} This is where most exceptions
+     * should be handled
      *
-     * @param request the {@link HttpServletRequest}
-     * @param response the {@link HttpServletResponse}
+     * @param  request          the {@link HttpServletRequest}
+     * @param  response         the {@link HttpServletResponse}
      * @throws ServletException
      * @throws IOException
      */
@@ -120,7 +124,8 @@ public class CamelServlet extends HttpServlet {
         if (consumer == null) {
             // okay we cannot process this requires so return either 404 or 405.
             // to know if its 405 then we need to check if any other HTTP method would have a consumer for the "same" request
-            boolean hasAnyMethod = METHODS.stream().anyMatch(m -> getServletResolveConsumerStrategy().isHttpMethodAllowed(request, m, getConsumers()));
+            boolean hasAnyMethod = METHODS.stream()
+                    .anyMatch(m -> getServletResolveConsumerStrategy().isHttpMethodAllowed(request, m, getConsumers()));
             if (hasAnyMethod) {
                 log.debug("No consumer to service request {} as method {} is not allowed", request, request.getMethod());
                 response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
@@ -130,8 +135,8 @@ public class CamelServlet extends HttpServlet {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
-        }       
-        
+        }
+
         // are we suspended?
         if (consumer.isSuspended()) {
             log.debug("Consumer suspended, cannot service request {}", request);
@@ -141,20 +146,26 @@ public class CamelServlet extends HttpServlet {
 
         // if its an OPTIONS request then return which method is allowed
         if ("OPTIONS".equals(request.getMethod()) && !consumer.isOptionsEnabled()) {
-            String s;
-            if (consumer.getEndpoint().getHttpMethodRestrict() != null) {
-                s = "OPTIONS," + consumer.getEndpoint().getHttpMethodRestrict();
-            } else {
-                // allow them all
-                s = "GET,HEAD,POST,PUT,DELETE,TRACE,OPTIONS,CONNECT,PATCH";
+            String allowedMethods = METHODS.stream()
+                    .filter(m -> getServletResolveConsumerStrategy().isHttpMethodAllowed(request, m, getConsumers()))
+                    .collect(Collectors.joining(","));
+            if (allowedMethods == null && consumer.getEndpoint().getHttpMethodRestrict() != null) {
+                allowedMethods = consumer.getEndpoint().getHttpMethodRestrict();
             }
-            response.addHeader("Allow", s);
+            if (allowedMethods == null) {
+                // allow them all
+                allowedMethods = "GET,HEAD,POST,PUT,DELETE,TRACE,OPTIONS,CONNECT,PATCH";
+            }
+            if (!allowedMethods.contains("OPTIONS")) {
+                allowedMethods = allowedMethods + ",OPTIONS";
+            }
+            response.addHeader("Allow", allowedMethods);
             response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
-        
-        if (consumer.getEndpoint().getHttpMethodRestrict() != null 
-            && !consumer.getEndpoint().getHttpMethodRestrict().contains(request.getMethod())) {
+
+        if (consumer.getEndpoint().getHttpMethodRestrict() != null
+                && !consumer.getEndpoint().getHttpMethodRestrict().contains(request.getMethod())) {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
@@ -163,7 +174,7 @@ public class CamelServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
-        
+
         // create exchange and set data on it
         Exchange exchange = consumer.getEndpoint().createExchange(ExchangePattern.InOut);
 
@@ -184,10 +195,10 @@ public class CamelServlet extends HttpServlet {
         String contextPath = consumer.getEndpoint().getPath();
         exchange.getIn().setHeader("CamelServletContextPath", contextPath);
 
-        String httpPath = (String)exchange.getIn().getHeader(Exchange.HTTP_PATH);
+        String httpPath = (String) exchange.getIn().getHeader(Exchange.HTTP_PATH);
         // here we just remove the CamelServletContextPath part from the HTTP_PATH
         if (contextPath != null
-            && httpPath.startsWith(contextPath)) {
+                && httpPath.startsWith(contextPath)) {
             exchange.getIn().setHeader(Exchange.HTTP_PATH,
                     httpPath.substring(contextPath.length()));
         }
@@ -234,23 +245,27 @@ public class CamelServlet extends HttpServlet {
     }
 
     /**
-     * @deprecated use {@link ServletResolveConsumerStrategy#resolve(javax.servlet.http.HttpServletRequest, java.util.Map)}
+     * @deprecated use
+     *             {@link ServletResolveConsumerStrategy#resolve(javax.servlet.http.HttpServletRequest, java.util.Map)}
      */
     @Deprecated
     protected HttpConsumer resolve(HttpServletRequest request) {
         return getServletResolveConsumerStrategy().resolve(request, getConsumers());
     }
 
+    @Override
     public void connect(HttpConsumer consumer) {
         log.debug("Connecting consumer: {}", consumer);
         consumers.put(consumer.getEndpoint().getEndpointUri(), consumer);
     }
 
+    @Override
     public void disconnect(HttpConsumer consumer) {
         log.debug("Disconnecting consumer: {}", consumer);
         consumers.remove(consumer.getEndpoint().getEndpointUri());
     }
 
+    @Override
     public String getServletName() {
         return servletName;
     }
@@ -281,6 +296,7 @@ public class CamelServlet extends HttpServlet {
 
     /**
      * Override the Thread Context ClassLoader if need be.
+     * 
      * @return old classloader if overridden; otherwise returns null
      */
     protected ClassLoader overrideTccl(final Exchange exchange) {
@@ -289,12 +305,12 @@ public class CamelServlet extends HttpServlet {
         if (oldClassLoader == null || appCtxCl == null) {
             return null;
         }
-        
+
         if (!oldClassLoader.equals(appCtxCl)) {
             Thread.currentThread().setContextClassLoader(appCtxCl);
             if (log.isTraceEnabled()) {
-                log.trace("Overrode TCCL for exchangeId {} to {} on thread {}", 
-                        new Object[] {exchange.getExchangeId(), appCtxCl, Thread.currentThread().getName()});
+                log.trace("Overrode TCCL for exchangeId {} to {} on thread {}",
+                        new Object[] { exchange.getExchangeId(), appCtxCl, Thread.currentThread().getName() });
             }
             return oldClassLoader;
         }
@@ -310,9 +326,9 @@ public class CamelServlet extends HttpServlet {
         }
         Thread.currentThread().setContextClassLoader(oldTccl);
         if (log.isTraceEnabled()) {
-            log.trace("Restored TCCL for exchangeId {} to {} on thread {}", 
-                    new String[] {exchange.getExchangeId(), oldTccl.toString(), Thread.currentThread().getName()});
+            log.trace("Restored TCCL for exchangeId {} to {} on thread {}",
+                    new String[] { exchange.getExchangeId(), oldTccl.toString(), Thread.currentThread().getName() });
         }
     }
-    
+
 }

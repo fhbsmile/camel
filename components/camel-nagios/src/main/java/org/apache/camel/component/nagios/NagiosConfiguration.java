@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,6 @@ import java.net.URI;
 
 import com.googlecode.jsendnsca.NagiosSettings;
 import com.googlecode.jsendnsca.encryption.Encryption;
-
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
@@ -28,17 +27,16 @@ import org.apache.camel.spi.UriParams;
 import org.apache.camel.spi.UriPath;
 import org.apache.camel.util.StringHelper;
 
-/**
- * @version 
- */
 @UriParams
 public class NagiosConfiguration implements Cloneable {
 
     private transient NagiosSettings nagiosSettings;
 
-    @UriPath @Metadata(required = "true")
+    @UriPath
+    @Metadata(required = true)
     private String host;
-    @UriPath @Metadata(required = "true")
+    @UriPath
+    @Metadata(required = true)
     private int port;
     @UriParam(defaultValue = "5000")
     private int connectionTimeout = 5000;
@@ -46,9 +44,6 @@ public class NagiosConfiguration implements Cloneable {
     private int timeout = 5000;
     @UriParam(label = "security", secret = true)
     private String password;
-    @Deprecated
-    @UriParam(label = "security")
-    private NagiosEncryptionMethod encryptionMethod;
     @UriParam(label = "security")
     private Encryption encryption = Encryption.NONE;
 
@@ -75,7 +70,7 @@ public class NagiosConfiguration implements Cloneable {
         }
     }
 
-    public synchronized NagiosSettings getNagiosSettings() {
+    public synchronized NagiosSettings getOrCreateNagiosSettings() {
         if (nagiosSettings == null) {
 
             // validate parameters
@@ -95,10 +90,6 @@ public class NagiosConfiguration implements Cloneable {
         }
 
         return nagiosSettings;
-    }
-
-    public void setNagiosSettings(NagiosSettings nagiosSettings) {
-        this.nagiosSettings = nagiosSettings;
     }
 
     public String getHost() {
@@ -156,19 +147,6 @@ public class NagiosConfiguration implements Cloneable {
         this.password = password;
     }
 
-    public NagiosEncryptionMethod getEncryptionMethod() {
-        return encryptionMethod;
-    }
-
-    /**
-     * To specify an encryption method.
-     * @deprecated use the {@link #encryption} query parameter instead.
-     */
-    @Deprecated
-    public void setEncryptionMethod(NagiosEncryptionMethod encryptionMethod) {
-        this.encryptionMethod = encryptionMethod;
-    }
-
     public Encryption getEncryption() {
         return encryption;
     }
@@ -178,12 +156,6 @@ public class NagiosConfiguration implements Cloneable {
      */
     public void setEncryption(Encryption encryption) {
         this.encryption = encryption;
-    }
-
-    @Override
-    public String toString() {
-        return "NagiosConfiguration[host=" + host + ":" + port + ", connectionTimeout=" + connectionTimeout
-                + ", timeout=" + timeout + ", encryptionMethod=" + encryptionMethod + ", encryption=" + encryption + "]";
     }
 
 }

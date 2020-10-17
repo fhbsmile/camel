@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,18 +23,26 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.camel.util.IOHelper;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ZipAggregationStrategyEmptyFileTest extends CamelTestSupport {
 
     private static final int EXPECTED_NO_FILES = 3;
+    private static final String TEST_DIR = "target/out_ZipAggregationStrategyEmptyFileTest";
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
         deleteDirectory("target/foo");
-        deleteDirectory("target/out");
+        deleteDirectory(TEST_DIR);
         super.setUp();
     }
 
@@ -51,11 +59,9 @@ public class ZipAggregationStrategyEmptyFileTest extends CamelTestSupport {
 
         assertMockEndpointsSatisfied();
 
-        Thread.sleep(500);
-
-        File[] files = new File("target/out").listFiles();
-        assertTrue(files != null);
-        assertTrue("Should be a file in target/out directory", files.length > 0);
+        File[] files = new File(TEST_DIR).listFiles();
+        assertNotNull(files);
+        assertTrue(files.length > 0, "Should be a file in " + TEST_DIR + " directory");
 
         File resultFile = files[0];
 
@@ -63,9 +69,10 @@ public class ZipAggregationStrategyEmptyFileTest extends CamelTestSupport {
         try {
             int fileCount = 0;
             for (ZipEntry ze = zin.getNextEntry(); ze != null; ze = zin.getNextEntry()) {
-                fileCount = fileCount + 1;
+                fileCount++;
             }
-            assertEquals("Zip file should contains " + ZipAggregationStrategyEmptyFileTest.EXPECTED_NO_FILES + " files", ZipAggregationStrategyEmptyFileTest.EXPECTED_NO_FILES, fileCount);
+            assertEquals(ZipAggregationStrategyEmptyFileTest.EXPECTED_NO_FILES, fileCount,
+                    "Zip file should contains " + ZipAggregationStrategyEmptyFileTest.EXPECTED_NO_FILES + " files");
         } finally {
             IOHelper.close(zin);
         }
@@ -77,13 +84,13 @@ public class ZipAggregationStrategyEmptyFileTest extends CamelTestSupport {
             @Override
             public void configure() throws Exception {
                 from("file:target/foo")
-                    .aggregate(new ZipAggregationStrategy())
+                        .aggregate(new ZipAggregationStrategy())
                         .constant(true)
                         .completionSize(4)
                         .eagerCheckCompletion()
-                    .to("file:target/out")
-                    .to("mock:aggregateToZipEntry")
-                    .log("Done processing zip file: ${header.CamelFileName}");
+                        .to("file:" + TEST_DIR)
+                        .to("mock:aggregateToZipEntry")
+                        .log("Done processing zip file: ${header.CamelFileName}");
             }
         };
 

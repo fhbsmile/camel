@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,12 +20,14 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.ContextTestSupport;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.camel.spring.processor.SpringTestHelper.createSpringCamelContext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SpringSetHeaderNameDynamicTest extends ContextTestSupport {
 
-
+    @Test
     public void testSetHeaderNameWithExpression() throws Exception {
         MockEndpoint resultEndpoint = getMockEndpoint("mock:end");
         resultEndpoint.expectedMessageCount(1);
@@ -36,10 +38,11 @@ public class SpringSetHeaderNameDynamicTest extends ContextTestSupport {
 
         Exchange exchange = resultEndpoint.getExchanges().get(0);
 
-        assertEquals(Boolean.TRUE, exchange.getIn().getHeader(SpringSetPropertyNameDynamicTest.TestConstans
-                .EXCHANGE_PROP_TX_FAILED, Boolean.class));
+        assertEquals(Boolean.TRUE, exchange.getIn()
+                .getHeader(SpringSetPropertyNameDynamicTest.TestConstans.EXCHANGE_PROP_TX_FAILED, Boolean.class));
     }
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
         return createSpringCamelContext(this, "org/apache/camel/spring/processor/setHeaderNameDynamic.xml");
     }

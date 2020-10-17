@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,18 +18,19 @@ package org.apache.camel.component.aws.xray;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
+
 import com.amazonaws.xray.AWSXRay;
 import com.amazonaws.xray.entities.Subsegment;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.NamedNode;
 import org.apache.camel.Processor;
 import org.apache.camel.component.bean.BeanProcessor;
 import org.apache.camel.model.BeanDefinition;
 import org.apache.camel.model.ProcessDefinition;
-import org.apache.camel.model.ProcessorDefinition;
-import org.apache.camel.processor.DelegateAsyncProcessor;
-import org.apache.camel.processor.DelegateSyncProcessor;
 import org.apache.camel.spi.InterceptStrategy;
+import org.apache.camel.support.processor.DelegateAsyncProcessor;
+import org.apache.camel.support.processor.DelegateSyncProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,21 +41,22 @@ public class TraceAnnotatedTracingStrategy implements InterceptStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @Override
-    public Processor wrapProcessorInInterceptors(CamelContext camelContext,
-        ProcessorDefinition<?> processorDefinition,
-        Processor target, Processor nextTarget)
-        throws Exception {
+    public Processor wrapProcessorInInterceptors(
+            CamelContext camelContext,
+            NamedNode processorDefinition,
+            Processor target, Processor nextTarget)
+            throws Exception {
 
         Class<?> processorClass = processorDefinition.getClass();
         String shortName = processorDefinition.getShortName();
 
         if (processorDefinition instanceof BeanDefinition) {
-            BeanProcessor beanProcessor = (BeanProcessor) nextTarget;
+            BeanProcessor beanProcessor = (BeanProcessor) target;
             if (null != beanProcessor && null != beanProcessor.getBean()) {
                 processorClass = beanProcessor.getBean().getClass();
             }
         } else if (processorDefinition instanceof ProcessDefinition) {
-            DelegateSyncProcessor syncProcessor = (DelegateSyncProcessor) nextTarget;
+            DelegateSyncProcessor syncProcessor = (DelegateSyncProcessor) target;
             if (null != syncProcessor && null != syncProcessor.getProcessor()) {
                 processorClass = syncProcessor.getProcessor().getClass();
             }
@@ -70,10 +72,10 @@ public class TraceAnnotatedTracingStrategy implements InterceptStrategy {
         }
 
         LOG.trace("Wrapping process definition {} of target {} in order for recording its trace",
-            processorDefinition, processorClass);
+                processorDefinition, processorClass);
 
         Annotation annotation = processorClass.getAnnotation(XRayTrace.class);
-        XRayTrace trace = (XRayTrace)annotation;
+        XRayTrace trace = (XRayTrace) annotation;
 
         String metricName = trace.metricName();
 

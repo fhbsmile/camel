@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,11 +18,8 @@ package org.apache.camel.component.file.remote;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
 public class FtpConsumerDualDoneFileNameTest extends FtpServerTestSupport {
 
     protected String getFtpUrl() {
@@ -33,8 +30,10 @@ public class FtpConsumerDualDoneFileNameTest extends FtpServerTestSupport {
     public void testTwoDoneFile() throws Exception {
         getMockEndpoint("mock:result").expectedBodiesReceivedInAnyOrder("Hello World", "Bye World");
 
-        template.sendBodyAndHeader(getFtpUrl() + "&doneFileName=${file:name}.ready", "Hello World", Exchange.FILE_NAME, "hello.txt");
-        template.sendBodyAndHeader(getFtpUrl() + "&doneFileName=${file:name}.ready", "Bye World", Exchange.FILE_NAME, "bye.txt");
+        template.sendBodyAndHeader(getFtpUrl() + "&doneFileName=${file:name}.ready", "Hello World", Exchange.FILE_NAME,
+                "hello.txt");
+        template.sendBodyAndHeader(getFtpUrl() + "&doneFileName=${file:name}.ready", "Bye World", Exchange.FILE_NAME,
+                "bye.txt");
 
         assertMockEndpointsSatisfied();
     }
@@ -43,7 +42,8 @@ public class FtpConsumerDualDoneFileNameTest extends FtpServerTestSupport {
     public void testOneDoneFileMissing() throws Exception {
         getMockEndpoint("mock:result").expectedBodiesReceived("Hello World");
 
-        template.sendBodyAndHeader(getFtpUrl() + "&doneFileName=${file:name}.ready", "Hello World", Exchange.FILE_NAME, "hello.txt");
+        template.sendBodyAndHeader(getFtpUrl() + "&doneFileName=${file:name}.ready", "Hello World", Exchange.FILE_NAME,
+                "hello.txt");
         template.sendBodyAndHeader(getFtpUrl(), "Bye World", Exchange.FILE_NAME, "bye.txt");
 
         // give chance to poll 2nd file but it lacks the done file
@@ -57,9 +57,7 @@ public class FtpConsumerDualDoneFileNameTest extends FtpServerTestSupport {
         return new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from(getFtpUrl() + "&doneFileName=${file:name}.ready")
-                    .convertBodyTo(String.class)
-                    .to("mock:result");
+                from(getFtpUrl() + "&doneFileName=${file:name}.ready").convertBodyTo(String.class).to("mock:result");
             }
         };
     }

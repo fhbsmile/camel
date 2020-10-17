@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.camel.component.jcr;
 
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.jcr.observation.Event;
 import javax.jcr.observation.EventIterator;
 import javax.jcr.observation.EventListener;
@@ -28,11 +29,10 @@ import org.apache.camel.RuntimeCamelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.camel.util.ObjectHelper.wrapRuntimeCamelException;
+import static org.apache.camel.RuntimeCamelException.wrapRuntimeCamelException;
 
 /**
- * A JCR {@link EventListener} which can be used to delegate processing to a
- * Camel endpoint.
+ * A JCR {@link EventListener} which can be used to delegate processing to a Camel endpoint.
  */
 public class EndpointEventListener implements EventListener {
 
@@ -46,6 +46,7 @@ public class EndpointEventListener implements EventListener {
         this.processor = processor;
     }
 
+    @Override
     public void onEvent(EventIterator events) {
         LOG.trace("onEvent START");
         LOG.debug("{} consumer received JCR events: {}", endpoint, events);
@@ -77,7 +78,7 @@ public class EndpointEventListener implements EventListener {
     private Exchange createExchange(EventIterator events) {
         Exchange exchange = endpoint.createExchange();
 
-        List<Event> eventList = new LinkedList<Event>();
+        List<Event> eventList = new LinkedList<>();
         if (events != null) {
             while (events.hasNext()) {
                 eventList.add(events.nextEvent());

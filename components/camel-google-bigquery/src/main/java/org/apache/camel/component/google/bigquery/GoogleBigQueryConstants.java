@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,9 +16,16 @@
  */
 package org.apache.camel.component.google.bigquery;
 
-public interface GoogleBigQueryConstants {
-    String TABLE_SUFFIX = "CamelGoogleBigQueryTableSuffix";
-    String TABLE_ID = "CamelGoogleBigQueryTableId";
-    String INSERT_ID = "CamelGoogleBigQueryInsertId";
-    String PARTITION_DECORATOR = "CamelGoogleBigQueryPartitionDecorator";
+public final class GoogleBigQueryConstants {
+    public static final String TABLE_SUFFIX = "CamelGoogleBigQueryTableSuffix";
+    public static final String TABLE_ID = "CamelGoogleBigQueryTableId";
+    public static final String INSERT_ID = "CamelGoogleBigQueryInsertId";
+    public static final String PARTITION_DECORATOR = "CamelGoogleBigQueryPartitionDecorator";
+    public static final String TRANSLATED_QUERY = "CamelGoogleBigQueryTranslatedQuery";
+
+    /**
+     * Prevent instantiation.
+     */
+    private GoogleBigQueryConstants() {
+    }
 }

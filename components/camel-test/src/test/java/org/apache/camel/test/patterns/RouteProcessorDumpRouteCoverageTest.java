@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.camel.test.patterns;
 import org.apache.camel.RoutesBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.test.junit4.CamelTestSupport;
+import org.junit.After;
 import org.junit.Test;
 
 public class RouteProcessorDumpRouteCoverageTest extends CamelTestSupport {
@@ -35,6 +36,7 @@ public class RouteProcessorDumpRouteCoverageTest extends CamelTestSupport {
     }
 
     @Override
+    @After
     public void tearDown() throws Exception {
         super.tearDown();
 
@@ -48,7 +50,7 @@ public class RouteProcessorDumpRouteCoverageTest extends CamelTestSupport {
             @Override
             public void configure() throws Exception {
                 from("direct:start")
-                    .process(exchange -> exchange.getOut().setBody("Bye World"));
+                        .process(exchange -> exchange.getMessage().setBody("Bye World"));
             }
         };
     }

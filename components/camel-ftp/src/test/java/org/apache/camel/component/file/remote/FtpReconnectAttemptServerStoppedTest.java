@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,15 +19,13 @@ package org.apache.camel.component.file.remote;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
 public class FtpReconnectAttemptServerStoppedTest extends FtpServerTestSupport {
 
     private String getFtpUrl() {
-        return "ftp://admin@localhost:" + getPort() + "/reconnect?password=admin&maximumReconnectAttempts=2&reconnectDelay=500&delete=true";
+        return "ftp://admin@localhost:" + getPort()
+               + "/reconnect?password=admin&maximumReconnectAttempts=2&reconnectDelay=500&delete=true";
     }
 
     @Test
@@ -58,6 +56,7 @@ public class FtpReconnectAttemptServerStoppedTest extends FtpServerTestSupport {
         assertMockEndpointsSatisfied();
     }
 
+    @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {

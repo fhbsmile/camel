@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,24 +24,29 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.apache.camel.spi.Registry;
+import org.apache.camel.support.SimpleRegistry;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 
-@Ignore("requires online connection")
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@Disabled("requires online connection")
 public class RedisStringIdempotentRepositoryIntegrationTest extends CamelTestSupport {
 
     private static final JedisConnectionFactory CONNECTION_FACTORY = new JedisConnectionFactory();
 
     protected RedisStringIdempotentRepository idempotentRepository;
 
-    @Produce(uri = "direct:start")
+    @Produce("direct:start")
     private ProducerTemplate producer;
 
-    @EndpointInject(uri = "mock:result")
+    @EndpointInject("mock:result")
     private MockEndpoint mockResult;
 
     @Resource
@@ -52,8 +57,8 @@ public class RedisStringIdempotentRepositoryIntegrationTest extends CamelTestSup
     }
 
     @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry registry = super.createRegistry();
+    protected Registry createCamelRegistry() throws Exception {
+        SimpleRegistry registry = new SimpleRegistry();
         redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(CONNECTION_FACTORY);
         redisTemplate.afterPropertiesSet();
@@ -64,7 +69,8 @@ public class RedisStringIdempotentRepositoryIntegrationTest extends CamelTestSup
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
-        idempotentRepository = new RedisStringIdempotentRepository(redisTemplate,
+        idempotentRepository = new RedisStringIdempotentRepository(
+                redisTemplate,
                 "redis-idempotent-repository");
         RouteBuilder rb = new RouteBuilder() {
             @Override
@@ -130,4 +136,3 @@ public class RedisStringIdempotentRepositoryIntegrationTest extends CamelTestSup
         assertFalse(idempotentRepository.contains("abc"));
     }
 }
-

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,7 @@ import org.apache.camel.component.github.GitHubComponentTestBase;
 import org.eclipse.egit.github.core.Comment;
 import org.eclipse.egit.github.core.CommitComment;
 import org.eclipse.egit.github.core.PullRequest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,13 +59,13 @@ public class PullRequestCommentConsumerTest extends GitHubComponentTestBase {
         mockResultEndpoint.assertIsSatisfied();
     }
 
-
     public class PullRequestCommentProcessor implements Processor {
         @Override
         public void process(Exchange exchange) throws Exception {
             Message in = exchange.getIn();
             Comment comment = (Comment) in.getBody();
-            LOG.debug("Got Comment " + comment.getId() + " [" + comment.getBody() + "] from User [" + comment.getUser().getLogin() + "]");
+            LOG.debug("Got Comment " + comment.getId() + " [" + comment.getBody() + "] from User ["
+                      + comment.getUser().getLogin() + "]");
         }
     }
 }

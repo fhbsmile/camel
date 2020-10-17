@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,7 +26,7 @@ import java.util.Iterator;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.RuntimeCamelException;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultMessage;
 import org.apache.camel.util.IOHelper;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -37,8 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Iterator which can go through the TarArchiveInputStream according to TarArchiveEntry
- * Based on ZipIterator from camel-zipfile component
+ * The Iterator which can go through the TarArchiveInputStream according to TarArchiveEntry Based on ZipIterator from
+ * camel-zipfile component
  */
 public class TarIterator implements Iterator<Message>, Closeable {
 
@@ -61,7 +61,8 @@ public class TarIterator implements Iterator<Message>, Closeable {
             tarInputStream = (TarArchiveInputStream) inputStream;
         } else {
             try {
-                ArchiveInputStream input = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.TAR, new BufferedInputStream(inputStream));
+                ArchiveInputStream input = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.TAR,
+                        new BufferedInputStream(inputStream));
                 tarInputStream = (TarArchiveInputStream) input;
             } catch (ArchiveException e) {
                 throw new RuntimeException(e.getMessage(), e);
@@ -89,7 +90,6 @@ public class TarIterator implements Iterator<Message>, Closeable {
             }
             return availableDataInCurrentEntry;
         } catch (IOException exception) {
-            //Just wrap the IOException as CamelRuntimeException
             throw new RuntimeCamelException(exception);
         }
     }
@@ -132,7 +132,6 @@ public class TarIterator implements Iterator<Message>, Closeable {
                 return null;
             }
         } catch (IOException exception) {
-            //Just wrap the IOException as CamelRuntimeException
             throw new RuntimeCamelException(exception);
         }
     }

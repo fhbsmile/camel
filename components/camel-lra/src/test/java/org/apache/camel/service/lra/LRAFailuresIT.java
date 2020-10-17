@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,15 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class LRAFailuresIT extends AbstractLRATestSupport {
 
     private AtomicInteger maxFailures;
 
     @Test
-    @Ignore("https://issues.jboss.org/browse/JBTM-2978")
     public void testCompensationAfterFailures() throws Exception {
         maxFailures = new AtomicInteger(1);
 
@@ -42,7 +40,6 @@ public class LRAFailuresIT extends AbstractLRATestSupport {
     }
 
     @Test
-    @Ignore("https://issues.jboss.org/browse/JBTM-2977")
     public void testCompletionAfterFailures() throws Exception {
         maxFailures = new AtomicInteger(1);
 
@@ -58,7 +55,6 @@ public class LRAFailuresIT extends AbstractLRATestSupport {
         complete.assertIsSatisfied();
         end.assertIsSatisfied();
     }
-
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {

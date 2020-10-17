@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,24 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.component.mllp;
 
-public class MllpTcpClientProducerRequiredEndOfDataWithValidationTest extends TcpClientProducerEndOfDataAndValidationTestSupport {
+import org.junit.jupiter.api.Test;
+
+public class MllpTcpClientProducerRequiredEndOfDataWithValidationTest
+        extends TcpClientProducerEndOfDataAndValidationTestSupport {
 
     @Override
     boolean requireEndOfData() {
         return true;
     }
 
-
     @Override
     boolean validatePayload() {
         return false;
     }
 
-
     @Override
+    @Test
     public void testSendSingleMessageWithoutEndOfData() throws Exception {
         expectedTimeoutCount = 1;
 
@@ -39,21 +40,25 @@ public class MllpTcpClientProducerRequiredEndOfDataWithValidationTest extends Tc
     }
 
     @Override
+    @Test
     public void testSendMultipleMessagesWithoutEndOfDataByte() throws Exception {
         runSendMultipleMessagesWithoutEndOfDataByte(ackTimeoutError);
     }
 
     @Override
+    @Test
     public void testEmptyAcknowledgement() throws Exception {
         runEmptyAcknowledgement(aa);
     }
 
     @Override
+    @Test
     public void testInvalidAcknowledgement() throws Exception {
         runInvalidAcknowledgement(aa);
     }
 
     @Override
+    @Test
     public void testMissingEndOfDataByte() throws Exception {
         expectedAACount = 2;
         expectedTimeoutCount = 1;
@@ -62,6 +67,7 @@ public class MllpTcpClientProducerRequiredEndOfDataWithValidationTest extends Tc
     }
 
     @Override
+    @Test
     public void testInvalidAcknowledgementContainingEmbeddedStartOfBlock() throws Exception {
         expectedAACount = 1;
 
@@ -69,6 +75,7 @@ public class MllpTcpClientProducerRequiredEndOfDataWithValidationTest extends Tc
     }
 
     @Override
+    @Test
     public void testInvalidAcknowledgementContainingEmbeddedEndOfBlockByte() throws Exception {
         expectedTimeoutCount = 1;
 
@@ -76,6 +83,7 @@ public class MllpTcpClientProducerRequiredEndOfDataWithValidationTest extends Tc
     }
 
     @Override
+    @Test
     public void testSendMultipleMessagesWithoutSomeEndOfDataByte() throws Exception {
         expectedAACount = 2;
         expectedTimeoutCount = 1;

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,38 +16,40 @@
  */
 package org.apache.camel.component.asterisk;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.apache.camel.support.DefaultEndpoint;
 import org.apache.camel.util.ObjectHelper;
 
 /**
- * The asterisk component is used to interact with Asterisk PBX Server <a href="http://www.asterisk.org">Asterisk PBX Server</a>.
+ * Interact with Asterisk PBX Server.
  */
-@UriEndpoint(firstVersion = "2.18.0", scheme = "asterisk", title = "Asterisk", syntax = "asterisk:name", consumerClass = AsteriskConsumer.class, label = "voip")
+@UriEndpoint(firstVersion = "2.18.0", scheme = "asterisk", title = "Asterisk", syntax = "asterisk:name",
+             category = { Category.VOIP })
 public class AsteriskEndpoint extends DefaultEndpoint {
     @UriPath(description = "Name of component")
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String name;
 
     @UriParam
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String hostname;
 
     @UriParam(label = "producer")
     private AsteriskAction action;
 
     @UriParam(secret = true)
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String username;
 
     @UriParam(secret = true)
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String password;
 
     public AsteriskEndpoint(String uri, AsteriskComponent component) {
@@ -55,7 +57,8 @@ public class AsteriskEndpoint extends DefaultEndpoint {
     }
 
     @Override
-    protected void doStart() throws Exception {
+    protected void doInit() throws Exception {
+        super.doInit();
         // Validate mandatory option
         ObjectHelper.notNull(hostname, "hostname");
         ObjectHelper.notNull(username, "username");
@@ -70,11 +73,6 @@ public class AsteriskEndpoint extends DefaultEndpoint {
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
         return new AsteriskConsumer(this, processor);
-    }
-
-    @Override
-    public boolean isSingleton() {
-        return true;
     }
 
     public String getUsername() {

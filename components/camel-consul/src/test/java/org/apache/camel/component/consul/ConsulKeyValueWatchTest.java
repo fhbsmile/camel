@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,7 @@ import java.util.Random;
 import com.orbitz.consul.KeyValueClient;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ConsulKeyValueWatchTest extends ConsulTestSupport {
     private String key;
@@ -54,12 +54,11 @@ public class ConsulKeyValueWatchTest extends ConsulTestSupport {
     }
 
     @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             public void configure() {
                 fromF("consul:kv?key=%s&valueAsString=true", key)
-                    .to("log:org.apache.camel.component.consul?level=INFO&showAll=true")
-                        .to("mock:kv-watch");
+                        .to("log:org.apache.camel.component.consul?level=INFO&showAll=true").to("mock:kv-watch");
             }
         };
     }

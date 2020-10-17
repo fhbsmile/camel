@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,8 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.support.ResourceHelper;
 import org.apache.camel.util.IOHelper;
-import org.apache.camel.util.ResourceHelper;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.bouncycastle.util.Arrays;
@@ -51,9 +51,9 @@ public class ResourceBasedSSHKeyVerifier implements ServerKeyVerifier {
     public ResourceBasedSSHKeyVerifier(CamelContext camelContext, String knownHostsResource) {
         this(camelContext, knownHostsResource, false);
     }
-    
+
     public ResourceBasedSSHKeyVerifier(CamelContext camelContext, String knownHostsResource,
-            boolean failOnUnknownHost) {
+                                       boolean failOnUnknownHost) {
         this.camelContext = camelContext;
         this.knownHostsResource = knownHostsResource;
         this.failOnUnknownHost = failOnUnknownHost;
@@ -61,7 +61,7 @@ public class ResourceBasedSSHKeyVerifier implements ServerKeyVerifier {
 
     @Override
     public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-        log.debug("Trying to find known_hosts file %s", knownHostsResource);
+        log.debug("Trying to find known_hosts file {}", knownHostsResource);
         InputStream knownHostsInputStream = null;
         try {
             knownHostsInputStream = ResourceHelper.resolveMandatoryResourceAsInputStream(camelContext,

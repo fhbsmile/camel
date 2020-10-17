@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,19 +20,20 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+
 public class LevelDBAggregateConcurrentDifferentGroupsTest extends CamelTestSupport {
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
         deleteDirectory("target/data");
         super.setUp();
@@ -83,7 +84,7 @@ public class LevelDBAggregateConcurrentDifferentGroupsTest extends CamelTestSupp
                 LevelDBAggregationRepository repo = new LevelDBAggregationRepository("repo1", "target/data/leveldb.dat");
 
                 from("direct:start")
-                    .aggregate(header("id"), new MyAggregationStrategy())
+                        .aggregate(header("id"), new MyAggregationStrategy())
                         .completionTimeout(1000).aggregationRepository(repo)
                         .to("mock:aggregated");
             }
@@ -92,6 +93,7 @@ public class LevelDBAggregateConcurrentDifferentGroupsTest extends CamelTestSupp
 
     private static class MyAggregationStrategy implements AggregationStrategy {
 
+        @Override
         public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
             if (oldExchange == null) {
                 return newExchange;

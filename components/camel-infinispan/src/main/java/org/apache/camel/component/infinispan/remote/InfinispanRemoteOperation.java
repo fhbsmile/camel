@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,7 +31,8 @@ public final class InfinispanRemoteOperation {
     }
 
     public static Query buildQuery(InfinispanConfiguration configuration, BasicCache<Object, Object> cache, Message message) {
-        InfinispanQueryBuilder queryBuilder = message.getHeader(InfinispanConstants.QUERY_BUILDER, InfinispanQueryBuilder.class);
+        InfinispanQueryBuilder queryBuilder
+                = message.getHeader(InfinispanConstants.QUERY_BUILDER, InfinispanQueryBuilder.class);
         if (queryBuilder == null) {
             queryBuilder = configuration.getQueryBuilder();
         }

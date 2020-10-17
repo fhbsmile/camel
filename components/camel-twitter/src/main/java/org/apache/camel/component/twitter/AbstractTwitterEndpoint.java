@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,47 +17,42 @@
 package org.apache.camel.component.twitter;
 
 import org.apache.camel.Consumer;
-import org.apache.camel.Endpoint;
 import org.apache.camel.api.management.ManagedAttribute;
-import org.apache.camel.component.twitter.consumer.TwitterConsumerPolling;
 import org.apache.camel.component.twitter.data.EndpointType;
-import org.apache.camel.impl.DefaultPollingEndpoint;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.support.DefaultPollingEndpoint;
 
 /**
  * The base Twitter Endpoint.
  */
 public abstract class AbstractTwitterEndpoint extends DefaultPollingEndpoint implements TwitterEndpoint {
 
-    @UriParam(optionalPrefix = "consumer.", defaultValue = "" + TwitterConsumerPolling.DEFAULT_CONSUMER_DELAY, label = "consumer,scheduler",
-        description = "Milliseconds before the next poll.")
-    private long delay = TwitterConsumerPolling.DEFAULT_CONSUMER_DELAY;
+    public static final long DEFAULT_CONSUMER_DELAY = 30 * 1000L;
+
+    @UriParam(defaultValue = "" + DEFAULT_CONSUMER_DELAY, javaType = "java.time.Duration", label = "consumer,scheduler",
+              description = "Milliseconds before the next poll.")
+    private long delay = DEFAULT_CONSUMER_DELAY;
 
     @UriParam
     private TwitterConfiguration properties;
 
     public AbstractTwitterEndpoint(String uri, AbstractTwitterComponent component, TwitterConfiguration properties) {
         super(uri, component);
+        setDelay(DEFAULT_CONSUMER_DELAY);
         this.properties = properties;
     }
 
     @Override
     protected void doStop() throws Exception {
         super.doStop();
-        if (properties.getType() == EndpointType.EVENT && properties.getTwitterStream() != null) {
-            properties.getTwitterStream().shutdown();
-        }
     }
 
+    @Override
     public void configureConsumer(Consumer consumer) throws Exception {
         super.configureConsumer(consumer);
     }
 
-    @ManagedAttribute
-    public boolean isSingleton() {
-        return true;
-    }
-
+    @Override
     public TwitterConfiguration getProperties() {
         return properties;
     }

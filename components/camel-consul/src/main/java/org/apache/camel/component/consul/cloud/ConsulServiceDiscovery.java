@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,6 +27,7 @@ import com.orbitz.consul.model.catalog.CatalogService;
 import com.orbitz.consul.model.health.ServiceHealth;
 import com.orbitz.consul.option.ImmutableQueryOptions;
 import com.orbitz.consul.option.QueryOptions;
+import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.cloud.ServiceDefinition;
 import org.apache.camel.component.consul.ConsulConfiguration;
 import org.apache.camel.impl.cloud.DefaultServiceDefinition;
@@ -40,10 +41,8 @@ public final class ConsulServiceDiscovery extends DefaultServiceDiscovery {
     private final QueryOptions queryOptions;
 
     public ConsulServiceDiscovery(ConsulConfiguration configuration) throws Exception {
-        this.client = Suppliers.memorize(
-            () -> configuration.createConsulClient(getCamelContext()),
-            e -> ObjectHelper.wrapRuntimeCamelException(e)
-        );
+        this.client = Suppliers.memorize(() -> configuration.createConsulClient(getCamelContext()),
+                e -> RuntimeCamelException.wrapRuntimeCamelException(e));
 
         ImmutableQueryOptions.Builder builder = ImmutableQueryOptions.builder();
         ObjectHelper.ifNotEmpty(configuration.getDatacenter(), builder::datacenter);
@@ -54,16 +53,10 @@ public final class ConsulServiceDiscovery extends DefaultServiceDiscovery {
 
     @Override
     public List<ServiceDefinition> getServices(String name) {
-        List<CatalogService> services = client.get().catalogClient()
-            .getService(name, queryOptions)
-            .getResponse();
-        List<ServiceHealth> healths = client.get().healthClient()
-            .getAllServiceInstances(name, queryOptions)
-            .getResponse();
+        List<CatalogService> services = client.get().catalogClient().getService(name, queryOptions).getResponse();
+        List<ServiceHealth> healths = client.get().healthClient().getAllServiceInstances(name, queryOptions).getResponse();
 
-        return services.stream()
-            .map(service -> newService(name, service, healths))
-            .collect(Collectors.toList());
+        return services.stream().map(service -> newService(name, service, healths)).collect(Collectors.toList());
     }
 
     // *************************
@@ -71,16 +64,15 @@ public final class ConsulServiceDiscovery extends DefaultServiceDiscovery {
     // *************************
 
     private boolean isHealthy(ServiceHealth serviceHealth) {
-        return serviceHealth.getChecks().stream().allMatch(
-            check -> ObjectHelper.equal(check.getStatus(), "passing", true)
-        );
+        return serviceHealth.getChecks().stream().allMatch(check -> ObjectHelper.equal(check.getStatus(), "passing", true));
     }
 
     private ServiceDefinition newService(String serviceName, CatalogService service, List<ServiceHealth> serviceHealthList) {
         Map<String, String> meta = new HashMap<>();
-        ObjectHelper.ifNotEmpty(service.getServiceId(), val -> meta.put("service_id", val));
-        ObjectHelper.ifNotEmpty(service.getNode(), val -> meta.put("node", val));
-        ObjectHelper.ifNotEmpty(service.getServiceName(), val -> meta.put("service_name", val));
+        ObjectHelper.ifNotEmpty(service.getServiceId(), val -> meta.put(ServiceDefinition.SERVICE_META_ID, val));
+        ObjectHelper.ifNotEmpty(service.getServiceName(), val -> meta.put(ServiceDefinition.SERVICE_META_NAME, val));
+        ObjectHelper.ifNotEmpty(service.getNode(), val -> meta.put("service.node", val));
+        ObjectHelper.ifNotEmpty(service.getServiceMeta(), meta::putAll);
 
         List<String> tags = service.getServiceTags();
         if (tags != null) {
@@ -95,11 +87,10 @@ public final class ConsulServiceDiscovery extends DefaultServiceDiscovery {
         }
 
         return new DefaultServiceDefinition(
-            serviceName,
-            service.getServiceAddress(),
-            service.getServicePort(),
-            meta,
-            new DefaultServiceHealth(serviceHealthList.stream().allMatch(this::isHealthy))
-        );
+                serviceName, service.getServiceAddress(), service.getServicePort(), meta,
+                new DefaultServiceHealth(
+                        serviceHealthList.stream()
+                                .filter(h -> ObjectHelper.equal(h.getService().getId(), service.getServiceId()))
+                                .allMatch(this::isHealthy)));
     }
 }

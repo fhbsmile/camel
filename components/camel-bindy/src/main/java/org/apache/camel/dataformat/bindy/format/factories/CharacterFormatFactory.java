@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 package org.apache.camel.dataformat.bindy.format.factories;
 
 import java.text.ParseException;
+
 import org.apache.camel.dataformat.bindy.Format;
 import org.apache.camel.dataformat.bindy.FormattingOptions;
 
@@ -36,10 +37,12 @@ public class CharacterFormatFactory extends AbstractFormatFactory {
 
     private static class CharacterFormat implements Format<Character> {
 
+        @Override
         public String format(Character object) throws Exception {
             return object.toString();
         }
 
+        @Override
         public Character parse(String string) throws Exception {
             if (string.length() > 1) {
                 throw new ParseException("The string \"" + string + "\" cannot be parsed to a character (size > 1).", 1);

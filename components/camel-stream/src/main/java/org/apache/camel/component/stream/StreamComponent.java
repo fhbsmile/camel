@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,15 +19,16 @@ package org.apache.camel.component.stream;
 import java.util.Map;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 
 /**
  * Component providing streams connectivity
  */
-public class StreamComponent extends UriEndpointComponent {
+@Component("stream")
+public class StreamComponent extends DefaultComponent {
 
     public StreamComponent() {
-        super(StreamEndpoint.class);
     }
 
     @Override

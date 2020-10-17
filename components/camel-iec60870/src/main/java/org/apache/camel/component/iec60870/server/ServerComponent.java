@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,33 +25,30 @@ import org.apache.camel.component.iec60870.AbstractIecComponent;
 import org.apache.camel.component.iec60870.ConnectionId;
 import org.apache.camel.component.iec60870.Constants;
 import org.apache.camel.component.iec60870.ObjectAddress;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
 import org.eclipse.neoscada.protocol.iec60870.server.data.DataModuleOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@Component("iec60870-server")
 public class ServerComponent extends AbstractIecComponent<ServerConnectionMultiplexor, ServerOptions> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ServerComponent.class);
-
     public ServerComponent(final CamelContext context) {
-        super(ServerOptions.class, new ServerOptions(), context, ServerEndpoint.class);
+        super(ServerOptions.class, new ServerOptions(), context);
     }
 
     public ServerComponent() {
-        super(ServerOptions.class, new ServerOptions(), ServerEndpoint.class);
+        super(ServerOptions.class, new ServerOptions());
     }
 
     @Override
     protected void applyDataModuleOptions(final ServerOptions options, final Map<String, Object> parameters) {
         if (parameters.get(Constants.PARAM_DATA_MODULE_OPTIONS) instanceof DataModuleOptions) {
-            options.setDataModuleOptions((DataModuleOptions)parameters.get(Constants.PARAM_DATA_MODULE_OPTIONS));
+            options.setDataModuleOptions((DataModuleOptions) parameters.get(Constants.PARAM_DATA_MODULE_OPTIONS));
         }
     }
 
     @Override
     protected ServerConnectionMultiplexor createConnection(final ConnectionId id, final ServerOptions options) {
-        LOG.debug("Create new server - id: {}", id);
-
         try {
             return new ServerConnectionMultiplexor(new ServerInstance(id.getHost(), id.getPort(), options));
         } catch (final UnknownHostException e) {
@@ -60,17 +57,16 @@ public class ServerComponent extends AbstractIecComponent<ServerConnectionMultip
     }
 
     @Override
-    protected Endpoint createEndpoint(final String uri, final ServerConnectionMultiplexor connection, final ObjectAddress address) {
+    protected Endpoint createEndpoint(
+            final String uri, final ServerConnectionMultiplexor connection, final ObjectAddress address) {
         return new ServerEndpoint(uri, this, connection, address);
     }
 
     /**
      * Default connection options
-     *
-     * @param defaultConnectionOptions the new default connection options, must
-     *            not be {@code null}
      */
     @Override
+    @Metadata
     public void setDefaultConnectionOptions(final ServerOptions defaultConnectionOptions) {
         super.setDefaultConnectionOptions(defaultConnectionOptions);
     }

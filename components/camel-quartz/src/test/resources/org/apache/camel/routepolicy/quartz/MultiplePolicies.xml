@@ -30,11 +30,11 @@
 
   <bean id="startPolicy" class="org.apache.camel.routepolicy.quartz.SimpleScheduledRoutePolicy">
     <property name="routeStartDate" ref="now"/>
-    <property name="routeStartRepeatCount" value="-1"/>
+    <property name="routeStartRepeatCount" value="1"/>
     <property name="routeStartRepeatInterval" value="3000"/>
   </bean>
 
-  <bean id="throttlePolicy" class="org.apache.camel.impl.ThrottlingInflightRoutePolicy">
+  <bean id="throttlePolicy" class="org.apache.camel.throttling.ThrottlingInflightRoutePolicy">
     <property name="maxInflightExchanges" value="10"/>
   </bean>
 

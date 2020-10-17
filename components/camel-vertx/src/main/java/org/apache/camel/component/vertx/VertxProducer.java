@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,13 +23,11 @@ import io.vertx.core.eventbus.Message;
 import org.apache.camel.AsyncCallback;
 import org.apache.camel.Exchange;
 import org.apache.camel.InvalidPayloadRuntimeException;
-import org.apache.camel.impl.DefaultAsyncProducer;
-import org.apache.camel.util.ExchangeHelper;
-import org.apache.camel.util.MessageHelper;
+import org.apache.camel.support.DefaultAsyncProducer;
+import org.apache.camel.support.ExchangeHelper;
+import org.apache.camel.support.MessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.camel.component.vertx.VertxHelper.getVertxBody;
 
 public class VertxProducer extends DefaultAsyncProducer {
 
@@ -58,11 +56,11 @@ public class VertxProducer extends DefaultAsyncProducer {
         boolean reply = ExchangeHelper.isOutCapable(exchange);
         boolean pubSub = getEndpoint().isPubSub();
 
-        Object body = getVertxBody(exchange);
+        Object body = exchange.getMessage().getBody();
         if (body != null) {
             if (reply) {
                 LOG.debug("Sending to: {} with body: {}", address, body);
-                eventBus.send(address, body, new CamelReplyHandler(exchange, callback));
+                eventBus.request(address, body, new CamelReplyHandler(exchange, callback));
                 return false;
             } else {
                 if (pubSub) {

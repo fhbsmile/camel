@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,11 +24,12 @@ import org.springframework.security.core.Authentication;
 
 public class DefaultAuthenticationAdapter implements AuthenticationAdapter {
 
+    @Override
     public Authentication toAuthentication(Subject subject) {
         if (subject == null || subject.getPrincipals().size() == 0) {
             return null;
         }
-        Set<Authentication> authentications  = subject.getPrincipals(Authentication.class);
+        Set<Authentication> authentications = subject.getPrincipals(Authentication.class);
         if (authentications.size() > 0) {
             // just return the first one 
             return authentications.iterator().next();
@@ -41,7 +42,7 @@ public class DefaultAuthenticationAdapter implements AuthenticationAdapter {
      * You can add the customer convert code here
      */
     protected Authentication convertToAuthentication(Subject subject) {
-        return null;        
+        return null;
     }
 
 }

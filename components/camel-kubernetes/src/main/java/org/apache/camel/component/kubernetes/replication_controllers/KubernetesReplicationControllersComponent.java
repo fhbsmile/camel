@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,10 +18,15 @@ package org.apache.camel.component.kubernetes.replication_controllers;
 
 import org.apache.camel.component.kubernetes.AbstractKubernetesComponent;
 import org.apache.camel.component.kubernetes.KubernetesConfiguration;
+import org.apache.camel.spi.annotations.Component;
 
+@Component("kubernetes-replication-controllers")
 public class KubernetesReplicationControllersComponent extends AbstractKubernetesComponent {
 
-    protected KubernetesReplicationControllersEndpoint doCreateEndpoint(String uri, String remaining, KubernetesConfiguration config) throws Exception {
+    @Override
+    protected KubernetesReplicationControllersEndpoint doCreateEndpoint(
+            String uri, String remaining, KubernetesConfiguration config)
+            throws Exception {
         KubernetesReplicationControllersEndpoint endpoint = new KubernetesReplicationControllersEndpoint(uri, this, config);
         return endpoint;
     }

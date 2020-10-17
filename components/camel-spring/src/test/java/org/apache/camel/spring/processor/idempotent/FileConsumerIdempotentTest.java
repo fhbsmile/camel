@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,27 +24,32 @@ import org.apache.camel.Exchange;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.spi.IdempotentRepository;
 import org.apache.camel.util.FileUtil;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.camel.spring.processor.SpringTestHelper.createSpringCamelContext;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FileConsumerIdempotentTest extends ContextTestSupport {
 
-    private IdempotentRepository<String> repo;
+    private IdempotentRepository repo;
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
         return createSpringCamelContext(this, "org/apache/camel/spring/processor/idempotent/fileConsumerIdempotentTest.xml");
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    protected void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         deleteDirectory("target/fileidempotent");
 
         super.setUp();
         repo = context.getRegistry().lookupByNameAndType("fileStore", IdempotentRepository.class);
     }
 
-
+    @Test
     public void testIdempotent() throws Exception {
         // send a file
         template.sendBodyAndHeader("file://target/fileidempotent/", "Hello World", Exchange.FILE_NAME, "report.txt");
@@ -70,8 +75,7 @@ public class FileConsumerIdempotentTest extends ContextTestSupport {
         assertMockEndpointsSatisfied();
 
         String name = FileUtil.normalizePath(new File("target/fileidempotent/report.txt").getAbsolutePath());
-        assertTrue("Should contain file: " + name, repo.contains(name));
+        assertTrue(repo.contains(name), "Should contain file: " + name);
     }
 
 }
-

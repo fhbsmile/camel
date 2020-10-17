@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,27 +19,34 @@ package org.apache.camel.component.fastjson;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.support.config.FastJsonConfig;
+import org.apache.camel.CamelContext;
+import org.apache.camel.CamelContextAware;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.spi.DataFormat;
+import org.apache.camel.spi.DataFormatContentTypeHeader;
 import org.apache.camel.spi.DataFormatName;
-import org.apache.camel.support.ServiceSupport;
-import org.apache.camel.util.IOHelper;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Dataformat;
+import org.apache.camel.support.service.ServiceSupport;
 
 /**
- * A <a href="http://camel.apache.org/data-format.html">data format</a> ({@link DataFormat})
- * using <a href="https://github.com/alibaba/fastjson">Fastjson</a> to marshal to and from JSON.
+ * Marshal POJOs to JSON and back using <a href="https://github.com/alibaba/fastjson">Fastjson</a>
  */
-public class FastjsonDataFormat extends ServiceSupport implements DataFormat, DataFormatName {
+@Dataformat("json-fastjson")
+@Metadata(includeProperties = "unmarshalTypeName,prettyprint,contentTypeHeader")
+public class FastjsonDataFormat extends ServiceSupport
+        implements DataFormat, DataFormatName, DataFormatContentTypeHeader, CamelContextAware {
 
+    private CamelContext camelContext;
     private FastJsonConfig config;
     private Class<?> unmarshalType;
+    private String unmarshalTypeName;
     private Type unmarshalGenericType;
     private boolean serializeNulls;
     private boolean prettyPrint;
@@ -69,13 +76,22 @@ public class FastjsonDataFormat extends ServiceSupport implements DataFormat, Da
     }
 
     @Override
+    public CamelContext getCamelContext() {
+        return camelContext;
+    }
+
+    @Override
+    public void setCamelContext(CamelContext camelContext) {
+        this.camelContext = camelContext;
+    }
+
+    @Override
     public String getDataFormatName() {
         return "json-fastjson";
     }
 
     @Override
     public void marshal(final Exchange exchange, final Object graph, final OutputStream stream) throws Exception {
-
         int len = JSON.writeJSONString(stream,
                 config.getCharset(),
                 graph,
@@ -86,7 +102,7 @@ public class FastjsonDataFormat extends ServiceSupport implements DataFormat, Da
                 config.getSerializerFeatures());
 
         if (contentTypeHeader) {
-            Message message = exchange.hasOut() ? exchange.getOut() : exchange.getIn();
+            Message message = exchange.getMessage();
             message.setHeader(Exchange.CONTENT_TYPE, "application/json");
             message.setHeader(Exchange.CONTENT_LENGTH, len);
         }
@@ -102,9 +118,16 @@ public class FastjsonDataFormat extends ServiceSupport implements DataFormat, Da
     }
 
     @Override
+    protected void doInit() throws Exception {
+        if (unmarshalTypeName != null && (unmarshalType == null || unmarshalType == Object.class)) {
+            unmarshalType = camelContext.getClassResolver().resolveClass(unmarshalTypeName);
+        }
+    }
+
+    @Override
     protected void doStart() throws Exception {
         if (config == null) {
-            List<SerializerFeature> serializerFeatureList = new ArrayList<SerializerFeature>();
+            List<SerializerFeature> serializerFeatureList = new ArrayList<>();
             config = new FastJsonConfig();
             if (prettyPrint) {
                 serializerFeatureList.add(SerializerFeature.PrettyFormat);
@@ -120,7 +143,7 @@ public class FastjsonDataFormat extends ServiceSupport implements DataFormat, Da
                 serializerFeatureList.add(SerializerFeature.WriteDateUseDateFormat);
                 config.setDateFormat(this.dateFormatPattern);
             }
-
+            config.setSerializerFeatures(serializerFeatureList.toArray(new SerializerFeature[0]));
         }
     }
 
@@ -138,6 +161,14 @@ public class FastjsonDataFormat extends ServiceSupport implements DataFormat, Da
 
     public void setUnmarshalType(Class<?> unmarshalType) {
         this.unmarshalType = unmarshalType;
+    }
+
+    public String getUnmarshalTypeName() {
+        return unmarshalTypeName;
+    }
+
+    public void setUnmarshalTypeName(String unmarshalTypeName) {
+        this.unmarshalTypeName = unmarshalTypeName;
     }
 
     public Type getUnmarshalGenericType() {

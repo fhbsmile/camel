@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,8 +24,9 @@ import javax.mail.internet.MimeMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.mock_javamail.Mailbox;
 
 /**
@@ -34,6 +35,7 @@ import org.jvnet.mock_javamail.Mailbox;
 public class MailMaxMessagesPerPollTest extends CamelTestSupport {
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
         prepareMailbox();
         super.setUp();
@@ -81,11 +83,12 @@ public class MailMaxMessagesPerPollTest extends CamelTestSupport {
         folder.close(true);
     }
 
+    @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {
-                from("pop3://jones@localhost?password=secret&consumer.initialDelay=100&consumer.delay=100&maxMessagesPerPoll=3"
-                    + "&delete=true").to("mock:result");
+                from("pop3://jones@localhost?password=secret&initialDelay=100&delay=100&maxMessagesPerPoll=3"
+                     + "&delete=true").to("mock:result");
             }
         };
     }

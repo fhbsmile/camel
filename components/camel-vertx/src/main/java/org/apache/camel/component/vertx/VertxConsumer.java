@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,14 +23,14 @@ import org.apache.camel.AsyncCallback;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.camel.component.vertx.VertxHelper.getVertxBody;
-
 public class VertxConsumer extends DefaultConsumer {
+
     private static final Logger LOG = LoggerFactory.getLogger(VertxConsumer.class);
+
     private final VertxEndpoint endpoint;
     private transient MessageConsumer messageConsumer;
 
@@ -57,7 +57,7 @@ public class VertxConsumer extends DefaultConsumer {
                 @Override
                 public void done(boolean doneSync) {
                     if (reply) {
-                        Object body = getVertxBody(exchange);
+                        Object body = exchange.getMessage().getBody();
                         if (body != null) {
                             LOG.debug("Sending reply to: {} with body: {}", event.replyAddress(), body);
                             event.reply(body);
@@ -70,6 +70,7 @@ public class VertxConsumer extends DefaultConsumer {
         }
     }
 
+    @Override
     protected void doStart() throws Exception {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Registering EventBus handler on address {}", endpoint.getAddress());
@@ -81,6 +82,7 @@ public class VertxConsumer extends DefaultConsumer {
         super.doStart();
     }
 
+    @Override
     protected void doStop() throws Exception {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Unregistering EventBus handler on address {}", endpoint.getAddress());

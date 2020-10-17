@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,10 +19,12 @@ package org.apache.camel.component.ahc.ws;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.component.ahc.AhcEndpoint;
+import org.apache.camel.spi.ExceptionHandler;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.asynchttpclient.AsyncHttpClient;
@@ -36,14 +38,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * To exchange data with external Websocket servers using <a href="http://github.com/sonatype/async-http-client">Async Http Client</a>.
+ * Exchange data with external Websocket servers using <a href="http://github.com/sonatype/async-http-client">Async Http
+ * Client</a>.
  */
-@UriEndpoint(firstVersion = "2.14.0", scheme = "ahc-ws,ahc-wss", extendsScheme = "ahc,ahc", title = "AHC Websocket,AHC Secure Websocket",
-        syntax = "ahc-ws:httpUri", consumerClass = WsConsumer.class, label = "websocket")
+@UriEndpoint(firstVersion = "2.14.0", scheme = "ahc-ws,ahc-wss", extendsScheme = "ahc,ahc",
+             title = "Async HTTP Client (AHC) Websocket,Async HTTP Client (AHC) Secure Websocket",
+             syntax = "ahc-ws:httpUri", category = { Category.WEBSOCKET })
 public class WsEndpoint extends AhcEndpoint {
-    private static final transient Logger LOG = LoggerFactory.getLogger(WsEndpoint.class);
 
-    private final Set<WsConsumer> consumers = new HashSet<WsConsumer>();
+    private static final Logger LOG = LoggerFactory.getLogger(WsEndpoint.class);
+
+    private final Set<WsConsumer> consumers = new HashSet<>();
     private final WsListener listener = new WsListener();
     private transient WebSocket websocket;
 
@@ -68,7 +73,9 @@ public class WsEndpoint extends AhcEndpoint {
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new WsConsumer(this, processor);
+        WsConsumer consumer = new WsConsumer(this, processor);
+        configureConsumer(consumer);
+        return consumer;
     }
 
     WebSocket getWebSocket() throws Exception {
@@ -122,8 +129,9 @@ public class WsEndpoint extends AhcEndpoint {
 
         LOG.debug("Connecting to {}", uri);
         websocket = getClient().prepareGet(uri).execute(
-            new WebSocketUpgradeHandler.Builder()
-                .addWebSocketListener(listener).build()).get();
+                new WebSocketUpgradeHandler.Builder()
+                        .addWebSocketListener(listener).build())
+                .get();
     }
 
     @Override
@@ -170,6 +178,10 @@ public class WsEndpoint extends AhcEndpoint {
                 reConnect();
             } catch (Exception e) {
                 LOG.warn("Error re-connecting to websocket", e);
+                ExceptionHandler exceptionHandler = getExceptionHandler();
+                if (exceptionHandler != null) {
+                    exceptionHandler.handleException("Error re-connecting to websocket", e);
+                }
             }
         }
 
@@ -199,6 +211,11 @@ public class WsEndpoint extends AhcEndpoint {
             }
         }
 
+        @Override
+        public void onPingFrame(byte[] payload) {
+            LOG.debug("Received ping --> {}", payload);
+            websocket.sendPongFrame(payload);
+        }
     }
 
 }

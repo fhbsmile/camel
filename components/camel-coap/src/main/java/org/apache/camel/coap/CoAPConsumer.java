@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,12 +16,11 @@
  */
 package org.apache.camel.coap;
 
-
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.server.resources.Resource;
 
@@ -34,17 +33,17 @@ public class CoAPConsumer extends DefaultConsumer {
 
     public CoAPConsumer(final CoAPEndpoint endpoint, final Processor processor) {
         super(endpoint, processor);
-        this.endpoint = endpoint;        
+        this.endpoint = endpoint;
     }
-    
+
     public CoAPEndpoint getCoapEndpoint() {
         return endpoint;
     }
-    
+
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-        
+
         String path = endpoint.getUri().getPath();
         if (path.startsWith("/")) {
             path = path.substring(1);
@@ -65,7 +64,7 @@ public class CoAPConsumer extends DefaultConsumer {
                 cr.add(child);
                 cr = child;
             } else if (path.isEmpty()) {
-                ((CamelCoapResource)child).addConsumer(this);
+                ((CamelCoapResource) child).addConsumer(this);
             } else {
                 cr = child;
             }

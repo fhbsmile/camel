@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,11 +21,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.github.benmanes.caffeine.cache.Cache;
-
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.caffeine.CaffeineConstants;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSupport {
 
@@ -34,10 +37,10 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
     // ****************************
 
     @Test
-    public void testCacheClear() throws Exception {
+    void testCacheClear() throws Exception {
         MockEndpoint mock = getMockEndpoint("mock:result");
         mock.expectedMinimumMessageCount(1);
-        mock.expectedBodiesReceived((Object)null);
+        mock.expectedBodiesReceived((Object) null);
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_HAS_RESULT, false);
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_SUCCEEDED, true);
 
@@ -51,7 +54,7 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
     // ****************************
 
     @Test
-    public void testCachePut() throws Exception {
+    void testCachePut() {
         final String key = generateRandomString();
         final String val = generateRandomString();
 
@@ -61,18 +64,20 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_HAS_RESULT, false);
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_SUCCEEDED, true);
 
-        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_PUT).withHeader(CaffeineConstants.KEY, key).withBody(val).to("direct://start").send();
+        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_PUT)
+                .withHeader(CaffeineConstants.KEY, key).withBody(val).to("direct://start").send();
 
         assertTrue(getTestRemovalListenerCache().getIfPresent(key) != null);
         assertEquals(val, getTestRemovalListenerCache().getIfPresent(key));
     }
 
     @Test
-    public void testCachePutAll() throws Exception {
+    void testCachePutAll() throws Exception {
         final Map<String, String> map = generateRandomMapOfString(3);
         final Set<String> keys = map.keySet().stream().limit(2).collect(Collectors.toSet());
 
-        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_PUT_ALL).withBody(map).to("direct://start").send();
+        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_PUT_ALL).withBody(map)
+                .to("direct://start").send();
 
         MockEndpoint mock1 = getMockEndpoint("mock:result");
         mock1.expectedMinimumMessageCount(1);
@@ -93,7 +98,7 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
     // ****************************
 
     @Test
-    public void testCacheGet() throws Exception {
+    void testCacheGet() throws Exception {
         final Cache<Object, Object> cache = getTestRemovalListenerCache();
         final String key = generateRandomString();
         final String val = generateRandomString();
@@ -106,13 +111,14 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_HAS_RESULT, true);
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_SUCCEEDED, true);
 
-        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_GET).withHeader(CaffeineConstants.KEY, key).withBody(val).to("direct://start").send();
+        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_GET)
+                .withHeader(CaffeineConstants.KEY, key).withBody(val).to("direct://start").send();
 
         assertMockEndpointsSatisfied();
     }
 
     @Test
-    public void testCacheGetAll() throws Exception {
+    void testCacheGetAll() throws Exception {
         final Cache<Object, Object> cache = getTestRemovalListenerCache();
         final Map<String, String> map = generateRandomMapOfString(3);
         final Set<String> keys = map.keySet().stream().limit(2).collect(Collectors.toSet());
@@ -124,7 +130,8 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_HAS_RESULT, true);
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_SUCCEEDED, true);
 
-        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_GET_ALL).withHeader(CaffeineConstants.KEYS, keys).to("direct://start").send();
+        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_GET_ALL)
+                .withHeader(CaffeineConstants.KEYS, keys).to("direct://start").send();
 
         assertMockEndpointsSatisfied();
 
@@ -140,7 +147,7 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
     // ****************************
 
     @Test
-    public void testCacheInvalidate() throws Exception {
+    void testCacheInvalidate() throws Exception {
         final Cache<Object, Object> cache = getTestRemovalListenerCache();
         final String key = generateRandomString();
         final String val = generateRandomString();
@@ -152,7 +159,8 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_HAS_RESULT, false);
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_SUCCEEDED, true);
 
-        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_INVALIDATE).withHeader(CaffeineConstants.KEY, key).to("direct://start").send();
+        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_INVALIDATE)
+                .withHeader(CaffeineConstants.KEY, key).to("direct://start").send();
 
         assertMockEndpointsSatisfied();
 
@@ -160,7 +168,7 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
     }
 
     @Test
-    public void testCacheInvalidateAll() throws Exception {
+    void testCacheInvalidateAll() throws Exception {
         final Cache<Object, Object> cache = getTestRemovalListenerCache();
         final Map<String, String> map = generateRandomMapOfString(3);
         final Set<String> keys = map.keySet().stream().limit(2).collect(Collectors.toSet());
@@ -172,7 +180,8 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_HAS_RESULT, false);
         mock.expectedHeaderReceived(CaffeineConstants.ACTION_SUCCEEDED, true);
 
-        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_INVALIDATE_ALL).withHeader(CaffeineConstants.KEYS, keys).to("direct://start").send();
+        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_INVALIDATE_ALL)
+                .withHeader(CaffeineConstants.KEYS, keys).to("direct://start").send();
 
         assertMockEndpointsSatisfied();
 
@@ -183,11 +192,12 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
     }
 
     @Test
-    public void testStats() throws Exception {
+    void testStats() {
         final Map<String, String> map = generateRandomMapOfString(3);
         final Set<String> keys = map.keySet().stream().limit(2).collect(Collectors.toSet());
 
-        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_PUT_ALL).withBody(map).to("direct://start").send();
+        fluentTemplate().withHeader(CaffeineConstants.ACTION, CaffeineConstants.ACTION_PUT_ALL).withBody(map)
+                .to("direct://start").send();
 
         MockEndpoint mock1 = getMockEndpoint("mock:result");
         mock1.expectedMinimumMessageCount(1);
@@ -206,11 +216,13 @@ public class CaffeineCacheRemovaListenerProducerTest extends CaffeineCacheTestSu
     // ****************************
 
     @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             public void configure() {
-                from("direct://start").toF("caffeine-cache://%s?cache=#cacheRl", "test").to("log:org.apache.camel.component.caffeine?level=INFO&showAll=true&multiline=true")
-                    .to("mock:result");
+                from("direct://start")
+                        .to("caffeine-cache://cacheRl")
+                        .to("log:org.apache.camel.component.caffeine?level=INFO&showAll=true&multiline=true")
+                        .to("mock:result");
             }
         };
     }

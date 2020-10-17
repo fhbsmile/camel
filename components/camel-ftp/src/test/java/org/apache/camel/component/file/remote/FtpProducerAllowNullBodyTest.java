@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,13 @@ import java.io.File;
 
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.component.file.GenericFileOperationFailedException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.apache.camel.test.junit5.TestSupport.assertFileExists;
+import static org.apache.camel.test.junit5.TestSupport.assertIsInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class FtpProducerAllowNullBodyTest extends FtpServerTestSupport {
 
@@ -41,11 +47,13 @@ public class FtpProducerAllowNullBodyTest extends FtpServerTestSupport {
             template.sendBody(getFtpUrl() + "&allowNullBody=false", null);
             fail("Should have thrown a GenericFileOperationFailedException");
         } catch (CamelExecutionException e) {
-            GenericFileOperationFailedException cause = assertIsInstanceOf(GenericFileOperationFailedException.class, e.getCause());
+            GenericFileOperationFailedException cause
+                    = assertIsInstanceOf(GenericFileOperationFailedException.class, e.getCause());
             assertTrue(cause.getMessage().endsWith("allowNullBody.txt"));
         }
 
-        assertFalse("allowNullBody set to false with null body should not create a new file", new File(FTP_ROOT_DIR + "/allownull/allowNullBody.txt").exists());
+        assertFalse(new File(FTP_ROOT_DIR + "/allownull/allowNullBody.txt").exists(),
+                "allowNullBody set to false with null body should not create a new file");
     }
 
 }

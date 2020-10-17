@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.camel.component.jms;
 
 import java.io.File;
 import java.util.Map;
+
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -25,17 +26,16 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeExchangeException;
-import org.apache.camel.impl.DefaultMessage;
-import org.apache.camel.util.ExchangeHelper;
+import org.apache.camel.support.DefaultMessage;
+import org.apache.camel.support.ExchangeHelper;
 import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Represents a {@link org.apache.camel.Message} for working with JMS
- *
- * @version 
  */
 public class JmsMessage extends DefaultMessage {
     private static final Logger LOG = LoggerFactory.getLogger(JmsMessage.class);
@@ -43,12 +43,8 @@ public class JmsMessage extends DefaultMessage {
     private Session jmsSession;
     private JmsBinding binding;
 
-    @Deprecated
-    public JmsMessage(Message jmsMessage, JmsBinding binding) {
-        this(jmsMessage, null, binding);
-    }
-
-    public JmsMessage(Message jmsMessage, Session jmsSession, JmsBinding binding) {
+    public JmsMessage(Exchange exchange, Message jmsMessage, Session jmsSession, JmsBinding binding) {
+        super(exchange);
         setJmsMessage(jmsMessage);
         setJmsSession(jmsSession);
         setBinding(binding);
@@ -91,18 +87,17 @@ public class JmsMessage extends DefaultMessage {
             setMessageId(that.getMessageId());
         }
 
+        // cover over exchange if none has been assigned
+        if (getExchange() == null) {
+            setExchange(that.getExchange());
+        }
+
         // copy body and fault flag
         setBody(that.getBody());
-        setFault(that.isFault());
 
         // we have already cleared the headers
         if (that.hasHeaders()) {
             getHeaders().putAll(that.getHeaders());
-        }
-
-        getAttachments().clear();
-        if (that.hasAttachments()) {
-            getAttachmentObjects().putAll(that.getAttachmentObjects());
         }
     }
 
@@ -138,8 +133,8 @@ public class JmsMessage extends DefaultMessage {
     /**
      * Returns the underlying JMS session.
      * <p/>
-     * This may be <tt>null</tt> if using {@link org.apache.camel.component.jms.JmsPollingConsumer},
-     * or the broker component from Apache ActiveMQ 5.11.x or older.
+     * This may be <tt>null</tt> if using {@link org.apache.camel.component.jms.JmsPollingConsumer}, or the broker
+     * component from Apache ActiveMQ 5.11.x or older.
      */
     public Session getJmsSession() {
         return jmsSession;
@@ -160,6 +155,7 @@ public class JmsMessage extends DefaultMessage {
         }
     }
 
+    @Override
     public Object getHeader(String name) {
         ensureInitialHeaders();
         return super.getHeader(name);
@@ -191,7 +187,7 @@ public class JmsMessage extends DefaultMessage {
 
     @Override
     public JmsMessage newInstance() {
-        JmsMessage answer = new JmsMessage(null, null, binding);
+        JmsMessage answer = new JmsMessage(null, null, null, binding);
         answer.setCamelContext(getCamelContext());
         return answer;
     }
@@ -204,8 +200,7 @@ public class JmsMessage extends DefaultMessage {
     }
 
     /**
-     * Ensure that the headers have been populated from the underlying JMS message
-     * before we start mutating the headers
+     * Ensure that the headers have been populated from the underlying JMS message before we start mutating the headers
      */
     protected void ensureInitialHeaders() {
         if (jmsMessage != null && !hasPopulatedHeaders()) {

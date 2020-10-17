@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,8 @@ import javax.enterprise.inject.spi.Producer;
 
 import org.apache.camel.CamelContext;
 
-final class CamelContextInjectionTarget<T extends CamelContext> extends DelegateInjectionTarget<T> implements InjectionTarget<T> {
+final class CamelContextInjectionTarget<T extends CamelContext> extends DelegateInjectionTarget<T>
+        implements InjectionTarget<T> {
 
     CamelContextInjectionTarget(InjectionTarget<T> target, Producer<T> producer) {
         super(target, producer);

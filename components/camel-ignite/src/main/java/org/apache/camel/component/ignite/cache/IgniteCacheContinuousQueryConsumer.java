@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,7 +27,7 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.component.ignite.IgniteConstants;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -47,7 +47,8 @@ public class IgniteCacheContinuousQueryConsumer extends DefaultConsumer {
 
     private QueryCursor<Entry<Object, Object>> cursor;
 
-    public IgniteCacheContinuousQueryConsumer(IgniteCacheEndpoint endpoint, Processor processor, IgniteCache<Object, Object> cache) {
+    public IgniteCacheContinuousQueryConsumer(IgniteCacheEndpoint endpoint, Processor processor,
+                                              IgniteCache<Object, Object> cache) {
         super(endpoint, processor);
         this.endpoint = endpoint;
         this.cache = cache;
@@ -59,7 +60,8 @@ public class IgniteCacheContinuousQueryConsumer extends DefaultConsumer {
 
         launchContinuousQuery();
 
-        LOG.info("Started Ignite Cache Continuous Query consumer for cache {} with query: {}.", cache.getName(), endpoint.getQuery());
+        LOG.info("Started Ignite Cache Continuous Query consumer for cache {} with query: {}.", cache.getName(),
+                endpoint.getQuery());
 
         maybeFireExistingQueryResults();
     }
@@ -97,7 +99,8 @@ public class IgniteCacheContinuousQueryConsumer extends DefaultConsumer {
 
         continuousQuery.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
             @Override
-            public void onUpdated(Iterable<CacheEntryEvent<? extends Object, ? extends Object>> events) throws CacheEntryListenerException {
+            public void onUpdated(Iterable<CacheEntryEvent<? extends Object, ? extends Object>> events)
+                    throws CacheEntryListenerException {
                 if (LOG.isTraceEnabled()) {
                     LOG.info("Processing Continuous Query event(s): {}.", events);
                 }
@@ -125,8 +128,9 @@ public class IgniteCacheContinuousQueryConsumer extends DefaultConsumer {
         super.doStop();
 
         cursor.close();
-        
-        LOG.info("Stopped Ignite Cache Continuous Query consumer for cache {} with query: {}.", cache.getName(), endpoint.getQuery());
+
+        LOG.info("Stopped Ignite Cache Continuous Query consumer for cache {} with query: {}.", cache.getName(),
+                endpoint.getQuery());
     }
 
     private void fireSingleExchange(CacheEntryEvent<? extends Object, ? extends Object> entry) {

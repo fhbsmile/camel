@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,26 +17,26 @@
 package org.apache.camel.http.common;
 
 import java.io.IOException;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeCamelException;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultMessage;
 import org.apache.camel.util.ObjectHelper;
 
-/**
- * @version 
- */
 public class HttpMessage extends DefaultMessage {
 
     private final HttpServletRequest request;
     private final HttpServletResponse response;
     private final HttpCommonEndpoint endpoint;
+    private boolean requestRead;
 
-    public HttpMessage(Exchange exchange, HttpCommonEndpoint endpoint, HttpServletRequest request, HttpServletResponse response) {
-        setExchange(exchange);
-        setCamelContext(exchange.getContext());
+    public HttpMessage(Exchange exchange, HttpCommonEndpoint endpoint, HttpServletRequest request,
+                       HttpServletResponse response) {
+        super(exchange);
+        this.requestRead = false;
         this.endpoint = endpoint;
 
         this.request = request;
@@ -44,7 +44,7 @@ public class HttpMessage extends DefaultMessage {
         // Put the request and response into the message header
         this.setHeader(Exchange.HTTP_SERVLET_REQUEST, request);
         this.setHeader(Exchange.HTTP_SERVLET_RESPONSE, response);
-        
+
         // Check the setting of exchange
         Boolean flag = exchange.getProperty(Exchange.SKIP_WWW_FORM_URLENCODED, Boolean.class);
         if (flag != null && flag) {
@@ -56,12 +56,14 @@ public class HttpMessage extends DefaultMessage {
         endpoint.getHttpBinding().readRequest(request, this);
     }
 
-    private HttpMessage(HttpServletRequest request, HttpServletResponse response, Exchange exchange, HttpCommonEndpoint endpoint) {
+    private HttpMessage(HttpServletRequest request, HttpServletResponse response, Exchange exchange,
+                        HttpCommonEndpoint endpoint,
+                        boolean requestRead) {
+        super(exchange);
         this.request = request;
         this.response = response;
-        setExchange(getExchange());
         this.endpoint = endpoint;
-        setCamelContext(exchange.getContext());
+        this.requestRead = requestRead;
     }
 
     public HttpServletRequest getRequest() {
@@ -74,16 +76,23 @@ public class HttpMessage extends DefaultMessage {
 
     @Override
     protected Object createBody() {
+        // HTTP request may be read only once
+        if (requestRead) {
+            return null;
+        }
+
         try {
             return endpoint.getHttpBinding().parseBody(this);
         } catch (IOException e) {
             throw new RuntimeCamelException(e);
+        } finally {
+            requestRead = true;
         }
     }
 
     @Override
     public HttpMessage newInstance() {
-        return new HttpMessage(request, response, getExchange(), endpoint);
+        return new HttpMessage(request, response, getExchange(), endpoint, requestRead);
     }
 
     @Override

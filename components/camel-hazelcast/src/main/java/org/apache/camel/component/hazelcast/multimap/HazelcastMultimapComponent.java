@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,15 +19,15 @@ package org.apache.camel.component.hazelcast.multimap;
 import java.util.Map;
 
 import com.hazelcast.core.HazelcastInstance;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.hazelcast.HazelcastDefaultComponent;
 import org.apache.camel.component.hazelcast.HazelcastDefaultEndpoint;
+import org.apache.camel.spi.annotations.Component;
 
+@Component("hazelcast-multimap")
 public class HazelcastMultimapComponent extends HazelcastDefaultComponent {
 
     public HazelcastMultimapComponent() {
-        super();
     }
 
     public HazelcastMultimapComponent(final CamelContext context) {
@@ -35,7 +35,9 @@ public class HazelcastMultimapComponent extends HazelcastDefaultComponent {
     }
 
     @Override
-    protected HazelcastDefaultEndpoint doCreateEndpoint(String uri, String remaining, Map<String, Object> parameters, HazelcastInstance hzInstance) throws Exception {
+    protected HazelcastDefaultEndpoint doCreateEndpoint(
+            String uri, String remaining, Map<String, Object> parameters, HazelcastInstance hzInstance)
+            throws Exception {
         return new HazelcastMultimapEndpoint(hzInstance, uri, remaining, this);
     }
 

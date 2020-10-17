@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,12 +16,9 @@
  */
 package org.apache.camel.component.twitter;
 
-import java.util.Date;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import twitter4j.Twitter;
 
 /**
  * consumes tweets
@@ -29,6 +26,7 @@ import twitter4j.Twitter;
 public class DirectMessageDirectTest extends CamelTwitterConsumerTestSupport {
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         /* Uncomment when you need a test direct message

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,7 +38,6 @@ import com.dropbox.core.v2.files.ListFolderResult;
 import com.dropbox.core.v2.files.Metadata;
 import com.dropbox.core.v2.files.SearchMatch;
 import com.dropbox.core.v2.files.SearchResult;
-import com.dropbox.core.v2.files.UploadUploader;
 import com.dropbox.core.v2.files.WriteMode;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.dropbox.dto.DropboxDelResult;
@@ -50,7 +49,7 @@ import org.apache.camel.component.dropbox.util.DropboxConstants;
 import org.apache.camel.component.dropbox.util.DropboxException;
 import org.apache.camel.component.dropbox.util.DropboxResultCode;
 import org.apache.camel.component.dropbox.util.DropboxUploadMode;
-import org.apache.camel.converter.stream.OutputStreamBuilder;
+import org.apache.camel.support.builder.OutputStreamBuilder;
 import org.apache.camel.util.IOHelper;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -67,7 +66,7 @@ public final class DropboxAPIFacade {
     private final Exchange exchange;
 
     /**
-     * @param client the DbxClient performing dropbox low level operations
+     * @param client   the DbxClient performing dropbox low level operations
      * @param exchange the current Exchange
      */
     public DropboxAPIFacade(DbxClientV2 client, Exchange exchange) {
@@ -78,45 +77,44 @@ public final class DropboxAPIFacade {
     /**
      * Put or upload a new file or an entire directory to dropbox
      *
-     * @param localPath the file path or the dir path on the local filesystem
-     * @param remotePath the remote path destination on dropbox
-     * @param mode how a file should be saved on dropbox; in case of "add" the
-     *            new file will be renamed in case a file with the same name
-     *            already exists on dropbox. in case of "force" the file already
-     *            existing with the same name will be overridden.
-     * @return a result object reporting for each remote path the result of the
-     *         operation.
+     * @param  localPath        the file path or the dir path on the local filesystem
+     * @param  remotePath       the remote path destination on dropbox
+     * @param  mode             how a file should be saved on dropbox; in case of "add" the new file will be renamed in
+     *                          case a file with the same name already exists on dropbox. in case of "force" the file
+     *                          already existing with the same name will be overridden.
+     * @return                  a result object reporting for each remote path the result of the operation.
      * @throws DropboxException
      */
     public DropboxFileUploadResult put(String localPath, String remotePath, DropboxUploadMode mode) throws DropboxException {
         // in case the remote path is not specified, the remotePath = localPath
         String dropboxPath = remotePath == null ? localPath : remotePath;
 
-        UploadUploader entry;
+        boolean isPresent = true;
         try {
-            entry = client.files().upload(dropboxPath);
+            client.files().getMetadata(dropboxPath);
         } catch (DbxException e) {
-            throw new DropboxException(dropboxPath + " does not exist or cannot obtain metadata", e);
+            isPresent = false;
         }
 
         if (localPath != null) {
-            return putFile(localPath, mode, dropboxPath, entry);
+            return putFile(localPath, mode, dropboxPath, isPresent);
         } else {
-            return putBody(exchange, mode, dropboxPath, entry);
+            return putBody(exchange, mode, dropboxPath, isPresent);
         }
     }
 
-    private DropboxFileUploadResult putFile(String localPath, DropboxUploadMode mode, String dropboxPath, UploadUploader entry) throws DropboxException {
+    private DropboxFileUploadResult putFile(String localPath, DropboxUploadMode mode, String dropboxPath, boolean isPresent)
+            throws DropboxException {
         File fileLocalPath = new File(localPath);
         // verify uploading of a single file
         if (fileLocalPath.isFile()) {
             // check if dropbox file exists
-            if (entry != null) {
-                throw new DropboxException(dropboxPath + " exists on dropbox and is not a file!");
+            if (isPresent && !DropboxUploadMode.force.equals(mode)) {
+                throw new DropboxException(dropboxPath + " exists on dropbox. Use force upload mode to override");
             }
             // in case the entry not exists on dropbox check if the filename
             // should be appended
-            if (entry == null) {
+            if (!isPresent) {
                 if (dropboxPath.endsWith(DropboxConstants.DROPBOX_FILE_SEPARATOR)) {
                     dropboxPath = dropboxPath + fileLocalPath.getName();
                 }
@@ -139,7 +137,7 @@ public final class DropboxAPIFacade {
             // verify uploading of a list of files inside a dir
             LOG.debug("Uploading a dir...");
             // check if dropbox folder exists
-            if (entry != null) {
+            if (isPresent && !DropboxUploadMode.force.equals(mode)) {
                 throw new DropboxException(dropboxPath + " exists on dropbox and is not a folder!");
             }
             if (!dropboxPath.endsWith(DropboxConstants.DROPBOX_FILE_SEPARATOR)) {
@@ -181,7 +179,8 @@ public final class DropboxAPIFacade {
         }
     }
 
-    private DropboxFileUploadResult putBody(Exchange exchange, DropboxUploadMode mode, String dropboxPath, UploadUploader entry) throws DropboxException {
+    private DropboxFileUploadResult putBody(Exchange exchange, DropboxUploadMode mode, String dropboxPath, boolean isPresent)
+            throws DropboxException {
         String name = exchange.getIn().getHeader(HEADER_PUT_FILE_NAME, String.class);
         if (name == null) {
             // fallback to use CamelFileName
@@ -194,7 +193,7 @@ public final class DropboxAPIFacade {
 
         // in case the entry not exists on dropbox check if the filename should
         // be appended
-        if (entry == null) {
+        if (!isPresent) {
             if (dropboxPath.endsWith(DropboxConstants.DROPBOX_FILE_SEPARATOR)) {
                 dropboxPath = dropboxPath + name;
             }
@@ -226,7 +225,8 @@ public final class DropboxAPIFacade {
             } else {
                 uploadMode = WriteMode.ADD;
             }
-            uploadedFile = client.files().uploadBuilder(dropboxPath).withMode(uploadMode).uploadAndFinish(inputStream, inputFile.length());
+            uploadedFile = client.files().uploadBuilder(dropboxPath).withMode(uploadMode).uploadAndFinish(inputStream,
+                    inputFile.length());
             return uploadedFile;
         } finally {
             IOHelper.close(inputStream);
@@ -252,13 +252,12 @@ public final class DropboxAPIFacade {
     }
 
     /**
-     * Search inside a remote path including its sub directories. The query
-     * param can be null.
+     * Search inside a remote path including its sub directories. The query param can be null.
      *
-     * @param remotePath the remote path where starting the search from
-     * @param query a space-separated list of substrings to search for. A file
-     *            matches only if it contains all the substrings
-     * @return a result object containing all the files found.
+     * @param  remotePath       the remote path where starting the search from
+     * @param  query            a space-separated list of substrings to search for. A file matches only if it contains
+     *                          all the substrings
+     * @return                  a result object containing all the files found.
      * @throws DropboxException
      */
     public DropboxSearchResult search(String remotePath, String query) throws DropboxException {
@@ -286,11 +285,11 @@ public final class DropboxAPIFacade {
     }
 
     /**
-     * Delete every files and subdirectories inside the remote directory. In
-     * case the remotePath is a file, delete the file.
+     * Delete every files and subdirectories inside the remote directory. In case the remotePath is a file, delete the
+     * file.
      *
-     * @param remotePath the remote location to delete
-     * @return a result object with the result of the delete operation.
+     * @param  remotePath       the remote location to delete
+     * @return                  a result object with the result of the delete operation.
      * @throws DropboxException
      */
     public DropboxDelResult del(String remotePath) throws DropboxException {
@@ -305,9 +304,9 @@ public final class DropboxAPIFacade {
     /**
      * Rename a remote path with the new path location.
      *
-     * @param remotePath the existing remote path to be renamed
-     * @param newRemotePath the new remote path substituting the old one
-     * @return a result object with the result of the move operation.
+     * @param  remotePath       the existing remote path to be renamed
+     * @param  newRemotePath    the new remote path substituting the old one
+     * @return                  a result object with the result of the move operation.
      * @throws DropboxException
      */
     public DropboxMoveResult move(String remotePath, String newRemotePath) throws DropboxException {
@@ -322,9 +321,9 @@ public final class DropboxAPIFacade {
     /**
      * Get the content of every file inside the remote path.
      *
-     * @param remotePath the remote path where to download from
-     * @return a result object with the content (ByteArrayOutputStream) of every
-     *         files inside the remote path.
+     * @param  remotePath       the remote path where to download from
+     * @return                  a result object with the content (ByteArrayOutputStream) of every files inside the
+     *                          remote path.
      * @throws DropboxException
      */
     public DropboxFileDownloadResult get(String remotePath) throws DropboxException {

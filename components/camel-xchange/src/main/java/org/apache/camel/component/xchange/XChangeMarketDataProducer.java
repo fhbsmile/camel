@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,14 +18,14 @@ package org.apache.camel.component.xchange;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.component.xchange.XChangeConfiguration.XChangeMethod;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.Ticker;
 
 import static org.apache.camel.component.xchange.XChangeConfiguration.HEADER_CURRENCY_PAIR;
 
 public class XChangeMarketDataProducer extends DefaultProducer {
-    
+
     public XChangeMarketDataProducer(XChangeEndpoint endpoint) {
         super(endpoint);
     }
@@ -40,11 +40,11 @@ public class XChangeMarketDataProducer extends DefaultProducer {
 
         XChangeEndpoint endpoint = getEndpoint();
         XChangeMethod method = endpoint.getConfiguration().getMethod();
-        
+
         if (XChangeMethod.ticker == method) {
             CurrencyPair pair = exchange.getIn().getHeader(HEADER_CURRENCY_PAIR, CurrencyPair.class);
             pair = pair != null ? pair : exchange.getMessage().getBody(CurrencyPair.class);
-            pair = pair != null ? pair : endpoint.getConfiguration().getCurrencyPair();
+            pair = pair != null ? pair : endpoint.getConfiguration().getAsCurrencyPair();
             Ticker ticker = endpoint.getTicker(pair);
             exchange.getMessage().setBody(ticker);
         }

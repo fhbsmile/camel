@@ -32,19 +32,14 @@
     <property name="targetMethod">
       <value>getNextAvailable</value>
     </property>
-    <property name="arguments">
-      <list>
-        <value>9000</value>
-      </list>
-    </property>
   </bean>
 
   <camel:sslContextParameters id="mySsl">
     <camel:keyManagers keyPassword="changeit">
-      <camel:keyStore resource="jsse/localhost.ks" password="changeit"/>
+      <camel:keyStore resource="jsse/localhost.p12" password="changeit"/>
     </camel:keyManagers>
     <camel:trustManagers>
-      <camel:keyStore resource="jsse/localhost.ks" password="changeit"/>
+      <camel:keyStore resource="jsse/localhost.p12" password="changeit"/>
     </camel:trustManagers>
   </camel:sslContextParameters>
 
@@ -52,7 +47,7 @@
     <endpoint id="input1" uri="netty-http:https://0.0.0.0:#{dynaPort}?ssl=true&amp;sslContextParameters=#mySsl"/>
 
     <route>
-      <from ref="input1"/>
+      <from uri="ref:input1"/>
       <to uri="mock:input"/>
       <transform>
         <simple>Bye World</simple>

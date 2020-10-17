@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,11 +20,11 @@ import org.apache.camel.Produce;
 
 public class MyMultiArgument {
 
-    @Produce(uri = "direct:myargs", binding = false)
+    @Produce(value = "direct:myargs", binding = false)
     MyMultiArgumentServiceInterface myMultiArgumentServiceInterface;
 
     public void doSomethingMultiple() {
-        myMultiArgumentServiceInterface.doSomething("Hello World 1", "Hello World 2", new Long(3));
+        myMultiArgumentServiceInterface.doSomething("Hello World 1", "Hello World 2", Long.valueOf(3));
     }
 
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,29 +16,38 @@
  */
 package org.apache.camel.component.nats;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutorService;
 
+import javax.net.ssl.SSLContext;
+
+import io.nats.client.Connection;
+import io.nats.client.Nats;
+import io.nats.client.Options;
+import io.nats.client.Options.Builder;
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.support.DefaultEndpoint;
 
 /**
- * The nats component allows you produce and consume messages from <a href="http://nats.io/">NATS</a>.
+ * Send and receive messages from <a href="http://nats.io/">NATS</a> messaging system.
  */
-@UriEndpoint(firstVersion = "2.17.0", scheme = "nats", title = "Nats", syntax = "nats:servers", label = "messaging", consumerClass = NatsConsumer.class)
+@UriEndpoint(firstVersion = "2.17.0", scheme = "nats", title = "Nats", syntax = "nats:topic", category = { Category.MESSAGING })
 public class NatsEndpoint extends DefaultEndpoint {
 
     @UriParam
     private NatsConfiguration configuration;
-    
+
     public NatsEndpoint(String uri, NatsComponent component, NatsConfiguration config) {
         super(uri, component);
         this.configuration = config;
-    }    
-    
+    }
+
     @Override
     public Producer createProducer() throws Exception {
         return new NatsProducer(this);
@@ -46,19 +55,28 @@ public class NatsEndpoint extends DefaultEndpoint {
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new NatsConsumer(this, processor);
-    }
-    
-    public ExecutorService createExecutor() {
-        return getCamelContext().getExecutorServiceManager().newFixedThreadPool(this, "NatsTopic[" + configuration.getTopic() + "]", configuration.getPoolSize());
+        NatsConsumer consumer = new NatsConsumer(this, processor);
+        configureConsumer(consumer);
+        return consumer;
     }
 
-    @Override
-    public boolean isSingleton() {
-        return true;
+    public ExecutorService createExecutor() {
+        return getCamelContext().getExecutorServiceManager().newFixedThreadPool(this,
+                "NatsTopic[" + configuration.getTopic() + "]", configuration.getPoolSize());
     }
-    
-    public NatsConfiguration getNatsConfiguration() {
+
+    public NatsConfiguration getConfiguration() {
         return configuration;
+    }
+
+    public Connection getConnection()
+            throws InterruptedException, IllegalArgumentException, GeneralSecurityException, IOException {
+        Builder builder = getConfiguration().createOptions();
+        if (getConfiguration().getSslContextParameters() != null && getConfiguration().isSecure()) {
+            SSLContext sslCtx = getConfiguration().getSslContextParameters().createSSLContext(getCamelContext());
+            builder.sslContext(sslCtx);
+        }
+        Options options = builder.build();
+        return Nats.connect(options);
     }
 }

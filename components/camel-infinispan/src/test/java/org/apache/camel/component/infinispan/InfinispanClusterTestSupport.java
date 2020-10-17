@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,19 +18,20 @@ package org.apache.camel.component.infinispan;
 
 import java.util.List;
 
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.BindToRegistry;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.infinispan.Cache;
 import org.infinispan.commons.api.BasicCacheContainer;
+import org.infinispan.commons.time.TimeService;
 import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.test.MultipleCacheManagersTest;
+import org.infinispan.test.TestDataSCI;
 import org.infinispan.test.TestingUtil;
 import org.infinispan.transaction.TransactionMode;
 import org.infinispan.util.ControlledTimeService;
-import org.infinispan.util.TimeService;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 public class InfinispanClusterTestSupport extends CamelTestSupport {
 
@@ -74,15 +75,15 @@ public class InfinispanClusterTestSupport extends CamelTestSupport {
                 builderUsed.clustering().hash().numOwners(1);
             }
             if (cacheName != null) {
-                createClusteredCaches(clusterSize, cacheName, builderUsed);
+                createClusteredCaches(clusterSize, cacheName, TestDataSCI.INSTANCE, builderUsed);
             } else {
-                createClusteredCaches(clusterSize, builderUsed);
+                createClusteredCaches(clusterSize, TestDataSCI.INSTANCE, builderUsed);
             }
         }
     }
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         ClusteredCacheSupport cluster = new ClusteredCacheSupport(CacheMode.DIST_SYNC, false, 2);
         try {
@@ -95,21 +96,19 @@ public class InfinispanClusterTestSupport extends CamelTestSupport {
         super.setUp();
     }
 
+    @BindToRegistry("cacheContainer")
+    public EmbeddedCacheManager loadContainer() {
+        return clusteredCacheContainers.get(0);
+    }
+
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
 
         // Has to be done later, maybe CamelTestSupport should
-        for (BasicCacheContainer container: clusteredCacheContainers) {
+        for (BasicCacheContainer container : clusteredCacheContainers) {
             container.stop();
         }
-    }
-
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry registry = super.createRegistry();
-        registry.bind("cacheContainer", clusteredCacheContainers.get(0));
-        return registry;
     }
 
     protected Cache<Object, Object> defaultCache() {
@@ -129,9 +128,9 @@ public class InfinispanClusterTestSupport extends CamelTestSupport {
     }
 
     protected void injectTimeService() {
-        ts0 = new ControlledTimeService(0);
+        ts0 = new ControlledTimeService();
         TestingUtil.replaceComponent(clusteredCacheContainers.get(0), TimeService.class, ts0, true);
-        ts1 = new ControlledTimeService(0);
+        ts1 = new ControlledTimeService();
         TestingUtil.replaceComponent(clusteredCacheContainers.get(1), TimeService.class, ts1, true);
     }
 }

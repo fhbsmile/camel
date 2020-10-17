@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,68 +28,34 @@ import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.asynchttpclient.ws.WebSocket;
 import org.asynchttpclient.ws.WebSocketListener;
 import org.asynchttpclient.ws.WebSocketUpgradeHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UndertowWsTwoRoutesTest extends BaseUndertowTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger(UndertowWsTwoRoutesTest.class);
 
     @Test
     public void testWSHttpCallEcho() throws Exception {
 
         // We call the route WebSocket BAR
         {
-            final List<String> received = new ArrayList<String>();
+            final List<String> received = new ArrayList<>();
             final CountDownLatch latch = new CountDownLatch(1);
             final AsyncHttpClient c = new DefaultAsyncHttpClient();
             final WebSocket websocket = c.prepareGet("ws://localhost:" + getPort() + "/bar").execute(
-                new WebSocketUpgradeHandler.Builder()
-                    .addWebSocketListener(new WebSocketListener() {
-                        @Override
-                        public void onTextFrame(String message, boolean finalFragment, int rsv) {
-                            received.add(message);
-                            log.info("received --> " + message);
-                            latch.countDown();
-                        }
-
-                        @Override
-                        public void onOpen(WebSocket websocket) {
-                        }
-
-                        @Override
-                        public void onClose(WebSocket websocket, int code, String reason) {
-                        }
-
-                        @Override
-                        public void onError(Throwable t) {
-                            t.printStackTrace();
-                        }
-                    }).build()).get();
-
-            websocket.sendTextFrame("Beer");
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-
-            assertEquals(1, received.size());
-            assertEquals("The bar has Beer", received.get(0));
-
-            websocket.sendCloseFrame();
-            c.close();
-        }
-
-
-        // We call the route WebSocket PUB
-        {
-            final List<String> received = new ArrayList<String>();
-            final CountDownLatch latch = new CountDownLatch(1);
-            final AsyncHttpClient c = new DefaultAsyncHttpClient();
-            final WebSocket websocket = c.prepareGet("ws://localhost:" + getPort() + "/pub").execute(
                     new WebSocketUpgradeHandler.Builder()
                             .addWebSocketListener(new WebSocketListener() {
                                 @Override
                                 public void onTextFrame(String message, boolean finalFragment, int rsv) {
                                     received.add(message);
-                                    log.info("received --> " + message);
+                                    LOG.info("received --> " + message);
                                     latch.countDown();
                                 }
-
 
                                 @Override
                                 public void onOpen(WebSocket websocket) {
@@ -101,9 +67,50 @@ public class UndertowWsTwoRoutesTest extends BaseUndertowTest {
 
                                 @Override
                                 public void onError(Throwable t) {
-                                    t.printStackTrace();
+                                    LOG.warn("Unhandled exception: {}", t.getMessage(), t);
                                 }
-                            }).build()).get();
+                            }).build())
+                    .get();
+
+            websocket.sendTextFrame("Beer");
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+            assertEquals(1, received.size());
+            assertEquals("The bar has Beer", received.get(0));
+
+            websocket.sendCloseFrame();
+            c.close();
+        }
+
+        // We call the route WebSocket PUB
+        {
+            final List<String> received = new ArrayList<>();
+            final CountDownLatch latch = new CountDownLatch(1);
+            final AsyncHttpClient c = new DefaultAsyncHttpClient();
+            final WebSocket websocket = c.prepareGet("ws://localhost:" + getPort() + "/pub").execute(
+                    new WebSocketUpgradeHandler.Builder()
+                            .addWebSocketListener(new WebSocketListener() {
+                                @Override
+                                public void onTextFrame(String message, boolean finalFragment, int rsv) {
+                                    received.add(message);
+                                    LOG.info("received --> " + message);
+                                    latch.countDown();
+                                }
+
+                                @Override
+                                public void onOpen(WebSocket websocket) {
+                                }
+
+                                @Override
+                                public void onClose(WebSocket websocket, int code, String reason) {
+                                }
+
+                                @Override
+                                public void onError(Throwable t) {
+                                    LOG.warn("Unhandled exception: {}", t.getMessage(), t);
+                                }
+                            }).build())
+                    .get();
 
             websocket.sendTextFrame("wine");
             assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -123,10 +130,10 @@ public class UndertowWsTwoRoutesTest extends BaseUndertowTest {
             public void configure() {
 
                 int port = getPort();
-                from("undertow:ws://localhost:" + port  + "/bar")
-                    .log(">>> Message received from BAR WebSocket Client : ${body}")
-                    .transform().simple("The bar has ${body}")
-                    .to("undertow:ws://localhost:" + port + "/bar");
+                from("undertow:ws://localhost:" + port + "/bar")
+                        .log(">>> Message received from BAR WebSocket Client : ${body}")
+                        .transform().simple("The bar has ${body}")
+                        .to("undertow:ws://localhost:" + port + "/bar");
 
                 from("undertow:ws://localhost:" + port + "/pub")
                         .log(">>> Message received from PUB WebSocket Client : ${body}")

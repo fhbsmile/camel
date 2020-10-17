@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,27 +17,32 @@
 package org.apache.camel.component.elsql;
 
 import java.util.Map;
+
 import javax.sql.DataSource;
 
 import com.opengamma.elsql.ElSqlConfig;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
 import org.apache.camel.spi.Metadata;
-import org.apache.camel.spi.UriParam;
-import org.apache.camel.util.CamelContextHelper;
-import org.apache.camel.util.IntrospectionSupport;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.CamelContextHelper;
+import org.apache.camel.support.DefaultComponent;
+import org.apache.camel.support.PropertyBindingSupport;
+import org.apache.camel.util.PropertiesHelper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-public class ElsqlComponent extends UriEndpointComponent {
+@Component("elsql")
+public class ElsqlComponent extends DefaultComponent {
 
+    @Metadata
     private ElSqlDatabaseVendor databaseVendor;
+    @Metadata
     private DataSource dataSource;
     @Metadata(label = "advanced")
     private ElSqlConfig elSqlConfig;
+    @Metadata
     private String resourceUri;
 
     public ElsqlComponent() {
-        super(ElsqlEndpoint.class);
     }
 
     @Override
@@ -62,7 +67,8 @@ public class ElsqlComponent extends UriEndpointComponent {
         }
 
         NamedParameterJdbcTemplate jdbcTemplate = new NamedParameterJdbcTemplate(target);
-        IntrospectionSupport.setProperties(jdbcTemplate, parameters, "template.");
+        Map<String, Object> params = PropertiesHelper.extractProperties(parameters, "template.");
+        PropertyBindingSupport.bindProperties(getCamelContext(), jdbcTemplate, params);
 
         String elsqlName = remaining;
         String resUri = resourceUri;
@@ -139,9 +145,10 @@ public class ElsqlComponent extends UriEndpointComponent {
     }
 
     /**
-     * The resource file which contains the elsql SQL statements to use. You can specify multiple resources separated by comma.
-     * The resources are loaded on the classpath by default, you can prefix with <tt>file:</tt> to load from file system.
-     * Notice you can set this option on the component and then you do not have to configure this on the endpoint.
+     * The resource file which contains the elsql SQL statements to use. You can specify multiple resources separated by
+     * comma. The resources are loaded on the classpath by default, you can prefix with <tt>file:</tt> to load from file
+     * system. Notice you can set this option on the component and then you do not have to configure this on the
+     * endpoint.
      */
     public void setResourceUri(String resourceUri) {
         this.resourceUri = resourceUri;

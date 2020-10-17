@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,10 +24,10 @@ import org.jsmpp.session.BindParameter;
 import org.jsmpp.session.MessageReceiverListener;
 import org.jsmpp.session.SMPPSession;
 import org.jsmpp.session.SessionStateListener;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -36,30 +36,31 @@ import static org.mockito.Mockito.when;
 
 /**
  * JUnit test class for <code>org.apache.camel.component.smpp.SmppConsumer</code>
- * 
- * @version 
  */
 public class SmppConsumerTest {
-    
+
     private SmppConsumer consumer;
     private SmppEndpoint endpoint;
     private SmppConfiguration configuration;
     private Processor processor;
     private SMPPSession session;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         configuration = new SmppConfiguration();
+        configuration.setServiceType("CMT");
+        configuration.setSystemType("cp");
+        configuration.setPassword("password");
         endpoint = mock(SmppEndpoint.class);
         processor = mock(Processor.class);
         session = mock(SMPPSession.class);
-        
+
         // the construction of SmppConsumer will trigger the getCamelContext call
         consumer = new SmppConsumer(
-                endpoint, 
+                endpoint,
                 configuration,
                 processor) {
-            
+
             SMPPSession createSMPPSession() {
                 return session;
             }
@@ -69,44 +70,45 @@ public class SmppConsumerTest {
     @Test
     public void doStartShouldStartANewSmppSession() throws Exception {
         when(endpoint.getConnectionString())
-            .thenReturn("smpp://smppclient@localhost:2775");
-        BindParameter expectedBindParameter = new BindParameter(BindType.BIND_RX,
-            "smppclient",
-            "password",
-            "cp",
-            TypeOfNumber.UNKNOWN,
-            NumberingPlanIndicator.UNKNOWN,
-            "");
-        when(session.connectAndBind("localhost", new Integer(2775), expectedBindParameter))
-            .thenReturn("1");
-        
+                .thenReturn("smpp://smppclient@localhost:2775");
+        BindParameter expectedBindParameter = new BindParameter(
+                BindType.BIND_RX,
+                "smppclient",
+                "password",
+                "cp",
+                TypeOfNumber.UNKNOWN,
+                NumberingPlanIndicator.UNKNOWN,
+                "");
+        when(session.connectAndBind("localhost", Integer.valueOf(2775), expectedBindParameter))
+                .thenReturn("1");
+
         consumer.doStart();
-        
+
         verify(session).setEnquireLinkTimer(5000);
         verify(session).setTransactionTimer(10000);
         verify(session).addSessionStateListener(isA(SessionStateListener.class));
         verify(session).setMessageReceiverListener(isA(MessageReceiverListener.class));
-        verify(session).connectAndBind("localhost", new Integer(2775), expectedBindParameter);
+        verify(session).connectAndBind("localhost", Integer.valueOf(2775), expectedBindParameter);
     }
 
     @Test
     public void doStopShouldNotCloseTheSMPPSessionIfItIsNull() throws Exception {
         when(endpoint.getConnectionString())
-            .thenReturn("smpp://smppclient@localhost:2775");
-        
+                .thenReturn("smpp://smppclient@localhost:2775");
+
         consumer.doStop();
     }
-    
+
     @Test
     public void doStopShouldCloseTheSMPPSession() throws Exception {
         doStartShouldStartANewSmppSession();
         reset(endpoint, processor, session);
-        
+
         when(endpoint.getConnectionString())
-            .thenReturn("smpp://smppclient@localhost:2775");
-        
+                .thenReturn("smpp://smppclient@localhost:2775");
+
         consumer.doStop();
-        
+
         verify(session).removeSessionStateListener(isA(SessionStateListener.class));
         verify(session).unbindAndClose();
     }
@@ -115,22 +117,22 @@ public class SmppConsumerTest {
     public void addressRangeFromConfigurationIsUsed() throws Exception {
         configuration.setAddressRange("(111*|222*|333*)");
         BindParameter expectedBindParameter = new BindParameter(
-            BindType.BIND_RX,
-            "smppclient",
-            "password",
-            "cp",
-            TypeOfNumber.UNKNOWN,
-            NumberingPlanIndicator.UNKNOWN,
-            "(111*|222*|333*)");
+                BindType.BIND_RX,
+                "smppclient",
+                "password",
+                "cp",
+                TypeOfNumber.UNKNOWN,
+                NumberingPlanIndicator.UNKNOWN,
+                "(111*|222*|333*)");
         when(session.connectAndBind("localhost",
-                new Integer(2775),
+                Integer.valueOf(2775),
                 expectedBindParameter))
-            .thenReturn("1");
+                        .thenReturn("1");
 
         consumer.doStart();
 
         verify(session).connectAndBind("localhost",
-                new Integer(2775),
+                Integer.valueOf(2775),
                 expectedBindParameter);
     }
 

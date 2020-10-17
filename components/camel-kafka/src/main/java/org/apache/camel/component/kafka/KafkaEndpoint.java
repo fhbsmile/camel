@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,21 +16,21 @@
  */
 package org.apache.camel.component.kafka;
 
-import java.lang.reflect.Field;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.MultipleConsumersSupport;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
-import org.apache.camel.impl.SynchronousDelegateProducer;
 import org.apache.camel.spi.ClassResolver;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.support.DefaultEndpoint;
+import org.apache.camel.support.SynchronousDelegateProducer;
 import org.apache.camel.util.CastUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -42,10 +42,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The kafka component allows messages to be sent to (or consumed from) Apache Kafka brokers.
+ * Sent and receive messages to/from an Apache Kafka broker.
  */
-@UriEndpoint(firstVersion = "2.13.0", scheme = "kafka", title = "Kafka", syntax = "kafka:topic", consumerClass = KafkaConsumer.class, label = "messaging")
+@UriEndpoint(firstVersion = "2.13.0", scheme = "kafka", title = "Kafka", syntax = "kafka:topic",
+             category = { Category.MESSAGING })
 public class KafkaEndpoint extends DefaultEndpoint implements MultipleConsumersSupport {
+
     private static final Logger LOG = LoggerFactory.getLogger(KafkaEndpoint.class);
 
     @UriParam
@@ -89,17 +91,8 @@ public class KafkaEndpoint extends DefaultEndpoint implements MultipleConsumersS
     }
 
     @Override
-    public boolean isSingleton() {
-        return true;
-    }
-
-    @Override
     public boolean isMultipleConsumersSupported() {
         return true;
-    }
-
-    private void loadParitionerClass(ClassResolver resolver, Properties props) {
-        replaceWithClass(props, "partitioner.class", resolver, Partitioner.class);
     }
 
     <T> Class<T> loadClass(Object o, ClassResolver resolver, Class<T> type) {
@@ -130,38 +123,27 @@ public class KafkaEndpoint extends DefaultEndpoint implements MultipleConsumersS
                 ClassResolver resolver = getCamelContext().getClassResolver();
                 replaceWithClass(props, ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, resolver, Serializer.class);
                 replaceWithClass(props, ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, resolver, Serializer.class);
+                replaceWithClass(props, ProducerConfig.PARTITIONER_CLASS_CONFIG, resolver, Partitioner.class);
                 replaceWithClass(props, ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, resolver, Deserializer.class);
                 replaceWithClass(props, ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, resolver, Deserializer.class);
-
-                try {
-                    //doesn't exist in old version of Kafka client so detect and only call the method if
-                    //the field/config actually exists
-                    Field f = ProducerConfig.class.getDeclaredField("PARTITIONER_CLASS_CONFIG");
-                    if (f != null) {
-                        loadParitionerClass(resolver, props);
-                    }
-                } catch (NoSuchFieldException e) {
-                    //ignore
-                } catch (SecurityException e) {
-                    //ignore
-                }
-                //doesn't work as it needs to be List<String>  :(
-                //replaceWithClass(props, "partition.assignment.strategy", resolver, PartitionAssignor.class);
             }
         } catch (Throwable t) {
-            //can ignore and Kafka itself might be able to handle it, if not, it will throw an exception
+            // can ignore and Kafka itself might be able to handle it, if not,
+            // it will throw an exception
             LOG.debug("Problem loading classes for Serializers", t);
         }
     }
 
     public ExecutorService createExecutor() {
-        return getCamelContext().getExecutorServiceManager().newFixedThreadPool(this, "KafkaConsumer[" + configuration.getTopic() + "]", configuration.getConsumerStreams());
+        return getCamelContext().getExecutorServiceManager().newFixedThreadPool(this,
+                "KafkaConsumer[" + configuration.getTopic() + "]", configuration.getConsumerStreams());
     }
 
     public ExecutorService createProducerExecutor() {
         int core = getConfiguration().getWorkerPoolCoreSize();
         int max = getConfiguration().getWorkerPoolMaxSize();
-        return getCamelContext().getExecutorServiceManager().newThreadPool(this, "KafkaProducer[" + configuration.getTopic() + "]", core, max);
+        return getCamelContext().getExecutorServiceManager().newThreadPool(this,
+                "KafkaProducer[" + configuration.getTopic() + "]", core, max);
     }
 
     @SuppressWarnings("rawtypes")

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,15 +20,21 @@ import java.util.Map;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.DefaultComponent;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 
+@Component("google-bigquery")
 public class GoogleBigQueryComponent extends DefaultComponent {
+
+    @Metadata
     private String projectId;
+    @Metadata
     private String datasetId;
+    @Metadata
     private GoogleBigQueryConnectionFactory connectionFactory;
 
     public GoogleBigQueryComponent() {
-        super();
     }
 
     public GoogleBigQueryComponent(CamelContext camelContext) {
@@ -45,14 +51,15 @@ public class GoogleBigQueryComponent extends DefaultComponent {
         }
 
         GoogleBigQueryConfiguration configuration = new GoogleBigQueryConfiguration();
-        setProperties(configuration, parameters);
         configuration.parseRemaining(remaining);
 
         if (configuration.getConnectionFactory() == null) {
             configuration.setConnectionFactory(getConnectionFactory());
         }
 
-        return new GoogleBigQueryEndpoint(uri, this, configuration);
+        GoogleBigQueryEndpoint endpoint = new GoogleBigQueryEndpoint(uri, this, configuration);
+        setProperties(endpoint, parameters);
+        return endpoint;
     }
 
     public String getProjectId() {

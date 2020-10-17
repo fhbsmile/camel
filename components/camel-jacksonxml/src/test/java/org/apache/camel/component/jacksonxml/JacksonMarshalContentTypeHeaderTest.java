@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,14 +22,19 @@ import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JacksonMarshalContentTypeHeaderTest extends CamelTestSupport {
 
     @Test
     public void testYes() throws Exception {
-        final Map<String, Object> in = new HashMap<String, Object>();
+        final Map<String, Object> in = new HashMap<>();
         in.put("name", "Camel");
 
         Exchange out = template.request("direct:yes", new Processor() {
@@ -41,12 +46,12 @@ public class JacksonMarshalContentTypeHeaderTest extends CamelTestSupport {
 
         assertNotNull(out);
         assertTrue(out.hasOut());
-        assertEquals("application/xml", out.getOut().getHeader(Exchange.CONTENT_TYPE));
+        assertEquals("application/xml", out.getMessage().getHeader(Exchange.CONTENT_TYPE));
     }
 
     @Test
     public void testYes2() throws Exception {
-        final Map<String, Object> in = new HashMap<String, Object>();
+        final Map<String, Object> in = new HashMap<>();
         in.put("name", "Camel");
 
         Exchange out = template.request("direct:yes2", new Processor() {
@@ -58,12 +63,12 @@ public class JacksonMarshalContentTypeHeaderTest extends CamelTestSupport {
 
         assertNotNull(out);
         assertTrue(out.hasOut());
-        assertEquals("application/xml", out.getOut().getHeader(Exchange.CONTENT_TYPE));
+        assertEquals("application/xml", out.getMessage().getHeader(Exchange.CONTENT_TYPE));
     }
 
     @Test
     public void testNo() throws Exception {
-        final Map<String, Object> in = new HashMap<String, Object>();
+        final Map<String, Object> in = new HashMap<>();
         in.put("name", "Camel");
 
         Exchange out = template.request("direct:no", new Processor() {
@@ -75,7 +80,7 @@ public class JacksonMarshalContentTypeHeaderTest extends CamelTestSupport {
 
         assertNotNull(out);
         assertTrue(out.hasOut());
-        assertNull(out.getOut().getHeader(Exchange.CONTENT_TYPE));
+        assertNull(out.getMessage().getHeader(Exchange.CONTENT_TYPE));
     }
 
     @Override

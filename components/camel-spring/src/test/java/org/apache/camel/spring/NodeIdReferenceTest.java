@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,13 +20,10 @@ import org.apache.camel.Endpoint;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
-/**
- * @version 
- */
 @ContextConfiguration
 public class NodeIdReferenceTest extends SpringRunWithTestSupport {
     protected String expectedBody = "Hi World";
@@ -34,10 +31,10 @@ public class NodeIdReferenceTest extends SpringRunWithTestSupport {
     @Autowired
     protected ProducerTemplate producer;
 
-    @EndpointInject(ref = "foo")
+    @EndpointInject("ref:foo")
     protected Endpoint start;
 
-    @EndpointInject(uri = "mock:result")
+    @EndpointInject("mock:result")
     protected MockEndpoint result;
 
     @Test

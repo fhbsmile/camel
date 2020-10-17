@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,38 +19,39 @@ package org.apache.camel.component.netty;
 import java.io.File;
 import java.util.Map;
 
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.handler.ssl.SslHandler;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
 import org.apache.camel.spi.UriPath;
-import org.apache.camel.util.jsse.SSLContextParameters;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.socket.nio.BossPool;
-import org.jboss.netty.channel.socket.nio.WorkerPool;
-import org.jboss.netty.handler.ssl.SslHandler;
+import org.apache.camel.support.jsse.SSLContextParameters;
 
 @UriParams
 public class NettyServerBootstrapConfiguration implements Cloneable {
-
     public static final String DEFAULT_ENABLED_PROTOCOLS = "TLSv1,TLSv1.1,TLSv1.2";
 
-    @UriPath(enums = "tcp,udp") @Metadata(required = "true")
+    @UriPath(enums = "tcp,udp")
+    @Metadata(required = true)
     protected String protocol;
-    @UriPath @Metadata(required = "true")
+    @UriPath
+    @Metadata(required = true)
     protected String host;
-    @UriPath @Metadata(required = "true")
+    @UriPath
+    @Metadata(required = true)
     protected int port;
     @UriParam(label = "consumer")
     protected boolean broadcast;
     @UriParam(label = "advanced", defaultValue = "65536")
-    protected long sendBufferSize = 65536;
+    protected int sendBufferSize = 65536;
     @UriParam(label = "advanced", defaultValue = "65536")
-    protected long receiveBufferSize = 65536;
+    protected int receiveBufferSize = 65536;
     @UriParam(label = "advanced")
     protected int receiveBufferSizePredictor;
     @UriParam(label = "consumer,advanced", defaultValue = "1")
     protected int bossCount = 1;
-    @UriParam(label = "consumer,advanced")
+    @UriParam(label = "advanced")
     protected int workerCount;
     @UriParam(defaultValue = "true")
     protected boolean keepAlive = true;
@@ -59,11 +60,11 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     @UriParam(defaultValue = "true")
     protected boolean reuseAddress = true;
     @UriParam(label = "producer", defaultValue = "10000")
-    protected long connectTimeout = 10000;
+    protected int connectTimeout = 10000;
     @UriParam(label = "consumer,advanced")
     protected int backlog;
     @UriParam(label = "consumer,advanced")
-    protected ServerPipelineFactory serverPipelineFactory;
+    protected ServerInitializerFactory serverInitializerFactory;
     @UriParam(label = "consumer,advanced")
     protected NettyServerBootstrapFactory nettyServerBootstrapFactory;
     @UriParam(label = "advanced", prefix = "option.", multiValue = true)
@@ -87,23 +88,29 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     protected String keyStoreResource;
     @UriParam(label = "security")
     protected String trustStoreResource;
-    @UriParam(defaultValue = "JKS", label = "security")
-    protected String keyStoreFormat = "JKS";
-    @UriParam(defaultValue = "SunX509", label = "security")
-    protected String securityProvider = "SunX509";
+    @UriParam(label = "security")
+    protected String keyStoreFormat;
+    @UriParam(label = "security")
+    protected String securityProvider;
     @UriParam(defaultValue = DEFAULT_ENABLED_PROTOCOLS, label = "security")
     protected String enabledProtocols = DEFAULT_ENABLED_PROTOCOLS;
     @UriParam(label = "security", secret = true)
     protected String passphrase;
+    @UriParam(label = "advanced")
+    protected boolean nativeTransport;
     @UriParam(label = "consumer,advanced")
-    protected BossPool bossPool;
-    @UriParam(label = "consumer,advanced")
-    protected WorkerPool workerPool;
-    @UriParam(label = "consumer,advanced")
+    protected EventLoopGroup bossGroup;
+    @UriParam(label = "advanced")
+    protected EventLoopGroup workerGroup;
+    @UriParam(label = "advanced")
     protected ChannelGroup channelGroup;
     @UriParam(label = "consumer,advanced")
     protected String networkInterface;
-    
+    @UriParam(label = "consumer", defaultValue = "true")
+    private boolean reconnect = true;
+    @UriParam(label = "consumer", defaultValue = "10000")
+    private int reconnectInterval = 10000;
+
     public String getAddress() {
         return host + ":" + port;
     }
@@ -130,8 +137,8 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     /**
      * The hostname.
      * <p/>
-     * For the consumer the hostname is localhost or 0.0.0.0
-     * For the producer the hostname is the remote host to connect to
+     * For the consumer the hostname is localhost or 0.0.0.0. For the producer the hostname is the remote host to
+     * connect to
      */
     public void setHost(String host) {
         this.host = host;
@@ -159,25 +166,25 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
         this.broadcast = broadcast;
     }
 
-    public long getSendBufferSize() {
+    public int getSendBufferSize() {
         return sendBufferSize;
     }
 
     /**
      * The TCP/UDP buffer sizes to be used during outbound communication. Size is bytes.
      */
-    public void setSendBufferSize(long sendBufferSize) {
+    public void setSendBufferSize(int sendBufferSize) {
         this.sendBufferSize = sendBufferSize;
     }
 
-    public long getReceiveBufferSize() {
+    public int getReceiveBufferSize() {
         return receiveBufferSize;
     }
 
     /**
      * The TCP/UDP buffer sizes to be used during inbound communication. Size is bytes.
      */
-    public void setReceiveBufferSize(long receiveBufferSize) {
+    public void setReceiveBufferSize(int receiveBufferSize) {
         this.receiveBufferSize = receiveBufferSize;
     }
 
@@ -197,8 +204,8 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     }
 
     /**
-     * When netty works on nio mode, it uses default workerCount parameter from Netty, which is cpu_core_threads*2.
-     * User can use this operation to override the default workerCount from Netty
+     * When netty works on nio mode, it uses default workerCount parameter from Netty (which is cpu_core_threads x 2).
+     * User can use this option to override the default workerCount from Netty.
      */
     public void setWorkerCount(int workerCount) {
         this.workerCount = workerCount;
@@ -209,8 +216,8 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     }
 
     /**
-     * When netty works on nio mode, it uses default bossCount parameter from Netty, which is 1.
-     * User can use this operation to override the default bossCount from Netty
+     * When netty works on nio mode, it uses default bossCount parameter from Netty, which is 1. User can use this
+     * option to override the default bossCount from Netty
      */
     public void setBossCount(int bossCount) {
         this.bossCount = bossCount;
@@ -249,14 +256,14 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
         this.reuseAddress = reuseAddress;
     }
 
-    public long getConnectTimeout() {
+    public int getConnectTimeout() {
         return connectTimeout;
     }
 
     /**
-     * Time to wait for a socket connection to be available. Value is in millis.
+     * Time to wait for a socket connection to be available. Value is in milliseconds.
      */
-    public void setConnectTimeout(long connectTimeout) {
+    public void setConnectTimeout(int connectTimeout) {
         this.connectTimeout = connectTimeout;
     }
 
@@ -265,10 +272,9 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     }
 
     /**
-     * Allows to configure a backlog for netty consumer (server).
-     * Note the backlog is just a best effort depending on the OS.
-     * Setting this option to a value such as 200, 500 or 1000, tells the TCP stack how long the "accept" queue can be
-     * If this option is not configured, then the backlog depends on OS setting.
+     * Allows to configure a backlog for netty consumer (server). Note the backlog is just a best effort depending on
+     * the OS. Setting this option to a value such as 200, 500 or 1000, tells the TCP stack how long the "accept" queue
+     * can be If this option is not configured, then the backlog depends on OS setting.
      */
     public void setBacklog(int backlog) {
         this.backlog = backlog;
@@ -291,7 +297,8 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
 
     /**
      * When enabled and in SSL mode, then the Netty consumer will enrich the Camel Message with headers having
-     * information about the client certificate such as subject name, issuer name, serial number, and the valid date range.
+     * information about the client certificate such as subject name, issuer name, serial number, and the valid date
+     * range.
      */
     public void setSslClientCertHeaders(boolean sslClientCertHeaders) {
         this.sslClientCertHeaders = sslClientCertHeaders;
@@ -361,8 +368,8 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     }
 
     /**
-     * Client side certificate keystore to be used for encryption. Is loaded by default from classpath,
-     * but you can prefix with "classpath:", "file:", or "http:" to load the resource from different systems.
+     * Client side certificate keystore to be used for encryption. Is loaded by default from classpath, but you can
+     * prefix with "classpath:", "file:", or "http:" to load the resource from different systems.
      */
     public void setKeyStoreResource(String keyStoreResource) {
         this.keyStoreResource = keyStoreResource;
@@ -373,8 +380,8 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     }
 
     /**
-     * Server side certificate keystore to be used for encryption.
-     * Is loaded by default from classpath, but you can prefix with "classpath:", "file:", or "http:" to load the resource from different systems.
+     * Server side certificate keystore to be used for encryption. Is loaded by default from classpath, but you can
+     * prefix with "classpath:", "file:", or "http:" to load the resource from different systems.
      */
     public void setTrustStoreResource(String trustStoreResource) {
         this.trustStoreResource = trustStoreResource;
@@ -413,15 +420,31 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
         this.passphrase = passphrase;
     }
 
-    public ServerPipelineFactory getServerPipelineFactory() {
-        return serverPipelineFactory;
+    /**
+     * @deprecated use #getServerInitializerFactory
+     */
+    @Deprecated
+    public ServerInitializerFactory getServerPipelineFactory() {
+        return serverInitializerFactory;
     }
 
     /**
-     * To use a custom ServerPipelineFactory
+     * @deprecated use #setServerInitializerFactory
      */
-    public void setServerPipelineFactory(ServerPipelineFactory serverPipelineFactory) {
-        this.serverPipelineFactory = serverPipelineFactory;
+    @Deprecated
+    public void setServerPipelineFactory(ServerInitializerFactory serverPipelineFactory) {
+        this.serverInitializerFactory = serverPipelineFactory;
+    }
+
+    public ServerInitializerFactory getServerInitializerFactory() {
+        return serverInitializerFactory;
+    }
+
+    /**
+     * To use a custom ServerInitializerFactory
+     */
+    public void setServerInitializerFactory(ServerInitializerFactory serverInitializerFactory) {
+        this.serverInitializerFactory = serverInitializerFactory;
     }
 
     public NettyServerBootstrapFactory getNettyServerBootstrapFactory() {
@@ -440,35 +463,49 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     }
 
     /**
-     * Allows to configure additional netty options using "option." as prefix.
-     * For example "option.child.keepAlive=false" to set the netty option "child.keepAlive=false". See the Netty documentation for possible options that can be used.
+     * Allows to configure additional netty options using "option." as prefix. For example
+     * "option.child.keepAlive=false" to set the netty option "child.keepAlive=false". See the Netty documentation for
+     * possible options that can be used.
      */
     public void setOptions(Map<String, Object> options) {
         this.options = options;
     }
 
-    public BossPool getBossPool() {
-        return bossPool;
+    public boolean isNativeTransport() {
+        return nativeTransport;
     }
 
     /**
-     * To use a explicit org.jboss.netty.channel.socket.nio.BossPool as the boss thread pool.
-     * For example to share a thread pool with multiple consumers. By default each consumer has their own boss pool with 1 core thread.
+     * Whether to use native transport instead of NIO. Native transport takes advantage of the host operating system and
+     * is only supported on some platforms. You need to add the netty JAR for the host operating system you are using.
+     * See more details at: http://netty.io/wiki/native-transports.html
      */
-    public void setBossPool(BossPool bossPool) {
-        this.bossPool = bossPool;
+    public void setNativeTransport(boolean nativeTransport) {
+        this.nativeTransport = nativeTransport;
     }
 
-    public WorkerPool getWorkerPool() {
-        return workerPool;
+    public EventLoopGroup getBossGroup() {
+        return bossGroup;
     }
 
     /**
-     * To use a explicit org.jboss.netty.channel.socket.nio.WorkerPool as the worker thread pool.
-     * For example to share a thread pool with multiple consumers. By default each consumer has their own worker pool with 2 x cpu count core threads.
+     * Set the BossGroup which could be used for handling the new connection of the server side across the NettyEndpoint
      */
-    public void setWorkerPool(WorkerPool workerPool) {
-        this.workerPool = workerPool;
+    public void setBossGroup(EventLoopGroup bossGroup) {
+        this.bossGroup = bossGroup;
+    }
+
+    public EventLoopGroup getWorkerGroup() {
+        return workerGroup;
+    }
+
+    /**
+     * To use a explicit EventLoopGroup as the boss thread pool. For example to share a thread pool with multiple
+     * consumers or producers. By default each consumer or producer has their own worker pool with 2 x cpu count core
+     * threads.
+     */
+    public void setWorkerGroup(EventLoopGroup workerGroup) {
+        this.workerGroup = workerGroup;
     }
 
     public ChannelGroup getChannelGroup() {
@@ -487,7 +524,8 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     }
 
     /**
-     * When using UDP then this option can be used to specify a network interface by its name, such as eth0 to join a multicast group.
+     * When using UDP then this option can be used to specify a network interface by its name, such as eth0 to join a
+     * multicast group.
      */
     public void setNetworkInterface(String networkInterface) {
         this.networkInterface = networkInterface;
@@ -503,11 +541,32 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
     public void setEnabledProtocols(String enabledProtocols) {
         this.enabledProtocols = enabledProtocols;
     }
-    
+
     /**
-     * Checks if the other {@link NettyServerBootstrapConfiguration} is compatible
-     * with this, as a Netty listener bound on port X shares the same common
-     * {@link NettyServerBootstrapConfiguration}, which must be identical.
+     * Used only in clientMode in consumer, the consumer will attempt to reconnect on disconnection if this is enabled
+     */
+    public boolean isReconnect() {
+        return reconnect;
+    }
+
+    public void setReconnect(boolean reconnect) {
+        this.reconnect = reconnect;
+    }
+
+    /**
+     * Used if reconnect and clientMode is enabled. The interval in milli seconds to attempt reconnection
+     */
+    public int getReconnectInterval() {
+        return reconnectInterval;
+    }
+
+    public void setReconnectInterval(int reconnectInterval) {
+        this.reconnectInterval = reconnectInterval;
+    }
+
+    /**
+     * Checks if the other {@link NettyServerBootstrapConfiguration} is compatible with this, as a Netty listener bound
+     * on port X shares the same common {@link NettyServerBootstrapConfiguration}, which must be identical.
      */
     public boolean compatible(NettyServerBootstrapConfiguration other) {
         boolean isCompatible = true;
@@ -540,7 +599,7 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
             isCompatible = false;
         } else if (backlog != other.backlog) {
             isCompatible = false;
-        } else if (serverPipelineFactory != other.serverPipelineFactory) {
+        } else if (serverInitializerFactory != other.serverInitializerFactory) {
             isCompatible = false;
         } else if (nettyServerBootstrapFactory != other.nettyServerBootstrapFactory) {
             isCompatible = false;
@@ -577,51 +636,57 @@ public class NettyServerBootstrapConfiguration implements Cloneable {
             isCompatible = false;
         } else if (passphrase != null && !passphrase.equals(other.passphrase)) {
             isCompatible = false;
-        } else if (bossPool != other.bossPool) {
+        } else if (bossGroup != other.bossGroup) {
             isCompatible = false;
-        } else if (workerPool != other.workerPool) {
+        } else if (workerGroup != other.workerGroup) {
             isCompatible = false;
         } else if (networkInterface != null && !networkInterface.equals(other.networkInterface)) {
+            isCompatible = false;
+        } else if (reconnect != other.reconnect) {
+            isCompatible = false;
+        } else if (reconnectInterval != other.reconnectInterval) {
             isCompatible = false;
         }
 
         return isCompatible;
     }
-    
+
     public String toStringBootstrapConfiguration() {
         return "NettyServerBootstrapConfiguration{"
-                + "protocol='" + protocol + '\''
-                + ", host='" + host + '\''
-                + ", port=" + port
-                + ", broadcast=" + broadcast
-                + ", sendBufferSize=" + sendBufferSize
-                + ", receiveBufferSize=" + receiveBufferSize
-                + ", receiveBufferSizePredictor=" + receiveBufferSizePredictor
-                + ", workerCount=" + workerCount
-                + ", bossCount=" + bossCount
-                + ", keepAlive=" + keepAlive
-                + ", tcpNoDelay=" + tcpNoDelay
-                + ", reuseAddress=" + reuseAddress
-                + ", connectTimeout=" + connectTimeout
-                + ", backlog=" + backlog
-                + ", serverPipelineFactory=" + serverPipelineFactory
-                + ", nettyServerBootstrapFactory=" + nettyServerBootstrapFactory
-                + ", options=" + options
-                + ", ssl=" + ssl
-                + ", sslHandler=" + sslHandler
-                + ", sslContextParameters='" + sslContextParameters + '\''
-                + ", needClientAuth=" + needClientAuth
-                + ", enabledProtocols='" + enabledProtocols              
-                + ", keyStoreFile=" + keyStoreFile
-                + ", trustStoreFile=" + trustStoreFile
-                + ", keyStoreResource='" + keyStoreResource + '\''
-                + ", trustStoreResource='" + trustStoreResource + '\''
-                + ", keyStoreFormat='" + keyStoreFormat + '\''
-                + ", securityProvider='" + securityProvider + '\''
-                + ", passphrase='" + passphrase + '\''
-                + ", bossPool=" + bossPool
-                + ", workerPool=" + workerPool
-                + ", networkInterface='" + networkInterface + '\''
-                + '}';
+               + "protocol='" + protocol + '\''
+               + ", host='" + host + '\''
+               + ", port=" + port
+               + ", broadcast=" + broadcast
+               + ", sendBufferSize=" + sendBufferSize
+               + ", receiveBufferSize=" + receiveBufferSize
+               + ", receiveBufferSizePredictor=" + receiveBufferSizePredictor
+               + ", workerCount=" + workerCount
+               + ", bossCount=" + bossCount
+               + ", keepAlive=" + keepAlive
+               + ", tcpNoDelay=" + tcpNoDelay
+               + ", reuseAddress=" + reuseAddress
+               + ", connectTimeout=" + connectTimeout
+               + ", backlog=" + backlog
+               + ", serverInitializerFactory=" + serverInitializerFactory
+               + ", nettyServerBootstrapFactory=" + nettyServerBootstrapFactory
+               + ", options=" + options
+               + ", ssl=" + ssl
+               + ", sslHandler=" + sslHandler
+               + ", sslContextParameters='" + sslContextParameters + '\''
+               + ", needClientAuth=" + needClientAuth
+               + ", enabledProtocols='" + enabledProtocols
+               + ", keyStoreFile=" + keyStoreFile
+               + ", trustStoreFile=" + trustStoreFile
+               + ", keyStoreResource='" + keyStoreResource + '\''
+               + ", trustStoreResource='" + trustStoreResource + '\''
+               + ", keyStoreFormat='" + keyStoreFormat + '\''
+               + ", securityProvider='" + securityProvider + '\''
+               + ", passphrase='" + passphrase + '\''
+               + ", bossGroup=" + bossGroup
+               + ", workerGroup=" + workerGroup
+               + ", networkInterface='" + networkInterface + '\''
+               + ", reconnect='" + reconnect + '\''
+               + ", reconnectInterval='" + reconnectInterval + '\''
+               + '}';
     }
 }

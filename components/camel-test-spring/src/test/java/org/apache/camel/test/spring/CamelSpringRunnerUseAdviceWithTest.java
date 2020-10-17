@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,23 +27,21 @@ import static org.junit.Assert.assertTrue;
 
 @UseAdviceWith
 public class CamelSpringRunnerUseAdviceWithTest extends CamelSpringRunnerPlainTest {
-    
+
     @Before
     public void testContextStarted() throws Exception {
-        
         assertEquals(ServiceStatus.Stopped, camelContext.getStatus());
-        assertEquals(ServiceStatus.Stopped, camelContext2.getStatus());
         camelContext.start();
-        camelContext2.start();
 
         // just sleep a little to simulate testing take a bit time
         Thread.sleep(1000);
     }
-    
+
+    @Override
     @Test
     public void testStopwatch() {
         StopWatch stopWatch = StopWatchTestExecutionListener.getStopWatch();
-        
+
         assertNotNull(stopWatch);
         long taken = stopWatch.taken();
         assertTrue(taken + " > 0, but was: " + taken, taken > 0);

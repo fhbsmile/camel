@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,21 +18,19 @@ package org.apache.camel.component.kubernetes.deployments;
 
 import java.util.Map;
 
-import io.fabric8.kubernetes.api.model.ReplicationController;
-import io.fabric8.kubernetes.api.model.extensions.Deployment;
-import io.fabric8.kubernetes.api.model.extensions.DeploymentBuilder;
-import io.fabric8.kubernetes.api.model.extensions.DeploymentList;
-import io.fabric8.kubernetes.api.model.extensions.DeploymentSpec;
-import io.fabric8.kubernetes.api.model.extensions.DoneableDeployment;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
+import io.fabric8.kubernetes.api.model.apps.DeploymentList;
+import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
+import io.fabric8.kubernetes.api.model.apps.DoneableDeployment;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
-import io.fabric8.kubernetes.client.dsl.ScalableResource;
-
+import io.fabric8.kubernetes.client.dsl.RollableScalableResource;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.kubernetes.AbstractKubernetesEndpoint;
 import org.apache.camel.component.kubernetes.KubernetesConstants;
 import org.apache.camel.component.kubernetes.KubernetesOperations;
-import org.apache.camel.impl.DefaultProducer;
-import org.apache.camel.util.MessageHelper;
+import org.apache.camel.support.DefaultProducer;
+import org.apache.camel.support.MessageHelper;
 import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,37 +60,37 @@ public class KubernetesDeploymentsProducer extends DefaultProducer {
 
         switch (operation) {
 
-        case KubernetesOperations.LIST_DEPLOYMENTS:
-            doList(exchange, operation);
-            break;
+            case KubernetesOperations.LIST_DEPLOYMENTS:
+                doList(exchange, operation);
+                break;
 
-        case KubernetesOperations.LIST_DEPLOYMENTS_BY_LABELS_OPERATION:
-            doListDeploymentsByLabels(exchange, operation);
-            break;
+            case KubernetesOperations.LIST_DEPLOYMENTS_BY_LABELS_OPERATION:
+                doListDeploymentsByLabels(exchange, operation);
+                break;
 
-        case KubernetesOperations.GET_DEPLOYMENT:
-            doGetDeployment(exchange, operation);
-            break;
+            case KubernetesOperations.GET_DEPLOYMENT:
+                doGetDeployment(exchange, operation);
+                break;
 
-        case KubernetesOperations.DELETE_DEPLOYMENT:
-            doDeleteDeployment(exchange, operation);
-            break;
+            case KubernetesOperations.DELETE_DEPLOYMENT:
+                doDeleteDeployment(exchange, operation);
+                break;
 
-        case KubernetesOperations.CREATE_DEPLOYMENT:
-            doCreateDeployment(exchange, operation);
-            break;
-            
-        case KubernetesOperations.SCALE_DEPLOYMENT:
-            doScaleDeployment(exchange, operation);
-            break;
+            case KubernetesOperations.CREATE_DEPLOYMENT:
+                doCreateDeployment(exchange, operation);
+                break;
 
-        default:
-            throw new IllegalArgumentException("Unsupported operation " + operation);
+            case KubernetesOperations.SCALE_DEPLOYMENT:
+                doScaleDeployment(exchange, operation);
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
     protected void doList(Exchange exchange, String operation) throws Exception {
-        DeploymentList deploymentsList = getEndpoint().getKubernetesClient().extensions().deployments().list();
+        DeploymentList deploymentsList = getEndpoint().getKubernetesClient().apps().deployments().list();
 
         MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
         exchange.getOut().setBody(deploymentsList.getItems());
@@ -101,8 +99,9 @@ public class KubernetesDeploymentsProducer extends DefaultProducer {
     protected void doListDeploymentsByLabels(Exchange exchange, String operation) throws Exception {
         DeploymentList deploymentList = null;
         Map<String, String> labels = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_DEPLOYMENTS_LABELS, Map.class);
-        NonNamespaceOperation<Deployment, DeploymentList, DoneableDeployment, ScalableResource<Deployment, DoneableDeployment>> deployments = getEndpoint().getKubernetesClient()
-            .extensions().deployments();
+        NonNamespaceOperation<Deployment, DeploymentList, DoneableDeployment, RollableScalableResource<Deployment, DoneableDeployment>> deployments
+                = getEndpoint()
+                        .getKubernetesClient().apps().deployments();
         for (Map.Entry<String, String> entry : labels.entrySet()) {
             deployments.withLabel(entry.getKey(), entry.getValue());
         }
@@ -119,7 +118,7 @@ public class KubernetesDeploymentsProducer extends DefaultProducer {
             LOG.error("Get a specific Deployment require specify a Deployment name");
             throw new IllegalArgumentException("Get a specific Deployment require specify a Deployment name");
         }
-        deployment = getEndpoint().getKubernetesClient().extensions().deployments().withName(deploymentName).get();
+        deployment = getEndpoint().getKubernetesClient().apps().deployments().withName(deploymentName).get();
 
         MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
         exchange.getOut().setBody(deployment);
@@ -137,7 +136,8 @@ public class KubernetesDeploymentsProducer extends DefaultProducer {
             throw new IllegalArgumentException("Delete a specific deployment require specify a namespace name");
         }
 
-        Boolean deployment = getEndpoint().getKubernetesClient().extensions().deployments().inNamespace(namespaceName).withName(deploymentName).delete();
+        Boolean deployment = getEndpoint().getKubernetesClient().apps().deployments().inNamespace(namespaceName)
+                .withName(deploymentName).delete();
 
         MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
         exchange.getOut().setBody(deployment);
@@ -147,27 +147,30 @@ public class KubernetesDeploymentsProducer extends DefaultProducer {
         Deployment deployment = null;
         String deploymentName = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_DEPLOYMENT_NAME, String.class);
         String namespaceName = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_NAMESPACE_NAME, String.class);
-        DeploymentSpec deSpec = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_DEPLOYMENT_SPEC, DeploymentSpec.class);
+        DeploymentSpec deSpec
+                = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_DEPLOYMENT_SPEC, DeploymentSpec.class);
         if (ObjectHelper.isEmpty(deploymentName)) {
             LOG.error("Create a specific Deployment require specify a Deployment name");
-            throw new IllegalArgumentException("Create a specific pod require specify a pod name");
+            throw new IllegalArgumentException("Create a specific Deployment require specify a pod name");
         }
         if (ObjectHelper.isEmpty(namespaceName)) {
-            LOG.error("Create a specific pod require specify a namespace name");
-            throw new IllegalArgumentException("Create a specific pod require specify a namespace name");
+            LOG.error("Create a specific Deployment require specify a namespace name");
+            throw new IllegalArgumentException("Create a specific Deployment require specify a namespace name");
         }
         if (ObjectHelper.isEmpty(deSpec)) {
             LOG.error("Create a specific Deployment require specify a Deployment spec bean");
             throw new IllegalArgumentException("Create a specific Deployment require specify a Deployment spec bean");
         }
         Map<String, String> labels = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_DEPLOYMENTS_LABELS, Map.class);
-        Deployment deploymentCreating = new DeploymentBuilder().withNewMetadata().withName(deploymentName).withLabels(labels).endMetadata().withSpec(deSpec).build();
-        deployment = getEndpoint().getKubernetesClient().extensions().deployments().inNamespace(namespaceName).create(deploymentCreating);
+        Deployment deploymentCreating = new DeploymentBuilder().withNewMetadata().withName(deploymentName).withLabels(labels)
+                .endMetadata().withSpec(deSpec).build();
+        deployment = getEndpoint().getKubernetesClient().apps().deployments().inNamespace(namespaceName)
+                .create(deploymentCreating);
 
         MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
         exchange.getOut().setBody(deployment);
     }
-    
+
     protected void doScaleDeployment(Exchange exchange, String operation) throws Exception {
         String deploymentName = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_DEPLOYMENT_NAME, String.class);
         String namespaceName = exchange.getIn().getHeader(KubernetesConstants.KUBERNETES_NAMESPACE_NAME, String.class);
@@ -184,7 +187,8 @@ public class KubernetesDeploymentsProducer extends DefaultProducer {
             LOG.error("Scale a specific deployment require specify a replicas number");
             throw new IllegalArgumentException("Scale a specific deployment require specify a replicas number");
         }
-        Deployment deploymentScaled = getEndpoint().getKubernetesClient().extensions().deployments().inNamespace(namespaceName).withName(deploymentName).scale(replicasNumber, false);
+        Deployment deploymentScaled = getEndpoint().getKubernetesClient().apps().deployments().inNamespace(namespaceName)
+                .withName(deploymentName).scale(replicasNumber, false);
 
         MessageHelper.copyHeaders(exchange.getIn(), exchange.getOut(), true);
         exchange.getOut().setBody(deploymentScaled.getStatus().getReplicas());

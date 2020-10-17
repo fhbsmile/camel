@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 package org.apache.camel.generator.swagger;
 
 import java.nio.file.Path;
+
 import javax.annotation.processing.Filer;
 
 import io.swagger.models.Swagger;
@@ -25,8 +26,8 @@ import org.apache.camel.model.rest.RestsDefinition;
 import static org.apache.camel.util.ObjectHelper.notNull;
 
 /**
- * Source code and {@link RestsDefinition} generator that generates Camel REST
- * DSL implementations from Swagger (OpenAPI) specifications.
+ * Source code and {@link RestsDefinition} generator that generates Camel REST DSL implementations from Swagger
+ * (OpenAPI) specifications.
  */
 public abstract class RestDslGenerator<G> {
 
@@ -34,6 +35,11 @@ public abstract class RestDslGenerator<G> {
 
     DestinationGenerator destinationGenerator = new DirectToOperationId();
     OperationFilter filter = new OperationFilter();
+    String restComponent;
+    String restContextPath;
+    String apiContextPath;
+    boolean springComponent;
+    boolean springBootProject;
 
     RestDslGenerator(final Swagger swagger) {
         this.swagger = notNull(swagger, "swagger");
@@ -64,6 +70,51 @@ public abstract class RestDslGenerator<G> {
 
     public G withOperationFilter(String include) {
         this.filter.setIncludes(include);
+
+        @SuppressWarnings("unchecked")
+        final G that = (G) this;
+
+        return that;
+    }
+
+    public G withRestComponent(String restComponent) {
+        this.restComponent = restComponent;
+
+        @SuppressWarnings("unchecked")
+        final G that = (G) this;
+
+        return that;
+    }
+
+    public G withRestContextPath(String contextPath) {
+        this.restContextPath = contextPath;
+
+        @SuppressWarnings("unchecked")
+        final G that = (G) this;
+
+        return that;
+    }
+
+    public G withApiContextPath(String contextPath) {
+        this.apiContextPath = contextPath;
+
+        @SuppressWarnings("unchecked")
+        final G that = (G) this;
+
+        return that;
+    }
+
+    public G asSpringComponent() {
+        this.springComponent = true;
+
+        @SuppressWarnings("unchecked")
+        final G that = (G) this;
+
+        return that;
+    }
+
+    public G asSpringBootProject() {
+        this.springBootProject = true;
 
         @SuppressWarnings("unchecked")
         final G that = (G) this;

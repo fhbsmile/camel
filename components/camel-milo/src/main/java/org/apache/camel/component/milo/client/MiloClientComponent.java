@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,27 +16,19 @@
  */
 package org.apache.camel.component.milo.client;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-
 import org.apache.camel.Endpoint;
-import org.apache.camel.component.milo.KeyStoreLoader;
-import org.apache.camel.component.milo.KeyStoreLoader.Result;
-import org.apache.camel.impl.DefaultComponent;
-import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfigBuilder;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
+import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Component("milo-client")
 public class MiloClientComponent extends DefaultComponent {
 
     private static final Logger LOG = LoggerFactory.getLogger(MiloClientComponent.class);
@@ -44,141 +36,77 @@ public class MiloClientComponent extends DefaultComponent {
     private final Map<String, MiloClientConnection> cache = new HashMap<>();
     private final Multimap<String, MiloClientEndpoint> connectionMap = HashMultimap.create();
 
-    private MiloClientConfiguration defaultConfiguration = new MiloClientConfiguration();
+    @Metadata
+    private MiloClientConfiguration configuration = new MiloClientConfiguration();
 
     @Override
-    protected Endpoint createEndpoint(final String uri, final String remaining, final Map<String, Object> parameters) throws Exception {
-
-        final MiloClientConfiguration configuration = new MiloClientConfiguration(this.defaultConfiguration);
+    protected Endpoint createEndpoint(final String uri, final String remaining, final Map<String, Object> parameters)
+            throws Exception {
+        final MiloClientConfiguration configuration = new MiloClientConfiguration(this.configuration);
         configuration.setEndpointUri(remaining);
-        setProperties(configuration, parameters);
 
-        return createEndpoint(uri, configuration, parameters);
-    }
-
-    private synchronized MiloClientEndpoint createEndpoint(final String uri, final MiloClientConfiguration configuration, final Map<String, Object> parameters) throws Exception {
-
-        MiloClientConnection connection = this.cache.get(configuration.toCacheId());
-
-        if (connection == null) {
-            LOG.info("Cache miss - creating new connection instance: {}", configuration.toCacheId());
-
-            connection = new MiloClientConnection(configuration, mapToClientConfiguration(configuration));
-            this.cache.put(configuration.toCacheId(), connection);
-        }
-
-        final MiloClientEndpoint endpoint = new MiloClientEndpoint(uri, this, connection, configuration.getEndpointUri());
-
-        setProperties(endpoint, parameters);
-
-        // register connection with endpoint
-
-        this.connectionMap.put(configuration.toCacheId(), endpoint);
-
+        Endpoint endpoint = doCreateEndpoint(uri, configuration, parameters);
         return endpoint;
     }
 
-    private OpcUaClientConfigBuilder mapToClientConfiguration(final MiloClientConfiguration configuration) {
-        final OpcUaClientConfigBuilder builder = new OpcUaClientConfigBuilder();
+    private synchronized MiloClientEndpoint doCreateEndpoint(
+            final String uri, final MiloClientConfiguration configuration, final Map<String, Object> parameters)
+            throws Exception {
+        final MiloClientEndpoint endpoint = new MiloClientEndpoint(uri, this, configuration.getEndpointUri());
+        endpoint.setConfiguration(configuration);
+        setProperties(endpoint, parameters);
 
-        whenHasText(configuration::getApplicationName, value -> builder.setApplicationName(LocalizedText.english(value)));
-        whenHasText(configuration::getApplicationUri, builder::setApplicationUri);
-        whenHasText(configuration::getProductUri, builder::setProductUri);
-
-        if (configuration.getRequestTimeout() != null) {
-            builder.setRequestTimeout(Unsigned.uint(configuration.getRequestTimeout()));
-        }
-        if (configuration.getChannelLifetime() != null) {
-            builder.setChannelLifetime(Unsigned.uint(configuration.getChannelLifetime()));
-        }
-
-        whenHasText(configuration::getSessionName, value -> builder.setSessionName(() -> value));
-        if (configuration.getSessionTimeout() != null) {
-            builder.setSessionTimeout(UInteger.valueOf(configuration.getSessionTimeout()));
+        final String cacheId = configuration.toCacheId();
+        MiloClientConnection connection = this.cache.get(cacheId);
+        if (connection == null) {
+            LOG.debug("Cache miss - creating new connection instance: {}", cacheId);
+            connection = new MiloClientConnection(configuration);
+            this.cache.put(cacheId, connection);
         }
 
-        if (configuration.getMaxPendingPublishRequests() != null) {
-            builder.setMaxPendingPublishRequests(UInteger.valueOf(configuration.getMaxPendingPublishRequests()));
-        }
-
-        if (configuration.getMaxResponseMessageSize() != null) {
-            builder.setMaxResponseMessageSize(UInteger.valueOf(configuration.getMaxPendingPublishRequests()));
-        }
-
-        if (configuration.getKeyStoreUrl() != null) {
-            setKey(configuration, builder);
-        }
-
-        return builder;
+        // register connection with endpoint
+        this.connectionMap.put(cacheId, endpoint);
+        endpoint.setConnection(connection);
+        return endpoint;
     }
 
-    private void setKey(final MiloClientConfiguration configuration, final OpcUaClientConfigBuilder builder) {
-        final KeyStoreLoader loader = new KeyStoreLoader();
-
-        final Result result;
-        try {
-            // key store properties
-            loader.setType(configuration.getKeyStoreType());
-            loader.setUrl(configuration.getKeyStoreUrl());
-            loader.setKeyStorePassword(configuration.getKeyStorePassword());
-
-            // key properties
-            loader.setKeyAlias(configuration.getKeyAlias());
-            loader.setKeyPassword(configuration.getKeyPassword());
-
-            result = loader.load();
-        } catch (GeneralSecurityException | IOException e) {
-            throw new IllegalStateException("Failed to load key", e);
-        }
-
-        if (result == null) {
-            throw new IllegalStateException("Key not found in keystore");
-        }
-
-        builder.setCertificate(result.getCertificate());
-        builder.setKeyPair(result.getKeyPair());
-    }
-
-    private void whenHasText(final Supplier<String> valueSupplier, final Consumer<String> valueConsumer) {
-        final String value = valueSupplier.get();
-        if (value != null && !value.isEmpty()) {
-            valueConsumer.accept(value);
-        }
+    public MiloClientConfiguration getConfiguration() {
+        return configuration;
     }
 
     /**
-     * All default options for client
+     * All default options for client configurations
      */
-    public void setDefaultConfiguration(final MiloClientConfiguration defaultConfiguration) {
-        this.defaultConfiguration = defaultConfiguration;
+    public void setConfiguration(final MiloClientConfiguration configuration) {
+        this.configuration = configuration;
     }
 
     /**
      * Default application name
      */
     public void setApplicationName(final String applicationName) {
-        this.defaultConfiguration.setApplicationName(applicationName);
+        this.configuration.setApplicationName(applicationName);
     }
 
     /**
      * Default application URI
      */
     public void setApplicationUri(final String applicationUri) {
-        this.defaultConfiguration.setApplicationUri(applicationUri);
+        this.configuration.setApplicationUri(applicationUri);
     }
 
     /**
      * Default product URI
      */
     public void setProductUri(final String productUri) {
-        this.defaultConfiguration.setProductUri(productUri);
+        this.configuration.setProductUri(productUri);
     }
 
     /**
      * Default reconnect timeout
      */
     public void setReconnectTimeout(final Long reconnectTimeout) {
-        this.defaultConfiguration.setRequestTimeout(reconnectTimeout);
+        this.configuration.setRequestTimeout(reconnectTimeout);
     }
 
     public synchronized void disposed(final MiloClientEndpoint endpoint) {

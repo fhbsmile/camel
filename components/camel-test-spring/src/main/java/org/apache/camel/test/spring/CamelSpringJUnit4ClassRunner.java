@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,8 +19,8 @@ package org.apache.camel.test.spring;
 import org.junit.runners.model.InitializationError;
 
 /**
- * The class {@link CamelSpringJUnit4ClassRunner} has been renamed to {@link CamelSpringRunner}
- * which is a shorter and easier to remember name.
+ * The class {@link CamelSpringJUnit4ClassRunner} has been renamed to {@link CamelSpringRunner} which is a shorter and
+ * easier to remember name.
  *
  * @deprecated use {@link CamelSpringRunner}
  */

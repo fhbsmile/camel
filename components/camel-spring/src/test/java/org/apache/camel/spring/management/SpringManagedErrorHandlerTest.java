@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,11 +18,9 @@ package org.apache.camel.spring.management;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.management.ManagedErrorHandlerTest;
+
 import static org.apache.camel.spring.processor.SpringTestHelper.createSpringCamelContext;
 
-/**
- * @version 
- */
 public class SpringManagedErrorHandlerTest extends ManagedErrorHandlerTest {
 
     @Override
@@ -30,6 +28,7 @@ public class SpringManagedErrorHandlerTest extends ManagedErrorHandlerTest {
         return true;
     }
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
         return createSpringCamelContext(this, "org/apache/camel/spring/management/SpringManagedErrorHandlerTest.xml");
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -62,13 +62,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A utility that attempts to keep all data from all children of a ZK path locally cached. This class
- * will watch the ZK path, respond to update/create/delete events, pull down the data, etc. You can
- * register a listener that will get notified when changes occur.</p>
+ * <p>
+ * A utility that attempts to keep all data from all children of a ZK path locally cached. This class will watch the ZK
+ * path, respond to update/create/delete events, pull down the data, etc. You can register a listener that will get
+ * notified when changes occur.
+ * </p>
  * <p/>
- * <p><b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must
- * be prepared for false-positives and false-negatives. Additionally, always use the version number
- * when updating data to avoid overwriting another process' change.</p>
+ * <p>
+ * <b>IMPORTANT</b> - it's not possible to stay transactionally in sync. Users of this class must be prepared for
+ * false-positives and false-negatives. Additionally, always use the version number when updating data to avoid
+ * overwriting another process' change.
+ * </p>
  */
 public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
 
@@ -80,8 +84,8 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     private final String path;
     private final ExecutorService executorService;
     private final EnsurePath ensurePath;
-    private final BlockingQueue<Operation> operations = new LinkedBlockingQueue<Operation>();
-    private final ListenerContainer<GroupListener<T>> listeners = new ListenerContainer<GroupListener<T>>();
+    private final BlockingQueue<Operation> operations = new LinkedBlockingQueue<>();
+    private final ListenerContainer<GroupListener<T>> listeners = new ListenerContainer<>();
     private final ConcurrentMap<String, ChildData<T>> currentData = new ConcurrentHashMap<>();
     private final AtomicBoolean started = new AtomicBoolean();
     private final AtomicBoolean connected = new AtomicBoolean();
@@ -162,6 +166,7 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     /**
      * Start the cache. The cache is not started automatically. You must call this method.
      */
+    @Override
     public void start() {
         LOG.info("Starting ZK Group for path: {}", path);
         if (started.compareAndSet(false, true)) {
@@ -236,13 +241,12 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
 
         if (started.get()) {
             boolean update = state == null && oldState != null
-                || state != null && oldState == null
-                || !Arrays.equals(encode(state), encode(oldState));
+                    || state != null && oldState == null
+                    || !Arrays.equals(encode(state), encode(oldState));
             if (update) {
                 offerOperation(new CompositeOperation(
-                    new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT),
-                    new UpdateOperation<T>(this, state)
-                ));
+                        new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT),
+                        new UpdateOperation<>(this, state)));
             }
         }
     }
@@ -289,8 +293,8 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
         state.uuid = uuid;
         creating.set(true);
         String pathId = client.create().creatingParentsIfNeeded()
-            .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
-            .forPath(path + "/0", encode(state));
+                .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
+                .forPath(path + "/0", encode(state));
         creating.set(false);
         unstable.set(false);
         if (LOG.isTraceEnabled()) {
@@ -312,10 +316,10 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     private void prunePartialState(final T ourState, final String pathId) throws Exception {
         if (ourState.uuid != null) {
             clearAndRefresh(true, true);
-            List<ChildData<T>> children = new ArrayList<ChildData<T>>(currentData.values());
+            List<ChildData<T>> children = new ArrayList<>(currentData.values());
             for (ChildData<T> child : children) {
                 if (ourState.uuid.equals(child.getNode().uuid) && !child.getPath().equals(pathId)) {
-                    LOG.debug("Deleting partially created znode: " + child.getPath());
+                    LOG.debug("Deleting partially created znode: {}", child.getPath());
                     client.delete().guaranteed().forPath(child.getPath());
                 }
             }
@@ -326,7 +330,7 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     public Map<String, T> members() {
         List<ChildData<T>> children = getActiveChildren();
         Collections.sort(children, sequenceComparator);
-        Map<String, T> members = new LinkedHashMap<String, T>();
+        Map<String, T> members = new LinkedHashMap<>();
         for (ChildData<T> child : children) {
             members.put(child.getPath(), child.getNode());
         }
@@ -354,7 +358,7 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     public List<T> slaves() {
         List<ChildData<T>> children = getActiveChildren();
         Collections.sort(children, sequenceComparator);
-        List<T> slaves = new ArrayList<T>();
+        List<T> slaves = new ArrayList<>();
         for (int i = 1; i < children.size(); i++) {
             slaves.add(children.get(i).getNode());
         }
@@ -371,7 +375,7 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
         for (ChildData<T> child : currentData.values()) {
             T node = child.getNode();
             if (!filtered.containsKey(node.getContainer())
-                || filtered.get(node.getContainer()).getPath().compareTo(child.getPath()) < 0) {
+                    || filtered.get(node.getContainer()).getPath().compareTo(child.getPath()) < 0) {
                 filtered.put(node.getContainer(), child);
             }
         }
@@ -397,8 +401,8 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     }
 
     /**
-     * Return the current data. There are no guarantees of accuracy. This is
-     * merely the most recent view of the data. The data is returned in sorted order.
+     * Return the current data. There are no guarantees of accuracy. This is merely the most recent view of the data.
+     * The data is returned in sorted order.
      *
      * @return list of children and data
      */
@@ -416,12 +420,11 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     }
 
     /**
-     * Return the current data for the given path. There are no guarantees of accuracy. This is
-     * merely the most recent view of the data. If there is no child with that path, <code>null</code>
-     * is returned.
+     * Return the current data for the given path. There are no guarantees of accuracy. This is merely the most recent
+     * view of the data. If there is no child with that path, <code>null</code> is returned.
      *
-     * @param fullPath full path to the node to check
-     * @return data or null
+     * @param  fullPath full path to the node to check
+     * @return          data or null
      */
     public ChildData getCurrentData(String fullPath) {
         return currentData.get(fullPath);
@@ -439,8 +442,8 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     /**
      * Clear out current data and begin a new query on the path
      *
-     * @param force - whether to force clear and refresh to trigger updates
-     * @param sync  - whether to run this synchronously (block current thread) or asynchronously
+     * @param  force     - whether to force clear and refresh to trigger updates
+     * @param  sync      - whether to run this synchronously (block current thread) or asynchronously
      * @throws Exception errors
      */
     public void clearAndRefresh(boolean force, boolean sync) throws Exception {
@@ -454,8 +457,7 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     }
 
     /**
-     * Clears the current data without beginning a new query and without generating any events
-     * for listeners.
+     * Clears the current data without beginning a new query and without generating any events for listeners.
      */
     public void clear() {
         currentData.clear();
@@ -490,8 +492,7 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
                 handleException(e);
             }
             return null;
-        }
-        );
+        });
     }
 
     void getDataAndStat(final String fullPath) throws Exception {
@@ -522,27 +523,26 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
 
     private void handleStateChange(ConnectionState newState) {
         switch (newState) {
-        case SUSPENDED:
-        case LOST: {
-            connected.set(false);
-            clear();
-            EventOperation op = new EventOperation(this, GroupListener.GroupEvent.DISCONNECTED);
-            op.invoke();
-            break;
-        }
+            case SUSPENDED:
+            case LOST: {
+                connected.set(false);
+                clear();
+                EventOperation op = new EventOperation(this, GroupListener.GroupEvent.DISCONNECTED);
+                op.invoke();
+                break;
+            }
 
-        case CONNECTED:
-        case RECONNECTED: {
-            connected.set(true);
-            offerOperation(new CompositeOperation(
-                new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT),
-                new UpdateOperation<T>(this, state),
-                new EventOperation(this, GroupListener.GroupEvent.CONNECTED)
-            ));
-            break;
-        }
-        default:
-            // noop
+            case CONNECTED:
+            case RECONNECTED: {
+                connected.set(true);
+                offerOperation(new CompositeOperation(
+                        new RefreshOperation(this, RefreshMode.FORCE_GET_DATA_AND_STAT),
+                        new UpdateOperation<>(this, state),
+                        new EventOperation(this, GroupListener.GroupEvent.CONNECTED)));
+                break;
+            }
+            default:
+                // noop
         }
     }
 
@@ -571,7 +571,7 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     private void applyNewData(String fullPath, int resultCode, Stat stat, byte[] bytes) {
         if (resultCode == KeeperException.Code.OK.intValue()) {
             // otherwise - node must have dropped or something - we should be getting another event
-            ChildData<T> data = new ChildData<T>(fullPath, stat, bytes, decode(bytes));
+            ChildData<T> data = new ChildData<>(fullPath, stat, bytes, decode(bytes));
             ChildData<T> previousData = currentData.put(fullPath, data);
             if (previousData == null || previousData.getStat().getVersion() != stat.getVersion()) {
                 offerOperation(new EventOperation(this, GroupListener.GroupEvent.CHANGED));
@@ -617,8 +617,9 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
         // operations.remove(operation);   // avoids herding for refresh operations
     }
 
-    public static <T> Map<String, T> members(ObjectMapper mapper, CuratorFramework curator, String path, Class<T> clazz) throws Exception {
-        Map<String, T> map = new TreeMap<String, T>();
+    public static <T> Map<String, T> members(ObjectMapper mapper, CuratorFramework curator, String path, Class<T> clazz)
+            throws Exception {
+        Map<String, T> map = new TreeMap<>();
         List<String> nodes = curator.getChildren().forPath(path);
         for (String node : nodes) {
             byte[] data = curator.getData().forPath(path + "/" + node);

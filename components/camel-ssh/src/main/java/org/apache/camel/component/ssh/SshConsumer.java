@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,7 @@ package org.apache.camel.component.ssh;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.ScheduledPollConsumer;
+import org.apache.camel.support.ScheduledPollConsumer;
 import org.apache.sshd.client.SshClient;
 
 public class SshConsumer extends ScheduledPollConsumer {
@@ -60,7 +60,8 @@ public class SshConsumer extends ScheduledPollConsumer {
 
         String knownHostResource = endpoint.getKnownHostsResource();
         if (knownHostResource != null) {
-            client.setServerKeyVerifier(new ResourceBasedSSHKeyVerifier(exchange.getContext(), knownHostResource,
+            client.setServerKeyVerifier(new ResourceBasedSSHKeyVerifier(
+                    exchange.getContext(), knownHostResource,
                     endpoint.isFailOnUnknownHost()));
         }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,15 +18,13 @@ package org.apache.camel.component.file.remote;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
 public class FromFileTransferLoggingLevelVerboseTest extends FtpServerTestSupport {
 
     protected String getFtpUrl() {
-        return "ftp://admin@localhost:" + getPort() + "/tmp3/camel?password=admin&transferLoggingLevel=INFO&transferLoggingVerbose=true";
+        return "ftp://admin@localhost:" + getPort()
+               + "/tmp3/camel?password=admin&transferLoggingLevel=INFO&transferLoggingVerbose=true";
     }
 
     @Test
@@ -37,6 +35,7 @@ public class FromFileTransferLoggingLevelVerboseTest extends FtpServerTestSuppor
         assertMockEndpointsSatisfied();
     }
 
+    @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,7 @@ package org.apache.camel.component.etcd;
 
 import mousio.etcd4j.EtcdClient;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.ScheduledPollConsumer;
+import org.apache.camel.support.ScheduledPollConsumer;
 
 /**
  * The etcd consumer.
@@ -42,7 +42,7 @@ public abstract class AbstractEtcdPollingConsumer extends ScheduledPollConsumer 
 
     protected EtcdClient getClient() throws Exception {
         if (client == null) {
-            client = ((EtcdEndpoint)getEndpoint()).createClient();
+            client = ((EtcdEndpoint) getEndpoint()).createClient();
         }
 
         return client;

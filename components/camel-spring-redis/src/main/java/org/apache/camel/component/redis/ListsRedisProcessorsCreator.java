@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -55,8 +55,7 @@ public final class ListsRedisProcessorsCreator extends AbstractRedisProcessorCre
         bind(Command.LTRIM, exchange -> redisClient.ltrim(exchangeConverter.getKey(exchange),
                 exchangeConverter.getStart(exchange),
                 exchangeConverter.getEnd(exchange)));
-        bind(Command.RPOP, wrap(exchange ->
-                redisClient.rpop(exchangeConverter.getKey(exchange))));
+        bind(Command.RPOP, wrap(exchange -> redisClient.rpop(exchangeConverter.getKey(exchange))));
         bind(Command.RPOPLPUSH, wrap(exchange -> redisClient.rpoplpush(exchangeConverter.getKey(exchange),
                 exchangeConverter.getDestination(exchange))));
         bind(Command.RPUSH, wrap(exchange -> redisClient.rpush(exchangeConverter.getKey(exchange),

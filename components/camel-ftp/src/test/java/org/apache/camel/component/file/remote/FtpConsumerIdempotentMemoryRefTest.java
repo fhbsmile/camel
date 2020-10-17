@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,11 +16,14 @@
  */
 package org.apache.camel.component.file.remote;
 
+import org.apache.camel.BindToRegistry;
 import org.apache.camel.builder.NotifyBuilder;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.processor.idempotent.MemoryIdempotentRepository;
-import org.junit.Test;
+import org.apache.camel.support.processor.idempotent.MemoryIdempotentRepository;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Memory repo test
@@ -31,16 +34,14 @@ public class FtpConsumerIdempotentMemoryRefTest extends FtpServerTestSupport {
 
     private String getFtpUrl() {
         return "ftp://admin@localhost:" + getPort()
-                + "/idempotent?password=admin&binary=false&idempotent=true&idempotentRepository=#myRepo&idempotentKey=${file:onlyname}&delete=true";
+               + "/idempotent?password=admin&binary=false&idempotent=true&idempotentRepository=#myRepo&idempotentKey=${file:onlyname}&delete=true";
     }
 
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndi = super.createRegistry();
+    @BindToRegistry("myRepo")
+    public MemoryIdempotentRepository addRepo() throws Exception {
         repo = new MemoryIdempotentRepository();
         repo.setCacheSize(5);
-        jndi.bind("myRepo", repo);
-        return jndi;
+        return repo;
     }
 
     @Test
@@ -55,7 +56,7 @@ public class FtpConsumerIdempotentMemoryRefTest extends FtpServerTestSupport {
         sendFile(getFtpUrl(), "Hello E", "e.txt");
 
         assertMockEndpointsSatisfied();
-        assertTrue(notify.matchesMockWaitTime());
+        assertTrue(notify.matchesWaitTime());
 
         assertEquals(5, repo.getCache().size());
         assertTrue(repo.contains("a.txt"));
@@ -77,18 +78,16 @@ public class FtpConsumerIdempotentMemoryRefTest extends FtpServerTestSupport {
         sendFile(getFtpUrl(), "Hello G", "g.txt");
 
         assertMockEndpointsSatisfied();
-        assertTrue(notify.matchesMockWaitTime());
+        assertTrue(notify.matchesWaitTime());
 
         assertEquals(5, repo.getCache().size());
     }
-    
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {
-                from(getFtpUrl())
-                    .to("log:result")
-                    .to("mock:result");
+                from(getFtpUrl()).to("log:result").to("mock:result");
             }
         };
     }

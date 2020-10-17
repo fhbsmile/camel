@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,9 +24,6 @@ import org.apache.camel.saga.CamelSagaCoordinator;
 import org.apache.camel.saga.CamelSagaStep;
 import org.apache.camel.util.ObjectHelper;
 
-/**
- *
- */
 public class LRASagaCoordinator implements CamelSagaCoordinator {
 
     private LRASagaService sagaService;
@@ -40,7 +37,14 @@ public class LRASagaCoordinator implements CamelSagaCoordinator {
 
     @Override
     public CompletableFuture<Void> beginStep(Exchange exchange, CamelSagaStep step) {
-        LRASagaStep sagaStep = LRASagaStep.fromCamelSagaStep(step, exchange);
+        LRASagaStep sagaStep;
+        try {
+            sagaStep = LRASagaStep.fromCamelSagaStep(step, exchange);
+        } catch (RuntimeException ex) {
+            return CompletableFuture.supplyAsync(() -> {
+                throw ex;
+            });
+        }
         return sagaService.getClient().join(this.lraURL, sagaStep);
     }
 

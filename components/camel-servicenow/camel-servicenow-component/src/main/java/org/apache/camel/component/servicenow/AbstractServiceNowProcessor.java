@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
@@ -53,7 +54,8 @@ public abstract class AbstractServiceNowProcessor implements Processor {
         this.dispatchers = new ArrayList<>();
     }
 
-    protected AbstractServiceNowProcessor setBodyAndHeaders(Message message, Class<?> responseModel, Response response) throws Exception {
+    protected AbstractServiceNowProcessor setBodyAndHeaders(Message message, Class<?> responseModel, Response response)
+            throws Exception {
         if (response != null) {
             setHeaders(message, responseModel, response);
             setBody(message, responseModel, response);
@@ -77,15 +79,15 @@ public abstract class AbstractServiceNowProcessor implements Processor {
     // Header
     // *********************************
 
-    protected AbstractServiceNowProcessor setHeaders(Message message, Class<?> responseModel, Response response) throws Exception {
+    protected AbstractServiceNowProcessor setHeaders(Message message, Class<?> responseModel, Response response)
+            throws Exception {
         ServiceNowHelper.findOffsets(response, (k, v) -> message.setHeader(k, v));
 
         String attachmentMeta = response.getHeaderString(ServiceNowConstants.ATTACHMENT_META_HEADER);
         if (ObjectHelper.isNotEmpty(attachmentMeta)) {
             message.setHeader(
-                ServiceNowConstants.CONTENT_META,
-                mapper.readValue(attachmentMeta, Map.class)
-            );
+                    ServiceNowConstants.CONTENT_META,
+                    mapper.readValue(attachmentMeta, Map.class));
         }
 
         copyHeader(response, HttpHeaders.CONTENT_TYPE, message, ServiceNowConstants.CONTENT_TYPE);
@@ -151,14 +153,20 @@ public abstract class AbstractServiceNowProcessor implements Processor {
 
         if (!body.getClass().isAssignableFrom(model)) {
             throw new IllegalArgumentException(
-                "Body is not compatible with model (body=" + body.getClass() + ", model=" + model);
+                    "Body is not compatible with model (body=" + body.getClass() + ", model=" + model);
         }
 
         return this;
     }
 
     protected Object unwrap(JsonNode node, Class<?> model) throws IOException {
-        Object result;
+        if (model == String.class) {
+            // If the model is a String, let's just serialize it as
+            // a json string
+            return mapper.writeValueAsString(node);
+        }
+
+        final Object result;
 
         if (node.isArray()) {
             if (model.isInstance(Map.class)) {
@@ -210,17 +218,15 @@ public abstract class AbstractServiceNowProcessor implements Processor {
 
     protected Object getRequestParamFromHeader(ServiceNowParam sysParam, Message message) {
         return message.getHeader(
-            sysParam.getHeader(),
-            sysParam.getDefaultValue(config),
-            sysParam.getType()
-        );
+                sysParam.getHeader(),
+                sysParam.getDefaultValue(config),
+                sysParam.getType());
     }
 
     protected Object getMandatoryRequestParamFromHeader(ServiceNowParam sysParam, Message message) {
         return ObjectHelper.notNull(
-            getRequestParamFromHeader(sysParam, message),
-            sysParam.getHeader()
-        );
+                getRequestParamFromHeader(sysParam, message),
+                sysParam.getHeader());
     }
 
     protected void copyHeader(Response from, String fromId, Message to, String toId) {
@@ -245,8 +251,8 @@ public abstract class AbstractServiceNowProcessor implements Processor {
         }
 
         return model != null
-            ? model
-            : ObjectHelper.isEmpty(modelName) ? Map.class : config.getRequestModel(modelName, Map.class);
+                ? model
+                : ObjectHelper.isEmpty(modelName) ? Map.class : config.getRequestModel(modelName, Map.class);
     }
 
     protected Class<?> getResponseModel(Message message) {
@@ -264,8 +270,8 @@ public abstract class AbstractServiceNowProcessor implements Processor {
         }
 
         return model != null
-            ? model
-            : ObjectHelper.isEmpty(modelName) ? Map.class : config.getResponseModel(modelName, Map.class);
+                ? model
+                : ObjectHelper.isEmpty(modelName) ? Map.class : config.getResponseModel(modelName, Map.class);
     }
 
     protected String getApiVersion(Message message) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,7 @@ package org.apache.camel.component.xchange;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.component.xchange.XChangeConfiguration.XChangeMethod;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 
@@ -26,7 +26,7 @@ import static org.apache.camel.component.xchange.XChangeConfiguration.HEADER_CUR
 import static org.apache.camel.component.xchange.XChangeConfiguration.HEADER_CURRENCY_PAIR;
 
 public class XChangeMetaDataProducer extends DefaultProducer {
-    
+
     public XChangeMetaDataProducer(XChangeEndpoint endpoint) {
         super(endpoint);
     }
@@ -41,7 +41,7 @@ public class XChangeMetaDataProducer extends DefaultProducer {
 
         XChangeEndpoint endpoint = getEndpoint();
         XChangeMethod method = endpoint.getConfiguration().getMethod();
-        
+
         if (XChangeMethod.currencies == method) {
             Object body = endpoint.getCurrencies();
             exchange.getMessage().setBody(body);
@@ -57,7 +57,7 @@ public class XChangeMetaDataProducer extends DefaultProducer {
         } else if (XChangeMethod.currencyPairMetaData == method) {
             CurrencyPair pair = exchange.getIn().getHeader(HEADER_CURRENCY_PAIR, CurrencyPair.class);
             pair = pair != null ? pair : exchange.getMessage().getBody(CurrencyPair.class);
-            pair = pair != null ? pair : endpoint.getConfiguration().getCurrencyPair();
+            pair = pair != null ? pair : endpoint.getConfiguration().getAsCurrencyPair();
             Object body = endpoint.getCurrencyPairMetaData(pair);
             exchange.getMessage().setBody(body);
         }

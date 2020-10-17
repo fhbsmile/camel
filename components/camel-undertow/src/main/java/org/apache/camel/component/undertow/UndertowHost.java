@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,7 +19,6 @@ package org.apache.camel.component.undertow;
 import java.net.URI;
 
 import io.undertow.server.HttpHandler;
-
 import org.apache.camel.component.undertow.handlers.CamelWebSocketHandler;
 
 /**
@@ -40,14 +39,12 @@ public interface UndertowHost {
      * differ from the passed {@link HttpHandler} and the returned instance is the effectively registered one for the
      * given {@link HttpHandlerRegistrationInfo}.
      *
-     * @param registrationInfo
-     *            the {@link HttpHandlerRegistrationInfo} related to {@code handler}
-     * @param handler
-     *            the {@link HttpHandler} to register
-     * @return the given {@code handler} or a different {@link HttpHandler} that has been registered with the given
-     *         {@link HttpHandlerRegistrationInfo} earlier.
+     * @param  registrationInfo the {@link HttpHandlerRegistrationInfo} related to {@code handler}
+     * @param  handler          the {@link HttpHandler} to register
+     * @return                  the given {@code handler} or a different {@link HttpHandler} that has been registered
+     *                          with the given {@link HttpHandlerRegistrationInfo} earlier.
      */
-    HttpHandler registerHandler(HttpHandlerRegistrationInfo registrationInfo, HttpHandler handler);
+    HttpHandler registerHandler(UndertowConsumer consumer, HttpHandlerRegistrationInfo registrationInfo, HttpHandler handler);
 
     /**
      * Unregister a handler with the given {@link HttpHandlerRegistrationInfo}. Note that if
@@ -55,6 +52,6 @@ public interface UndertowHost {
      * equivalent {@link HttpHandlerRegistrationInfo} then {@link #unregisterHandler(HttpHandlerRegistrationInfo)} must
      * be called the same number of times to unregister the associated handler completely.
      */
-    void unregisterHandler(HttpHandlerRegistrationInfo registrationInfo);
+    void unregisterHandler(UndertowConsumer consumer, HttpHandlerRegistrationInfo registrationInfo);
 
 }

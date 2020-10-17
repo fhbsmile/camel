@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,15 +16,14 @@
  */
 package org.apache.camel.component.ignite.messaging;
 
-import java.net.URI;
 import java.util.Map;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.component.ignite.AbstractIgniteEndpoint;
 import org.apache.camel.component.ignite.ClusterGroupExpression;
-import org.apache.camel.component.ignite.IgniteComponent;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
@@ -33,16 +32,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 
 /**
- * The Ignite Messaging endpoint is one of camel-ignite endpoints which allows you to send and
- * consume messages from an <a href="https://apacheignite.readme.io/docs/messaging">Ignite topic</a>.
+ * Send and receive messages from an <a href="https://apacheignite.readme.io/docs/messaging">Ignite topic</a>.
+ *
  * This endpoint supports producers (to send messages) and consumers (to receive messages).
  */
-@UriEndpoint(firstVersion = "2.17.0", scheme = "ignite-messaging", title = "Ignite Messaging", syntax = "ignite-messaging:topic", label = "nosql,cache,messaging",
-    consumerClass = IgniteMessagingConsumer.class)
+@UriEndpoint(firstVersion = "2.17.0", scheme = "ignite-messaging", title = "Ignite Messaging",
+             syntax = "ignite-messaging:topic", category = { Category.MESSAGING })
 public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
 
     @UriPath
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String topic;
 
     @UriParam(label = "consumer,producer")
@@ -54,13 +53,8 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
     @UriParam(label = "producer")
     private Long timeout;
 
-    @Deprecated
-    public IgniteMessagingEndpoint(String endpointUri, URI remainingUri, Map<String, Object> parameters, IgniteComponent igniteComponent) {
-        super(endpointUri, igniteComponent);
-        topic = remainingUri.getHost();
-    }
-
-    public IgniteMessagingEndpoint(String endpointUri, String remaining, Map<String, Object> parameters, IgniteMessagingComponent igniteComponent) {
+    public IgniteMessagingEndpoint(String endpointUri, String remaining, Map<String, Object> parameters,
+                                   IgniteMessagingComponent igniteComponent) {
         super(endpointUri, igniteComponent);
         topic = remaining;
     }
@@ -73,7 +67,8 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
         }
 
         if (sendMode == IgniteMessagingSendMode.ORDERED && timeout == null) {
-            throw new IllegalStateException("Cannot initialize an Ignite Messaging Producer in ORDERED send mode without a timeout.");
+            throw new IllegalStateException(
+                    "Cannot initialize an Ignite Messaging Producer in ORDERED send mode without a timeout.");
         }
 
         // Initialize the Producer.
@@ -97,14 +92,13 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
 
     private IgniteMessaging createIgniteMessaging() {
         Ignite ignite = ignite();
-        IgniteMessaging messaging = clusterGroupExpression == null ? ignite.message() : ignite.message(clusterGroupExpression.getClusterGroup(ignite));
+        IgniteMessaging messaging = clusterGroupExpression == null
+                ? ignite.message() : ignite.message(clusterGroupExpression.getClusterGroup(ignite));
         return messaging;
     }
 
     /**
      * Gets the topic name.
-     * 
-     * @return topic name
      */
     public String getTopic() {
         return topic;
@@ -112,8 +106,6 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
 
     /**
      * The topic name.
-     * 
-     * @param topic topic name
      */
     public void setTopic(String topic) {
         this.topic = topic;
@@ -121,8 +113,6 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
 
     /**
      * Gets the cluster group expression.
-     * 
-     * @return cluster group expression
      */
     public ClusterGroupExpression getClusterGroupExpression() {
         return clusterGroupExpression;
@@ -130,8 +120,6 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
 
     /**
      * The cluster group expression.
-     * 
-     * @param clusterGroupExpression cluster group expression
      */
     public void setClusterGroupExpression(ClusterGroupExpression clusterGroupExpression) {
         this.clusterGroupExpression = clusterGroupExpression;
@@ -139,8 +127,6 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
 
     /**
      * Gets the timeout.
-     * 
-     * @return timeout
      */
     public Long getTimeout() {
         return timeout;
@@ -148,8 +134,6 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
 
     /**
      * The timeout for the send operation when using ordered messages.
-     * 
-     * @param timeout timeout
      */
     public void setTimeout(Long timeout) {
         this.timeout = timeout;
@@ -157,18 +141,13 @@ public class IgniteMessagingEndpoint extends AbstractIgniteEndpoint {
 
     /**
      * Gets the send mode.
-     * 
-     * @return send mode
      */
     public IgniteMessagingSendMode getSendMode() {
         return sendMode;
     }
 
     /**
-     * The send mode to use.
-     * Possible values: UNORDERED, ORDERED.
-     * 
-     * @param sendMode send mode
+     * The send mode to use. Possible values: UNORDERED, ORDERED.
      */
     public void setSendMode(IgniteMessagingSendMode sendMode) {
         this.sendMode = sendMode;

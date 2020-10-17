@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -85,7 +85,8 @@ public final class ConsulKeyValueConsumer extends AbstractConsulConsumer<KeyValu
                 message.setHeader(ConsulConstants.CONSUL_SESSION, value.getSession().get());
             }
 
-            message.setBody(configuration.isValueAsString() ? value.getValueAsString().orElse(null) : value.getValue().orElse(null));
+            message.setBody(
+                    configuration.isValueAsString() ? value.getValueAsString().orElse(null) : value.getValue().orElse(null));
 
             try {
                 getProcessor().process(exchange);

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeExchangeException;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.apache.camel.util.StringHelper;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
@@ -33,9 +33,6 @@ import org.jxmpp.stringprep.XmppStringprepException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @version
- */
 public class XmppPrivateChatProducer extends DefaultProducer {
     private static final Logger LOG = LoggerFactory.getLogger(XmppPrivateChatProducer.class);
     private final XmppEndpoint endpoint;
@@ -51,6 +48,7 @@ public class XmppPrivateChatProducer extends DefaultProducer {
         LOG.debug("Creating XmppPrivateChatProducer to participant {}", participant);
     }
 
+    @Override
     public void process(Exchange exchange) {
 
         // make sure we are connected
@@ -81,23 +79,25 @@ public class XmppPrivateChatProducer extends DefaultProducer {
             message.setType(Message.Type.normal);
 
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
-            Chat chat = getOrCreateChat(chatManager, participant, thread);
+            Chat chat = getOrCreateChat(chatManager, participant);
 
             endpoint.getBinding().populateXmppMessage(message, exchange);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Sending XMPP message to {} from {} : {}", new Object[]{participant, endpoint.getUser(), message.getBody()});
+                LOG.debug("Sending XMPP message to {} from {} : {}", participant, endpoint.getUser(), message.getBody());
             }
             chat.send(message);
         } catch (Exception e) {
-            throw new RuntimeExchangeException("Could not send XMPP message to " + participant + " from " + endpoint.getUser() + " : " + message
-                    + " to: " + XmppEndpoint.getConnectionMessage(connection), exchange, e);
+            throw new RuntimeExchangeException(
+                    "Could not send XMPP message to " + participant + " from " + endpoint.getUser() + " : " + message
+                                               + " to: " + XmppEndpoint.getConnectionMessage(connection),
+                    exchange, e);
         }
     }
 
-    private Chat getOrCreateChat(ChatManager chatManager, final String participant, String thread) throws XmppStringprepException {
+    private Chat getOrCreateChat(ChatManager chatManager, final String participant) throws XmppStringprepException {
         // this starts a new chat or retrieves the pre-existing one in a threadsafe manner
-        return chatManager.chatWith(JidCreate.entityBareFrom(participant + "@" + thread));
+        return chatManager.chatWith(JidCreate.entityBareFrom(participant));
     }
 
     private synchronized void reconnect() throws InterruptedException, IOException, SmackException, XMPPException {
@@ -116,9 +116,11 @@ public class XmppPrivateChatProducer extends DefaultProducer {
                 connection = endpoint.createConnection();
             } catch (SmackException e) {
                 if (endpoint.isTestConnectionOnStartup()) {
-                    throw new RuntimeException("Could not establish connection to XMPP server: " + endpoint.getConnectionDescription(), e);
+                    throw new RuntimeException(
+                            "Could not establish connection to XMPP server: " + endpoint.getConnectionDescription(), e);
                 } else {
-                    LOG.warn("Could not connect to XMPP server: {} Producer will attempt lazy connection when needed.", e.getMessage());
+                    LOG.warn("Could not connect to XMPP server: {} Producer will attempt lazy connection when needed.",
+                            e.getMessage());
                 }
             }
         }

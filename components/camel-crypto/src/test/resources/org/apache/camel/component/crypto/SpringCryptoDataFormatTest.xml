@@ -66,60 +66,64 @@
       <!-- START SNIPPET: aes-128-ecb-encryption -->
       <crypto id="aes-128-ecb-encryption" algorithm="AES/ECB/PKCS5Padding" keyRef="aesKey" />
       <!-- END SNIPPET: aes-128-ecb-encryption -->
+      
+      <crypto id="aes-gcm-encryption" algorithm="AES/GCM/NoPadding" keyRef="aesKey" algorithmParameterRef="gcmParamSpec" />
+      
+      <crypto id="des-no-algorithm" keyRef="desKey" initVectorRef="initializationVector" />
     </dataFormats>
     
     <route>
       <from uri="direct:basic-encryption" />
-      <marshal ref="basic" />
+      <marshal><custom ref="basic" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="basic" />
+      <unmarshal><custom ref="basic" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
     <route>
       <from uri="direct:init-vector" />
-      <marshal ref="initvector" />
+      <marshal><custom ref="initvector" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="initvector" />
+      <unmarshal><custom ref="initvector" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
     <route>
       <from uri="direct:inline" />
-      <marshal ref="inline" />
+      <marshal><custom ref="inline" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="inline-decrypt" />
+      <unmarshal><custom ref="inline-decrypt" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
     <route>
       <from uri="direct:hmac" />
-      <marshal ref="hmac" />
+      <marshal><custom ref="hmac" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="hmac" />
+      <unmarshal><custom ref="hmac" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
     <route>
       <from uri="direct:hmac-algorithm" />
-      <marshal ref="hmac-algorithm" />
+      <marshal><custom ref="hmac-algorithm" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="hmac-algorithm" />
+      <unmarshal><custom ref="hmac-algorithm" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
     <route>
       <from uri="direct:hmac-sha-256-algorithm" />
-      <marshal ref="hmac-sha-256-algorithm" />
+      <marshal><custom ref="hmac-sha-256-algorithm" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="hmac-sha-256-algorithm" />
+      <unmarshal><custom ref="hmac-sha-256-algorithm" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
     <route>
       <from uri="direct:key-in-header-encrypt" />
-      <marshal ref="nokey" />
-      <setHeader headerName="CamelCryptoKey">
+      <marshal><custom ref="nokey" /></marshal>
+      <setHeader name="CamelCryptoKey">
         <constant />
       </setHeader>
       <to uri="mock:encrypted" />
@@ -127,8 +131,8 @@
     
     <route>
       <from uri="direct:key-in-header-decrypt" />
-      <unmarshal ref="nokey" />
-      <setHeader headerName="CamelCryptoKey">
+      <unmarshal><custom ref="nokey" /></unmarshal>
+      <setHeader name="CamelCryptoKey">
         <constant />
       </setHeader>
       <to uri="mock:unencrypted" />
@@ -136,25 +140,41 @@
     
     <route>
       <from uri="direct:3des-ecb-encryption" />
-      <marshal ref="tripledes-ecb-encryption" />
+      <marshal><custom ref="tripledes-ecb-encryption" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="tripledes-ecb-encryption" />
+      <unmarshal><custom ref="tripledes-ecb-encryption" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
     <route>
       <from uri="direct:3des-cbc-encryption" />
-      <marshal ref="tripledes-cbc-encryption-encrypt" />
+      <marshal><custom ref="tripledes-cbc-encryption-encrypt" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="tripledes-cbc-encryption-decrypt" />
+      <unmarshal><custom ref="tripledes-cbc-encryption-decrypt" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
     <route>
       <from uri="direct:aes-128-ecb-encryption" />
-      <marshal ref="aes-128-ecb-encryption" />
+      <marshal><custom ref="aes-128-ecb-encryption" /></marshal>
       <to uri="mock:encrypted" />
-      <unmarshal ref="aes-128-ecb-encryption" />
+      <unmarshal><custom ref="aes-128-ecb-encryption" /></unmarshal>
+      <to uri="mock:unencrypted" />
+    </route>
+    
+    <route>
+      <from uri="direct:aes-gcm-encryption" />
+      <marshal><custom ref="aes-gcm-encryption" /></marshal>
+      <to uri="mock:encrypted" />
+      <unmarshal><custom ref="aes-gcm-encryption" /></unmarshal>
+      <to uri="mock:unencrypted" />
+    </route>
+    
+    <route>
+      <from uri="direct:no-algorithm" />
+      <marshal><custom ref="des-no-algorithm" /></marshal>
+      <to uri="mock:encrypted" />
+      <unmarshal><custom ref="des-no-algorithm" /></unmarshal>
       <to uri="mock:unencrypted" />
     </route>
     
@@ -164,5 +184,6 @@
   <bean id="desEdeKey" class="org.apache.camel.converter.crypto.SpringCryptoDataFormatTest" factory-method="getDesEdeKey" />
   <bean id="aesKey" class="org.apache.camel.converter.crypto.SpringCryptoDataFormatTest" factory-method="getAESKey" />
   <bean id="initializationVector" class="org.apache.camel.converter.crypto.SpringCryptoDataFormatTest" factory-method="getIV" />
+  <bean id="gcmParamSpec" class="org.apache.camel.converter.crypto.SpringCryptoDataFormatTest" factory-method="getGCMParameterSpec" />
   
 </beans>

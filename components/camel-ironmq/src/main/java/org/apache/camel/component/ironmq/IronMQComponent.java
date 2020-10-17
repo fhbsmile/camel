@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,38 +20,36 @@ import java.util.Map;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.ScheduledPollEndpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 
 /**
  * Represents the component that manages {@link IronMQEndpoint}.
  */
-public class IronMQComponent extends UriEndpointComponent {
+@Component("ironmq")
+public class IronMQComponent extends DefaultComponent {
 
     public IronMQComponent(CamelContext context) {
-        super(context, IronMQEndpoint.class);
+        super(context);
     }
 
     public IronMQComponent() {
-        super(IronMQEndpoint.class);
     }
 
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        IronMQConfiguration ironMQConfiguration = new IronMQConfiguration();
-        setProperties(ironMQConfiguration, parameters);
         if (remaining == null || remaining.trim().length() == 0) {
             throw new IllegalArgumentException("Queue name must be specified.");
         }
 
+        IronMQConfiguration ironMQConfiguration = new IronMQConfiguration();
+        Endpoint endpoint = new IronMQEndpoint(uri, this, ironMQConfiguration);
         ironMQConfiguration.setQueueName(remaining);
-
-        if (ironMQConfiguration.getClient() == null && (ironMQConfiguration.getProjectId() == null || ironMQConfiguration.getToken() == null)) {
+        setProperties(endpoint, parameters);
+        if (ironMQConfiguration.getClient() == null
+                && (ironMQConfiguration.getProjectId() == null || ironMQConfiguration.getToken() == null)) {
             throw new IllegalArgumentException("Client or project and token must be specified.");
         }
-
-        Endpoint endpoint = new IronMQEndpoint(uri, this, ironMQConfiguration);
-        ((ScheduledPollEndpoint)endpoint).setConsumerProperties(parameters);
 
         return endpoint;
     }

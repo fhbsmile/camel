@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,11 +21,8 @@ import java.io.File;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
 public class FtpConsumerFileSplitTest extends FtpServerTestSupport {
 
     private String getFtpUrl() {
@@ -37,19 +34,17 @@ public class FtpConsumerFileSplitTest extends FtpServerTestSupport {
         MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
         resultEndpoint.expectedBodiesReceived("line1", "line2", "line3");
 
-        template.sendBodyAndHeader(getFtpUrl(), new File("src/test/data/ftptextfile/textexample.txt"), Exchange.FILE_NAME, "textexample.txt");
+        template.sendBodyAndHeader(getFtpUrl(), new File("src/test/data/ftptextfile/textexample.txt"), Exchange.FILE_NAME,
+                "textexample.txt");
 
         resultEndpoint.assertIsSatisfied();
     }
 
+    @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {
-                from(getFtpUrl())
-                    .to("log:file")
-                    .split(body().tokenize(LS))
-                        .to("log:line")
-                        .to("mock:result");
+                from(getFtpUrl()).to("log:file").split(body().tokenize(LS)).to("log:line").to("mock:result");
             }
         };
     }

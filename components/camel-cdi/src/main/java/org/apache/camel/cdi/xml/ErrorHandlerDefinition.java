@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.IdentifiedType;
 
 /**
@@ -39,19 +38,16 @@ public class ErrorHandlerDefinition extends IdentifiedType {
     private String deadLetterUri;
 
     @XmlAttribute
-    private Boolean deadLetterHandleNewException;
+    private String deadLetterHandleNewException;
 
     @XmlAttribute
-    private LoggingLevel level;
+    private String rollbackLoggingLevel;
 
     @XmlAttribute
-    private LoggingLevel rollbackLoggingLevel;
+    private String useOriginalMessage;
 
     @XmlAttribute
-    private String logName;
-
-    @XmlAttribute
-    private Boolean useOriginalMessage;
+    private String useOriginalBody;
 
     @XmlAttribute
     private String transactionTemplateRef;
@@ -96,44 +92,36 @@ public class ErrorHandlerDefinition extends IdentifiedType {
         this.deadLetterUri = deadLetterUri;
     }
 
-    public Boolean getDeadLetterHandleNewException() {
+    public String getDeadLetterHandleNewException() {
         return deadLetterHandleNewException;
     }
 
-    public void setDeadLetterHandleNewException(Boolean deadLetterHandleNewException) {
+    public void setDeadLetterHandleNewException(String deadLetterHandleNewException) {
         this.deadLetterHandleNewException = deadLetterHandleNewException;
     }
 
-    public LoggingLevel getLevel() {
-        return level;
-    }
-
-    public void setLevel(LoggingLevel level) {
-        this.level = level;
-    }
-
-    public LoggingLevel getRollbackLoggingLevel() {
+    public String getRollbackLoggingLevel() {
         return rollbackLoggingLevel;
     }
 
-    public void setRollbackLoggingLevel(LoggingLevel rollbackLoggingLevel) {
+    public void setRollbackLoggingLevel(String rollbackLoggingLevel) {
         this.rollbackLoggingLevel = rollbackLoggingLevel;
     }
 
-    public String getLogName() {
-        return logName;
-    }
-
-    public void setLogName(String logName) {
-        this.logName = logName;
-    }
-
-    public Boolean getUseOriginalMessage() {
+    public String getUseOriginalMessage() {
         return useOriginalMessage;
     }
 
-    public void setUseOriginalMessage(Boolean useOriginalMessage) {
+    public void setUseOriginalMessage(String useOriginalMessage) {
         this.useOriginalMessage = useOriginalMessage;
+    }
+
+    public String getUseOriginalBody() {
+        return useOriginalBody;
+    }
+
+    public void setUseOriginalBody(String useOriginalBody) {
+        this.useOriginalBody = useOriginalBody;
     }
 
     public String getTransactionTemplateRef() {

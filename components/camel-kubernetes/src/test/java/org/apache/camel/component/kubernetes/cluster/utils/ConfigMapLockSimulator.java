@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,7 +18,6 @@ package org.apache.camel.component.kubernetes.cluster.utils;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,16 +58,14 @@ public class ConfigMapLockSimulator {
         if (version != null) {
             long versionLong = Long.parseLong(version);
             if (versionLong != versionCounter) {
-                LOG.warn("Current resource version is {} while the update is related to version {}", versionCounter, versionLong);
+                LOG.warn("Current resource version is {} while the update is related to version {}", versionCounter,
+                        versionLong);
                 return false;
             }
         }
 
-        this.currentMap = new ConfigMapBuilder(map)
-                .editOrNewMetadata()
-                .withResourceVersion(String.valueOf(++versionCounter))
-                .endMetadata()
-                .build();
+        this.currentMap = new ConfigMapBuilder(map).editOrNewMetadata().withResourceVersion(String.valueOf(++versionCounter))
+                .endMetadata().build();
         return true;
     }
 

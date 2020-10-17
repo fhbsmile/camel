@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.camel.test.cdi;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.annotation.Priority;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Alternative;
@@ -39,13 +40,10 @@ final class CamelCdiTestExtension implements Extension {
     }
 
     /**
-     * Activates the alternatives declared with {@code @Beans} globally for the
-     * application.
+     * Activates the alternatives declared with {@code @Beans} globally for the application.
      * <p/>
-     * For every types and every methods of every types declared with
-     * {@link Beans#alternatives()}, the {@code Priority} annotation is added
-     * so that the corresponding alternatives are selected globally for the
-     * entire application.
+     * For every types and every methods of every types declared with {@link Beans#alternatives()}, the {@code Priority}
+     * annotation is added so that the corresponding alternatives are selected globally for the entire application.
      *
      * @see Beans
      */

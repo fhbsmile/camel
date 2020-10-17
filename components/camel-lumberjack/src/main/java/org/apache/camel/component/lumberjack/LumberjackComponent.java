@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,14 +20,16 @@ import java.util.Map;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.SSLContextParametersAware;
-import org.apache.camel.impl.UriEndpointComponent;
 import org.apache.camel.spi.Metadata;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
+import org.apache.camel.support.jsse.SSLContextParameters;
 
 /**
  * The class is the Camel component for the Lumberjack server
  */
-public class LumberjackComponent extends UriEndpointComponent implements SSLContextParametersAware {
+@Component("lumberjack")
+public class LumberjackComponent extends DefaultComponent implements SSLContextParametersAware {
     static final int DEFAULT_PORT = 5044;
 
     @Metadata(label = "security")
@@ -40,7 +42,6 @@ public class LumberjackComponent extends UriEndpointComponent implements SSLCont
     }
 
     protected LumberjackComponent(Class<? extends LumberjackEndpoint> endpointClass) {
-        super(endpointClass);
     }
 
     @Override
@@ -73,8 +74,8 @@ public class LumberjackComponent extends UriEndpointComponent implements SSLCont
     }
 
     /**
-     * Sets the default SSL configuration to use for all the endpoints. You can also configure it directly at
-     * the endpoint level.
+     * Sets the default SSL configuration to use for all the endpoints. You can also configure it directly at the
+     * endpoint level.
      */
     public void setSslContextParameters(SSLContextParameters sslContextParameters) {
         this.sslContextParameters = sslContextParameters;

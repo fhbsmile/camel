@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,8 +17,8 @@
 package org.apache.camel.component.crypto.cms.exception;
 
 /**
- * Exception thrown when no certificate in the keystore fits to the recipients
- * in the CMS enveloped data during the decryption process.
+ * Exception thrown when no certificate in the keystore fits to the recipients in the CMS enveloped data during the
+ * decryption process.
  */
 public class CryptoCmsNoCertificateForRecipientsException extends CryptoCmsException {
 

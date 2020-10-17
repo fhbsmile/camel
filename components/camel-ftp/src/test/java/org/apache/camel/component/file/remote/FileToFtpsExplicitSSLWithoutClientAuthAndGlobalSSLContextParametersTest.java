@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,11 +18,12 @@ package org.apache.camel.component.file.remote;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.SSLContextParametersAware;
-import org.apache.camel.util.jsse.KeyStoreParameters;
-import org.apache.camel.util.jsse.SSLContextParameters;
-import org.apache.camel.util.jsse.TrustManagersParameters;
+import org.apache.camel.support.jsse.KeyStoreParameters;
+import org.apache.camel.support.jsse.SSLContextParameters;
+import org.apache.camel.support.jsse.TrustManagersParameters;
 
-public class FileToFtpsExplicitSSLWithoutClientAuthAndGlobalSSLContextParametersTest extends FileToFtpsExplicitSSLWithoutClientAuthTest {
+public class FileToFtpsExplicitSSLWithoutClientAuthAndGlobalSSLContextParametersTest
+        extends FileToFtpsExplicitSSLWithoutClientAuthTest {
 
     @Override
     protected CamelContext createCamelContext() throws Exception {
@@ -35,16 +36,18 @@ public class FileToFtpsExplicitSSLWithoutClientAuthAndGlobalSSLContextParameters
         tmp.setKeyStore(ksp);
 
         SSLContextParameters sslContextParameters = new SSLContextParameters();
-        sslContextParameters.setSecureSocketProtocol("SSL");
+        sslContextParameters.setSecureSocketProtocol("SSLv3");
         sslContextParameters.setTrustManagers(tmp);
         context.setSSLContextParameters(sslContextParameters);
 
         ((SSLContextParametersAware) context.getComponent("ftps")).setUseGlobalSslContextParameters(true);
         return context;
     }
-    
+
+    @Override
     protected String getFtpUrl() {
-        return "ftps://admin@localhost:" + getPort() + "/tmp2/camel?password=admin&consumer.initialDelay=2000&disableSecureDataChannelDefaults=true"
-                + "&isImplicit=false&delete=true";
+        return "ftps://admin@localhost:" + getPort()
+               + "/tmp2/camel?password=admin&initialDelay=2000&disableSecureDataChannelDefaults=true"
+               + "&implicit=false&delete=true";
     }
 }

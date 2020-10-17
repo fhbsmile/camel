@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,12 +18,10 @@ package org.apache.camel.component.file.remote;
 
 import org.apache.camel.Consumer;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.DefaultPollingConsumerPollStrategy;
+import org.apache.camel.support.DefaultPollingConsumerPollStrategy;
 
 /**
  * Remote file consumer polling strategy that attempts to help recovering from lost connections.
- *
- * @version 
  */
 public class RemoteFilePollingConsumerPollStrategy extends DefaultPollingConsumerPollStrategy {
 
@@ -34,13 +32,16 @@ public class RemoteFilePollingConsumerPollStrategy extends DefaultPollingConsume
 
             // only try to recover if we are allowed to run
             if (rfc.isRunAllowed()) {
-                // disconnect from the server to force it to re login at next poll to recover
-                log.warn("Trying to recover by force disconnecting from remote server and re-connecting at next poll: {}", rfc.remoteServer());
+                // disconnect from the server to force it to re login at next
+                // poll to recover
+                log.warn("Trying to recover by force disconnecting from remote server and re-connecting at next poll: {}",
+                        rfc.remoteServer());
                 try {
                     rfc.forceDisconnect();
                 } catch (Throwable t) {
                     // ignore the exception
-                    log.debug("Error occurred during force disconnecting from: " + rfc.remoteServer() + ". This exception will be ignored.", t);
+                    log.debug("Error occurred during force disconnecting from: {}. This exception will be ignored.",
+                            rfc.remoteServer(), t);
                 }
             }
         }

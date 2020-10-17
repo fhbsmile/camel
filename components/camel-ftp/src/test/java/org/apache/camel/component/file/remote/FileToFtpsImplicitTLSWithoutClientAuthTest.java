@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,20 +18,19 @@ package org.apache.camel.component.file.remote;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test the ftps component over TLS (implicit) without client authentication
- * 
- * @version 
  */
 public class FileToFtpsImplicitTLSWithoutClientAuthTest extends FtpsServerImplicitTLSWithoutClientAuthTestSupport {
-    
+
     protected String getFtpUrl() {
-        return "ftps://admin@localhost:" + getPort() + "/tmp2/camel?password=admin&consumer.initialDelay=2000&disableSecureDataChannelDefaults=true"
-                + "&securityProtocol=TLS&isImplicit=true&delete=true";
+        return "ftps://admin@localhost:" + getPort()
+               + "/tmp2/camel?password=admin&initialDelay=2000&disableSecureDataChannelDefaults=true"
+               + "&securityProtocol=TLSv1.2&implicit=true&delete=true";
     }
-    
+
     @Test
     public void testFromFileToFtp() throws Exception {
         // some platforms cannot test SSL
@@ -45,6 +44,7 @@ public class FileToFtpsImplicitTLSWithoutClientAuthTest extends FtpsServerImplic
         assertMockEndpointsSatisfied();
     }
 
+    @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {

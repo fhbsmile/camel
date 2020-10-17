@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,49 +16,48 @@
  */
 package org.apache.camel.component.box;
 
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.box.sdk.BoxAPIConnection;
-import com.box.sdk.BoxFolder;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.box.api.BoxSearchManager;
 import org.apache.camel.component.box.internal.BoxApiCollection;
 import org.apache.camel.component.box.internal.BoxSearchManagerApiMethod;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
- * Test class for {@link BoxSearchManager}
- * APIs.
+ * Test class for {@link BoxSearchManager} APIs.
  */
 public class BoxSearchManagerIntegrationTest extends AbstractBoxTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(BoxSearchManagerIntegrationTest.class);
     private static final String PATH_PREFIX = BoxApiCollection.getCollection()
             .getApiName(BoxSearchManagerApiMethod.class).getName();
-    private static final String CAMEL_TEST_FILE = "/CamelTestFile.txt";
-    private static final String CAMEL_TEST_FILE_NAME = "CamelTestFile.txt";
 
+    /**
+     * There is a delay 5-10 mins between upload of file and being searchable (probably to update some search indexes,
+     * see https://community.box.com/t5/Platform-and-Development-Forum/Box-Search-Delay/td-p/40072). With this delay
+     * search for an actual item, created in the beginning of the test, doesn't make sense. Test only verifies, that
+     * search results works (and does not end with an exception).
+     *
+     * To test search of real data, change query string from '*' to real name of file.
+     */
     @Test
-    public void testSearchFolder() throws Exception {
-        final Map<String, Object> headers = new HashMap<String, Object>();
+    public void testSearchFolder() {
+        final Map<String, Object> headers = new HashMap<>();
         // parameter type is String
         headers.put("CamelBox.folderId", "0");
         // parameter type is String
-        headers.put("CamelBox.query", CAMEL_TEST_FILE_NAME);
+        headers.put("CamelBox.query", "*");
 
         @SuppressWarnings("rawtypes")
         final java.util.Collection result = requestBodyAndHeaders("direct://SEARCHFOLDER", null, headers);
 
-        assertNotNull("searchFolder result", result);
-        assertEquals("searchFolder file found", 1, result.size());
+        assertNotNull(result, "searchFolder result");
         LOG.debug("searchFolder: " + result);
     }
 
@@ -68,29 +67,8 @@ public class BoxSearchManagerIntegrationTest extends AbstractBoxTestSupport {
             public void configure() {
                 // test route for searchFolder
                 from("direct://SEARCHFOLDER").to("box://" + PATH_PREFIX + "/searchFolder");
-
             }
         };
     }
 
-    @Before
-    public void setupTest() throws Exception {
-        createTestFile();
-    }
-
-    @After
-    public void teardownTest() {
-        deleteTestFile();
-    }
-
-    public BoxAPIConnection getConnection() {
-        BoxEndpoint endpoint = (BoxEndpoint) context().getEndpoint("box://" + PATH_PREFIX + "/searchFolder");
-        return endpoint.getBoxConnection();
-    }
-
-    private void createTestFile() throws FileNotFoundException {
-        BoxFolder rootFolder = BoxFolder.getRootFolder(getConnection());
-        InputStream stream = getClass().getResourceAsStream(CAMEL_TEST_FILE);
-        testFile = rootFolder.uploadFile(stream, CAMEL_TEST_FILE_NAME).getResource();
-    }
 }

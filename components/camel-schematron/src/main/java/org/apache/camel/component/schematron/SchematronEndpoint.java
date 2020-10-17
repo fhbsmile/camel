@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,10 +19,12 @@ package org.apache.camel.component.schematron;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+
 import javax.xml.transform.Templates;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.URIResolver;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
@@ -30,12 +32,12 @@ import org.apache.camel.component.schematron.constant.Constants;
 import org.apache.camel.component.schematron.exception.SchematronConfigException;
 import org.apache.camel.component.schematron.processor.ClassPathURIResolver;
 import org.apache.camel.component.schematron.processor.TemplatesFactory;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
-import org.apache.camel.util.ResourceHelper;
+import org.apache.camel.support.DefaultEndpoint;
+import org.apache.camel.support.ResourceHelper;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,16 +46,18 @@ import static org.apache.camel.component.schematron.constant.Constants.LINE_NUMB
 import static org.apache.camel.component.schematron.constant.Constants.SAXON_TRANSFORMER_FACTORY_CLASS_NAME;
 
 /**
- *  Validates the payload of a message using the Schematron Library.
+ * Validate XML payload using the Schematron Library.
  */
-@UriEndpoint(firstVersion = "2.15.0", scheme = "schematron", title = "Schematron", syntax = "schematron:path", producerOnly = true, label = "validation")
+@UriEndpoint(firstVersion = "2.15.0", scheme = "schematron", title = "Schematron", syntax = "schematron:path",
+             producerOnly = true, category = { Category.VALIDATION })
 public class SchematronEndpoint extends DefaultEndpoint {
 
     private static final Logger LOG = LoggerFactory.getLogger(SchematronEndpoint.class);
 
     private TransformerFactory transformerFactory;
 
-    @UriPath @Metadata(required = "true")
+    @UriPath
+    @Metadata(required = true)
     private String path;
     @UriParam
     private boolean abort;
@@ -70,20 +74,14 @@ public class SchematronEndpoint extends DefaultEndpoint {
         this.path = path;
     }
 
-    public SchematronEndpoint(String endpointUri) {
-        super(endpointUri);
-    }
-
+    @Override
     public Producer createProducer() throws Exception {
         return new SchematronProducer(this);
     }
 
+    @Override
     public Consumer createConsumer(Processor processor) throws Exception {
         throw new UnsupportedOperationException("Consumer is not implemented for this component");
-    }
-
-    public boolean isSingleton() {
-        return true;
     }
 
     public String getPath() {
@@ -130,7 +128,6 @@ public class SchematronEndpoint extends DefaultEndpoint {
         return uriResolver;
     }
 
-
     @Override
     protected void doStart() throws Exception {
         super.doStart();
@@ -167,8 +164,9 @@ public class SchematronEndpoint extends DefaultEndpoint {
 
     private void createTransformerFactory() throws ClassNotFoundException {
         // provide the class loader of this component to work in OSGi environments
-        Class<TransformerFactory> factoryClass = getCamelContext().getClassResolver().resolveMandatoryClass(SAXON_TRANSFORMER_FACTORY_CLASS_NAME,
-                TransformerFactory.class, SchematronComponent.class.getClassLoader());
+        Class<TransformerFactory> factoryClass
+                = getCamelContext().getClassResolver().resolveMandatoryClass(SAXON_TRANSFORMER_FACTORY_CLASS_NAME,
+                        TransformerFactory.class, SchematronComponent.class.getClassLoader());
 
         LOG.debug("Using TransformerFactoryClass {}", factoryClass);
         transformerFactory = getCamelContext().getInjector().newInstance(factoryClass);

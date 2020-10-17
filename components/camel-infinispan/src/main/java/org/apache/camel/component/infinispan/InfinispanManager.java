@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,18 +22,23 @@ import java.util.Properties;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.Service;
+import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.ObjectHelper;
+import org.infinispan.cache.impl.CacheImpl;
 import org.infinispan.cache.impl.DecoratedCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.commons.api.BasicCache;
 import org.infinispan.commons.api.BasicCacheContainer;
+import org.infinispan.commons.util.EnumUtil;
+import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InfinispanManager implements Service {
+import static org.apache.camel.component.infinispan.InfinispanConstants.CACHE_MANAGER_CURRENT;
+
+public class InfinispanManager extends ServiceSupport {
     private static final transient Logger LOGGER = LoggerFactory.getLogger(InfinispanManager.class);
 
     private final InfinispanConfiguration configuration;
@@ -44,7 +49,8 @@ public class InfinispanManager implements Service {
     public InfinispanManager() {
         this.camelContext = null;
         this.configuration = new InfinispanConfiguration();
-        this.configuration.setCacheContainer(new DefaultCacheManager(true));
+        this.configuration.setCacheContainer(
+                new DefaultCacheManager(new GlobalConfigurationBuilder().defaultCacheName("default").build()));
     }
 
     public InfinispanManager(InfinispanConfiguration configuration) {
@@ -57,26 +63,26 @@ public class InfinispanManager implements Service {
     }
 
     @Override
-    public void start() throws Exception {
+    public void doStart() throws Exception {
         cacheContainer = configuration.getCacheContainer();
 
         if (cacheContainer == null) {
+            final Object containerConf = configuration.getCacheContainerConfiguration();
             // Check if a container configuration object has been provided so use
             // it and discard any other additional configuration.
-            if (configuration.getCacheContainerConfiguration() != null) {
-                final Object containerConf = configuration.getCacheContainerConfiguration();
+            if (containerConf != null) {
                 if (containerConf instanceof org.infinispan.client.hotrod.configuration.Configuration) {
                     cacheContainer = new RemoteCacheManager(
-                        (org.infinispan.client.hotrod.configuration.Configuration)containerConf,
-                        true
-                    );
+                            (org.infinispan.client.hotrod.configuration.Configuration) containerConf,
+                            true);
                 } else if (containerConf instanceof org.infinispan.configuration.cache.Configuration) {
                     cacheContainer = new DefaultCacheManager(
-                        (org.infinispan.configuration.cache.Configuration)containerConf,
-                        true
-                    );
+                            new GlobalConfigurationBuilder().defaultCacheName("default").build(),
+                            (org.infinispan.configuration.cache.Configuration) containerConf,
+                            true);
                 } else {
-                    throw new IllegalArgumentException("Unsupported CacheContainer Configuration type: " + containerConf.getClass());
+                    throw new IllegalArgumentException(
+                            "Unsupported CacheContainer Configuration type: " + containerConf.getClass());
                 }
             }
 
@@ -90,6 +96,26 @@ public class InfinispanManager implements Service {
                     builder.classLoader(camelContext.getApplicationContextClassLoader());
                 } else {
                     builder.classLoader(Thread.currentThread().getContextClassLoader());
+                }
+
+                if (configuration.isSecure()) {
+                    if (ObjectHelper.isNotEmpty(configuration.getUsername())
+                            && ObjectHelper.isNotEmpty(configuration.getPassword())) {
+                        builder.security().authentication().username(configuration.getUsername())
+                                .password(configuration.getPassword());
+                    } else {
+                        throw new IllegalArgumentException(
+                                "If the Infinispan instance is secured, username and password are needed");
+                    }
+                    if (ObjectHelper.isNotEmpty(configuration.getSaslMechanism())) {
+                        builder.security().authentication().saslMechanism(configuration.getSaslMechanism());
+                    }
+                    if (ObjectHelper.isNotEmpty(configuration.getSecurityRealm())) {
+                        builder.security().authentication().realm(configuration.getSecurityRealm());
+                    }
+                    if (ObjectHelper.isNotEmpty(configuration.getSecurityServerName())) {
+                        builder.security().authentication().serverName(configuration.getSecurityServerName());
+                    }
                 }
 
                 Properties properties = new Properties();
@@ -120,7 +146,9 @@ public class InfinispanManager implements Service {
                         cacheContainer = new DefaultCacheManager(is, true);
                     }
                 } else {
-                    cacheContainer = new DefaultCacheManager(new org.infinispan.configuration.cache.ConfigurationBuilder().build());
+                    cacheContainer = new DefaultCacheManager(
+                            new GlobalConfigurationBuilder().defaultCacheName("default").build(),
+                            new org.infinispan.configuration.cache.ConfigurationBuilder().build());
                 }
             }
 
@@ -129,7 +157,7 @@ public class InfinispanManager implements Service {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void doStop() throws Exception {
         if (isManagedCacheContainer) {
             cacheContainer.stop();
         }
@@ -149,7 +177,7 @@ public class InfinispanManager implements Service {
 
     public <K, V> BasicCache<K, V> getCache(String cacheName) {
         BasicCache<K, V> cache;
-        if (ObjectHelper.isEmpty(cacheName)) {
+        if (ObjectHelper.isEmpty(cacheName) || CACHE_MANAGER_CURRENT.equals(cacheName)) {
             cache = cacheContainer.getCache();
             cacheName = cache.getName();
         } else {
@@ -159,7 +187,8 @@ public class InfinispanManager implements Service {
         LOGGER.trace("Cache[{}]", cacheName);
 
         if (configuration.hasFlags() && InfinispanUtil.isEmbedded(cache)) {
-            cache = new DecoratedCache(InfinispanUtil.asAdvanced(cache), configuration.getFlags());
+            cache = new DecoratedCache(
+                    (CacheImpl) InfinispanUtil.asAdvanced(cache), EnumUtil.bitSetOf(configuration.getFlags()));
         }
 
         return cache;
@@ -191,7 +220,7 @@ public class InfinispanManager implements Service {
         BasicCache<K, V> cache = getCache(message.getHeader(InfinispanConstants.CACHE_NAME, defaultCache, String.class));
 
         return message.getHeader(InfinispanConstants.IGNORE_RETURN_VALUES) != null
-            ? cache
-            : InfinispanUtil.ignoreReturnValuesCache(cache);
+                ? cache
+                : InfinispanUtil.ignoreReturnValuesCache(cache);
     }
 }

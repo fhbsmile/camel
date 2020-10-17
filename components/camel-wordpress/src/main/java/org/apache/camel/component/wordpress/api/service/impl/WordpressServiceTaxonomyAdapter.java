@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,14 +17,17 @@
 package org.apache.camel.component.wordpress.api.service.impl;
 
 import java.util.Map;
+
 import org.apache.camel.component.wordpress.api.model.Context;
 import org.apache.camel.component.wordpress.api.model.Taxonomy;
 import org.apache.camel.component.wordpress.api.service.WordpressServiceTaxonomy;
 import org.apache.camel.component.wordpress.api.service.spi.TaxonomySPI;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.emptyToNull;
 
-public class WordpressServiceTaxonomyAdapter extends AbstractWordpressServiceAdapter<TaxonomySPI> implements WordpressServiceTaxonomy {
+public class WordpressServiceTaxonomyAdapter extends AbstractWordpressServiceAdapter<TaxonomySPI>
+        implements WordpressServiceTaxonomy {
 
     public WordpressServiceTaxonomyAdapter(String wordpressUrl, String apiVersion) {
         super(wordpressUrl, apiVersion);

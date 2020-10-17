@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,21 +18,19 @@ package org.apache.camel.component.crypto.cms;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.spring.SpringCamelContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class SpringComponentTest extends ComponentTest {
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
 
-        return SpringCamelContext.springCamelContext("SpringCryptoCmsTests.xml");
+        return SpringCamelContext.springCamelContext(
+                new ClassPathXmlApplicationContext("SpringCryptoCmsTests.xml"), true);
     }
 
     @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        return super.createRegistry();
-    }
-
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             @Override

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,8 +21,8 @@ import java.util.Map;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.component.twilio.internal.TwilioApiName;
 import org.apache.camel.component.twilio.internal.TwilioPropertiesHelper;
-import org.apache.camel.util.component.AbstractApiProducer;
-import org.apache.camel.util.component.ApiMethod;
+import org.apache.camel.support.component.AbstractApiProducer;
+import org.apache.camel.support.component.ApiMethod;
 
 /**
  * The Twilio producer.
@@ -32,7 +32,7 @@ public class TwilioProducer extends AbstractApiProducer<TwilioApiName, TwilioCon
     protected final TwilioEndpoint endpoint;
 
     public TwilioProducer(TwilioEndpoint endpoint) {
-        super(endpoint, TwilioPropertiesHelper.getHelper());
+        super(endpoint, TwilioPropertiesHelper.getHelper(endpoint.getCamelContext()));
         this.endpoint = endpoint;
     }
 

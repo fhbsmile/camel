@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -33,13 +33,12 @@ import org.springframework.context.ApplicationContextAware;
 
 /**
  * Camel endpoint configuration
- *
- * @version 
  */
 @Metadata(label = "spring,configuration,endpoint")
 @XmlRootElement(name = "endpoint")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class CamelEndpointFactoryBean extends AbstractCamelEndpointFactoryBean implements FactoryBean<Endpoint>, ApplicationContextAware {
+public class CamelEndpointFactoryBean extends AbstractCamelEndpointFactoryBean
+        implements FactoryBean<Endpoint>, ApplicationContextAware {
     @XmlTransient
     private ApplicationContext applicationContext;
     // ref is needed as transient as namespace parser registerEndpointsWithIdsDefinedInFromOrToTypes
@@ -53,6 +52,7 @@ public class CamelEndpointFactoryBean extends AbstractCamelEndpointFactoryBean i
         return CamelContextResolverHelper.getCamelContextWithId(applicationContext, camelContextId);
     }
 
+    @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }

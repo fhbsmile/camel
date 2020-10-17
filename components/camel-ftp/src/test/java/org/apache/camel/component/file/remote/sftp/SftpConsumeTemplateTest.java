@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,17 +17,12 @@
 package org.apache.camel.component.file.remote.sftp;
 
 import org.apache.camel.Exchange;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class SftpConsumeTemplateTest extends SftpServerTestSupport {
-
-    @Override
-    public boolean isUseRouteBuilder() {
-        return false;
-    }
 
     @Test
     public void testSftpSimpleConsume() throws Exception {
@@ -38,7 +33,8 @@ public class SftpConsumeTemplateTest extends SftpServerTestSupport {
         // create file using regular file
         template.sendBodyAndHeader("file://" + FTP_ROOT_DIR, "Hello World", Exchange.FILE_NAME, "hello.txt");
 
-        String out = consumer.receiveBody("sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR + "?username=admin&password=admin", 5000, String.class);
+        String out = consumer.receiveBody(
+                "sftp://localhost:" + getPort() + "/" + FTP_ROOT_DIR + "?username=admin&password=admin", 5000, String.class);
         assertNotNull(out);
         // Apache SSHD appends \u0000 at last byte in retrieved file
         assertTrue(out.startsWith("Hello World"));

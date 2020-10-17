@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.camel.component.file.remote.sftp;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
@@ -26,26 +27,37 @@ import java.util.List;
 import org.apache.camel.component.file.remote.BaseServerTestSupport;
 import org.apache.camel.util.ObjectHelper;
 import org.apache.commons.io.FileUtils;
+import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * @version 
- */
+import static org.apache.camel.test.junit5.TestSupport.createDirectory;
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
+
 public class SftpServerTestSupport extends BaseServerTestSupport {
 
     protected static final String FTP_ROOT_DIR = "target/res/home";
+    private static final Logger LOG = LoggerFactory.getLogger(SftpServerTestSupport.class);
+    private static final String KNOWN_HOSTS = "[localhost]:%d ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDdfIWeSV4o68dRrKS"
+                                              + "zFd/Bk51E65UTmmSrmW0O1ohtzi6HzsDPjXgCtlTt3FqTcfFfI92IlTr4JWqC9UK1QT1ZTeng0MkPQmv68hDANHbt5CpETZHjW5q4OOgWhV"
+                                              + "vj5IyOC2NZHtKlJBkdsMAa15ouOOJLzBvAvbqOR/yUROsEiQ==";
     protected SshServer sshd;
     protected boolean canTest;
     protected String oldUserHome;
+    protected boolean rootDirMode;
+    private String simulatedUserHome = "./target/user-home";
+    private String simulatedUserSsh = "./target/user-home/.ssh";
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         deleteDirectory(FTP_ROOT_DIR);
 
@@ -53,15 +65,13 @@ public class SftpServerTestSupport extends BaseServerTestSupport {
 
         System.setProperty("user.home", "target/user-home");
 
-        String simulatedUserHome = "target/user-home";
-        String simulatedUserSsh = "target/user-home/.ssh";
         deleteDirectory(simulatedUserHome);
         createDirectory(simulatedUserHome);
         createDirectory(simulatedUserSsh);
 
-        FileUtils.copyInputStreamToFile(getClass().getClassLoader().getResourceAsStream("known_hosts"), new File(simulatedUserSsh + "/known_hosts"));
-
         super.setUp();
+
+        FileUtils.writeByteArrayToFile(new File(simulatedUserSsh + "/known_hosts"), buildKnownHosts());
 
         setUpServer();
     }
@@ -75,7 +85,11 @@ public class SftpServerTestSupport extends BaseServerTestSupport {
             sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
             sshd.setCommandFactory(new ScpCommandFactory());
             sshd.setPasswordAuthenticator((username, password, session) -> true);
-            sshd.setPublickeyAuthenticator((username, password, session) -> true);
+            sshd.setPublickeyAuthenticator(getPublickeyAuthenticator());
+            if (rootDirMode) {
+                sshd.setFileSystemFactory(new VirtualFileSystemFactory(
+                        FileSystems.getDefault().getPath(System.getProperty("user.dir") + "/target/res")));
+            }
             sshd.start();
         } catch (Exception e) {
             // ignore if algorithm is not on the OS
@@ -85,7 +99,7 @@ public class SftpServerTestSupport extends BaseServerTestSupport {
 
                 String name = System.getProperty("os.name");
                 String message = nsae.getMessage();
-                log.warn("SunX509 is not avail on this platform [{}] Testing is skipped! Real cause: {}", name, message);
+                LOG.warn("SunX509 is not avail on this platform [{}] Testing is skipped! Real cause: {}", name, message);
             } else {
                 // some other error then throw it so the test can fail
                 throw e;
@@ -93,8 +107,12 @@ public class SftpServerTestSupport extends BaseServerTestSupport {
         }
     }
 
+    protected PublickeyAuthenticator getPublickeyAuthenticator() {
+        return (username, key, session) -> true;
+    }
+
     @Override
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (oldUserHome != null) {
             System.setProperty("user.home", oldUserHome);
@@ -114,9 +132,12 @@ public class SftpServerTestSupport extends BaseServerTestSupport {
                 sshd.stop(true);
                 sshd = null;
             } catch (Exception e) {
-                // ignore while shutting down as we could be polling during shutdown
-                // and get errors when the ftp server is stopping. This is only an issue
-                // since we host the ftp server embedded in the same jvm for unit testing
+                // ignore while shutting down as we could be polling during
+                // shutdown
+                // and get errors when the ftp server is stopping. This is only
+                // an issue
+                // since we host the ftp server embedded in the same jvm for
+                // unit testing
             }
         }
     }
@@ -131,5 +152,13 @@ public class SftpServerTestSupport extends BaseServerTestSupport {
         for (AbstractSession session : sessions) {
             session.disconnect(4, "dummy");
         }
+    }
+
+    protected byte[] buildKnownHosts() {
+        return String.format(KNOWN_HOSTS, port).getBytes();
+    }
+
+    protected String getKnownHostsFile() {
+        return simulatedUserSsh + "/known_hosts";
     }
 }

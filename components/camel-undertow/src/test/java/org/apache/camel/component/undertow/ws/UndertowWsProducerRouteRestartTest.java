@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,26 +31,33 @@ import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.asynchttpclient.ws.WebSocket;
 import org.asynchttpclient.ws.WebSocketListener;
 import org.asynchttpclient.ws.WebSocketUpgradeHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UndertowWsProducerRouteRestartTest extends BaseUndertowTest {
 
+    private static final Logger LOG = LoggerFactory.getLogger(UndertowWsProducerRouteRestartTest.class);
+
     private static final String ROUTE_ID = UndertowWsProducerRouteRestartTest.class.getSimpleName();
 
-    @Produce(uri = "direct:shop")
+    @Produce("direct:shop")
     private ProducerTemplate producer;
 
     @Test
     public void testWSSuspendResumeRoute() throws Exception {
-        context.suspendRoute(ROUTE_ID);
-        context.resumeRoute(ROUTE_ID);
+        context.getRouteController().resumeRoute(ROUTE_ID);
+        context.getRouteController().resumeRoute(ROUTE_ID);
         doTestWSHttpCall();
     }
 
     @Test
     public void testWSStopStartRoute() throws Exception {
-        context.stopRoute(ROUTE_ID);
-        context.startRoute(ROUTE_ID);
+        context.getRouteController().stopRoute(ROUTE_ID);
+        context.getRouteController().startRoute(ROUTE_ID);
         doTestWSHttpCall();
     }
 
@@ -58,38 +65,38 @@ public class UndertowWsProducerRouteRestartTest extends BaseUndertowTest {
     public void testWSRemoveAddRoute() throws Exception {
         context.removeRoute(ROUTE_ID);
         context.addRoutes(createRouteBuilder());
-        context.startRoute(ROUTE_ID);
+        context.getRouteController().startRoute(ROUTE_ID);
         doTestWSHttpCall();
     }
 
     private void doTestWSHttpCall() throws Exception {
-        final List<Object> received = new ArrayList<Object>();
+        final List<Object> received = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
         AsyncHttpClient c = new DefaultAsyncHttpClient();
 
         WebSocket websocket = c.prepareGet("ws://localhost:" + getPort() + "/shop")
-            .execute(new WebSocketUpgradeHandler.Builder().addWebSocketListener(new WebSocketListener() {
-                @Override
-                public void onTextFrame(String message, boolean finalFragment, int rsv) {
-                    received.add(message);
-                    log.info("received --> " + message);
-                    latch.countDown();
-                }
+                .execute(new WebSocketUpgradeHandler.Builder().addWebSocketListener(new WebSocketListener() {
+                    @Override
+                    public void onTextFrame(String message, boolean finalFragment, int rsv) {
+                        received.add(message);
+                        LOG.info("received --> " + message);
+                        latch.countDown();
+                    }
 
-                @Override
-                public void onOpen(WebSocket websocket) {
-                }
+                    @Override
+                    public void onOpen(WebSocket websocket) {
+                    }
 
-                @Override
-                public void onClose(WebSocket websocket, int code, String reason) {
-                }
+                    @Override
+                    public void onClose(WebSocket websocket, int code, String reason) {
+                    }
 
-                @Override
-                public void onError(Throwable t) {
-                    t.printStackTrace();
-                }
-            }).build()).get();
+                    @Override
+                    public void onError(Throwable t) {
+                        LOG.warn("Unhandled exception: {}", t.getMessage(), t);
+                    }
+                }).build()).get();
 
         // Send message to the direct endpoint
         producer.sendBodyAndHeader("Beer on stock at Apache Mall", UndertowConstants.SEND_TO_ALL, "true");

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ package org.apache.camel.component.websocket;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -35,7 +36,7 @@ public class WebsocketComponentServlet extends WebSocketServlet {
     private WebsocketConsumer consumer;
     private String pathSpec;
 
-    private ConcurrentMap<String, WebsocketConsumer> consumers = new ConcurrentHashMap<String, WebsocketConsumer>();
+    private ConcurrentMap<String, WebsocketConsumer> consumers = new ConcurrentHashMap<>();
     private Map<String, WebSocketFactory> socketFactory;
 
     public WebsocketComponentServlet(NodeSynchronization sync, String pathSpec, Map<String, WebSocketFactory> socketFactory) {
@@ -71,8 +72,9 @@ public class WebsocketComponentServlet extends WebSocketServlet {
         }
 
         WebSocketFactory factory = socketFactory.get(protocolKey);
-        return factory.newInstance(request, protocolKey, 
-                (consumer != null && consumer.getEndpoint() != null) ? WebsocketComponent.createPathSpec(consumer.getEndpoint().getResourceUri()) : null,
+        return factory.newInstance(request, protocolKey,
+                (consumer != null && consumer.getEndpoint() != null)
+                        ? WebsocketComponent.createPathSpec(consumer.getEndpoint().getResourceUri()) : null,
                 sync, consumer);
     }
 

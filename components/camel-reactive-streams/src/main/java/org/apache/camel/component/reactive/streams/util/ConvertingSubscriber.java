@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,7 +20,7 @@ import java.util.Objects;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultExchange;
+import org.apache.camel.support.DefaultExchange;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -29,14 +29,18 @@ import org.reactivestreams.Subscription;
  */
 public class ConvertingSubscriber<R> implements Subscriber<R> {
 
-    private Subscriber<Exchange> delegate;
+    private final Class<R> type;
 
-    private CamelContext context;
+    private final Subscriber<Exchange> delegate;
 
-    public ConvertingSubscriber(Subscriber<Exchange> delegate, CamelContext context) {
+    private final CamelContext context;
+
+    public ConvertingSubscriber(Subscriber<Exchange> delegate, CamelContext context, Class<R> type) {
         Objects.requireNonNull(delegate, "delegate subscriber cannot be null");
+        Objects.requireNonNull(type, "type cannot be null");
         this.delegate = delegate;
         this.context = context;
+        this.type = type;
     }
 
     @Override
@@ -55,7 +59,7 @@ public class ConvertingSubscriber<R> implements Subscriber<R> {
         }
 
         Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setBody(r);
+        exchange.getIn().setBody(r, type);
         delegate.onNext(exchange);
     }
 

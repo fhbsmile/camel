@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 package org.apache.camel.component.wordpress.api.service.impl;
 
 import java.util.List;
+
 import org.apache.camel.component.wordpress.api.model.Context;
 import org.apache.camel.component.wordpress.api.model.Page;
 import org.apache.camel.component.wordpress.api.model.PageSearchCriteria;
@@ -27,15 +28,18 @@ import org.apache.camel.component.wordpress.api.service.spi.PostsSPI;
 import org.apache.cxf.jaxrs.client.JAXRSClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * The {@link WordpressServicePosts} implementation. Aggregates the {@link PostsSPI} interface using {@link JAXRSClientFactory} to make the API calls.
+ * The {@link WordpressServicePosts} implementation. Aggregates the {@link PostsSPI} interface using
+ * {@link JAXRSClientFactory} to make the API calls.
  * 
  * @since 0.0.1
  */
-public class WordpressServicePagesAdapter extends AbstractWordpressCrudServiceAdapter<PagesSPI, Page, PageSearchCriteria> implements WordpressServicePages {
+public class WordpressServicePagesAdapter extends AbstractWordpressCrudServiceAdapter<PagesSPI, Page, PageSearchCriteria>
+        implements WordpressServicePages {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WordpressServicePagesAdapter.class);
 
@@ -53,8 +57,10 @@ public class WordpressServicePagesAdapter extends AbstractWordpressCrudServiceAd
     public List<Page> list(PageSearchCriteria c) {
         LOGGER.debug("Calling list pages: searchCriteria {}", c);
         checkNotNull(c, "Please provide a search criteria");
-        return getSpi().list(this.getApiVersion(), c.getContext(), c.getPage(), c.getPerPage(), c.getSearch(), c.getAfter(), c.getAuthor(), c.getAuthorExclude(), c.getBefore(), c.getExclude(),
-                             c.getInclude(), c.getMenuOrder(), c.getOffset(), c.getOrder(), c.getOrderBy(), c.getParent(), c.getParentExclude(), c.getSlug(), c.getStatus(), c.getFilter());
+        return getSpi().list(this.getApiVersion(), c.getContext(), c.getPage(), c.getPerPage(), c.getSearch(), c.getAfter(),
+                c.getAuthor(), c.getAuthorExclude(), c.getBefore(), c.getExclude(),
+                c.getInclude(), c.getMenuOrder(), c.getOffset(), c.getOrder(), c.getOrderBy(), c.getParent(),
+                c.getParentExclude(), c.getSlug(), c.getStatus(), c.getFilter());
     }
     // @formatter:on
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,8 @@
  */
 package org.apache.camel.component.vertx;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -28,11 +28,10 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.impl.VertxFactoryImpl;
 import io.vertx.core.spi.VertxFactory;
 import org.apache.camel.CamelContext;
-import org.apache.camel.ComponentConfiguration;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
-import org.apache.camel.spi.EndpointCompleter;
 import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 import org.apache.camel.util.ObjectHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,26 +39,31 @@ import org.slf4j.LoggerFactory;
 /**
  * A Camel Component for <a href="http://vertx.io/">vert.x</a>
  */
-public class VertxComponent extends UriEndpointComponent implements EndpointCompleter {
+@Component("vertx")
+public class VertxComponent extends DefaultComponent {
+
     private static final Logger LOG = LoggerFactory.getLogger(VertxComponent.class);
 
     private volatile boolean createdVertx;
 
     @Metadata(label = "advanced")
     private VertxFactory vertxFactory;
+    @Metadata
     private Vertx vertx;
+    @Metadata
     private String host;
+    @Metadata
     private int port;
     @Metadata(defaultValue = "60")
     private int timeout = 60;
+    @Metadata
     private VertxOptions vertxOptions;
 
     public VertxComponent() {
-        super(VertxEndpoint.class);
     }
 
     public VertxComponent(CamelContext context) {
-        super(context, VertxEndpoint.class);
+        super(context);
     }
 
     public VertxFactory getVertxFactory() {
@@ -130,15 +134,23 @@ public class VertxComponent extends UriEndpointComponent implements EndpointComp
         this.timeout = timeout;
     }
 
+    @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         VertxEndpoint endpoint = new VertxEndpoint(uri, this, remaining);
         setProperties(endpoint, parameters);
         return endpoint;
     }
 
-    public List<String> completeEndpointPath(ComponentConfiguration componentConfiguration, String text) {
-        // TODO is there any way to find out the list of endpoint names in vertx?
-        return null;
+    @Override
+    protected void doInit() throws Exception {
+        super.doInit();
+
+        if (vertx == null) {
+            Set<Vertx> vertxes = getCamelContext().getRegistry().findByType(Vertx.class);
+            if (vertxes.size() == 1) {
+                vertx = vertxes.iterator().next();
+            }
+        }
     }
 
     @Override
@@ -176,7 +188,8 @@ public class VertxComponent extends UriEndpointComponent implements EndpointComp
                     @Override
                     public void handle(AsyncResult<Vertx> event) {
                         if (event.cause() != null) {
-                            LOG.warn("Error creating Clustered Vertx " + host + ":" + port + " due " + event.cause().getMessage(), event.cause());
+                            LOG.warn("Error creating Clustered Vertx {}:{} due {}", host, port,
+                                    event.cause().getMessage(), event.cause());
                         } else if (event.succeeded()) {
                             vertx = event.result();
                             LOG.info("EventBus is ready: {}", vertx);
@@ -197,7 +210,7 @@ public class VertxComponent extends UriEndpointComponent implements EndpointComp
                 latch.await(timeout, TimeUnit.SECONDS);
             }
         } else {
-            LOG.debug("Using Vert.x instance set on the component level.");
+            LOG.debug("Using Vertx instance set on the component level.");
         }
     }
 

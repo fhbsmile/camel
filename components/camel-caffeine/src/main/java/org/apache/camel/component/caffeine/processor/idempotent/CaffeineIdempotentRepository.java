@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,15 +18,14 @@ package org.apache.camel.component.caffeine.processor.idempotent;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-
 import org.apache.camel.api.management.ManagedAttribute;
 import org.apache.camel.api.management.ManagedOperation;
 import org.apache.camel.api.management.ManagedResource;
 import org.apache.camel.spi.IdempotentRepository;
-import org.apache.camel.support.ServiceSupport;
+import org.apache.camel.support.service.ServiceSupport;
 
 @ManagedResource(description = "Caffeine based message id repository")
-public class CaffeineIdempotentRepository extends ServiceSupport implements IdempotentRepository<String> {
+public class CaffeineIdempotentRepository extends ServiceSupport implements IdempotentRepository {
 
     private String cacheName;
     private Cache<String, Boolean> cache;
@@ -86,7 +85,7 @@ public class CaffeineIdempotentRepository extends ServiceSupport implements Idem
             cache = builder.build();
         }
     }
-    
+
     protected Cache getCache() {
         return this.cache;
     }

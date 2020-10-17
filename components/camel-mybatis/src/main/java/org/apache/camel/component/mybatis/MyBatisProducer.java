@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,18 +20,15 @@ import java.util.Iterator;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultProducer;
-import org.apache.camel.util.ExchangeHelper;
-import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.support.DefaultProducer;
+import org.apache.camel.support.ExchangeHelper;
+import org.apache.camel.support.ObjectHelper;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @version
- */
 public class MyBatisProducer extends DefaultProducer {
 
     private static final Logger LOG = LoggerFactory.getLogger(MyBatisProducer.class);
@@ -44,6 +41,7 @@ public class MyBatisProducer extends DefaultProducer {
         this.statement = endpoint.getStatement();
     }
 
+    @Override
     public void process(Exchange exchange) throws Exception {
         SqlSession session;
 
@@ -56,32 +54,32 @@ public class MyBatisProducer extends DefaultProducer {
 
         try {
             switch (endpoint.getStatementType()) {
-            case SelectOne:
-                doSelectOne(exchange, session);
-                break;
-            case SelectList:
-                doSelectList(exchange, session);
-                break;
-            case Insert:
-                doInsert(exchange, session);
-                break;
-            case InsertList:
-                doInsertList(exchange, session);
-                break;
-            case Update:
-                doUpdate(exchange, session);
-                break;
-            case UpdateList:
-                doUpdateList(exchange, session);
-                break;
-            case Delete:
-                doDelete(exchange, session);
-                break;
-            case DeleteList:
-                doDeleteList(exchange, session);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported statementType: " + endpoint.getStatementType());
+                case SelectOne:
+                    doSelectOne(exchange, session);
+                    break;
+                case SelectList:
+                    doSelectList(exchange, session);
+                    break;
+                case Insert:
+                    doInsert(exchange, session);
+                    break;
+                case InsertList:
+                    doInsertList(exchange, session);
+                    break;
+                case Update:
+                    doUpdate(exchange, session);
+                    break;
+                case UpdateList:
+                    doUpdateList(exchange, session);
+                    break;
+                case Delete:
+                    doDelete(exchange, session);
+                    break;
+                case DeleteList:
+                    doDeleteList(exchange, session);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported statementType: " + endpoint.getStatementType());
             }
             // flush the batch statements and commit the database connection
             session.commit();
@@ -243,7 +241,8 @@ public class MyBatisProducer extends DefaultProducer {
             MappedStatement ms = session.getConfiguration().getMappedStatement(statement);
             if (ms != null && ms.getStatementType() == org.apache.ibatis.mapping.StatementType.CALLABLE) {
                 if (result == null) {
-                    LOG.trace("Setting result as existing body as MyBatis statement type is Callable, and there was no result.");
+                    LOG.trace(
+                            "Setting result as existing body as MyBatis statement type is Callable, and there was no result.");
                     answer.setBody(exchange.getIn().getBody());
                 } else {
                     if (outputHeader != null) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,17 +16,22 @@
  */
 package org.apache.camel.component.rabbitmq.qpid;
 
-import org.apache.camel.component.rabbitmq.RabbitMQRequeueUnhandledExceptionIntTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.camel.component.rabbitmq.integration.RabbitMQRequeueUnhandledExceptionIntTest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public class RabbitMQRequeueUnhandledExceptionQpidTest extends RabbitMQRequeueUnhandledExceptionIntTest {
-    @BeforeClass
+    @Override
+    public boolean isStartDocker() {
+        return false;
+    }
+
+    @BeforeAll
     public static void startBroker() throws Exception {
         systemLauncher.startup(createQpidSystemConfig());
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopBroker() {
         systemLauncher.shutdown();
     }

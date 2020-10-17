@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,20 +19,18 @@ package org.apache.camel.component.file.remote;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
 public class FtpConsumerMaxMessagesPerPollTest extends FtpServerTestSupport {
 
     private String getFtpUrl() {
-        return "ftp://admin@localhost:" + getPort() + "/poll/?password=admin&delay=6000&delete=true&sortBy=file:name&maxMessagesPerPoll=2";
+        return "ftp://admin@localhost:" + getPort()
+               + "/poll/?password=admin&delay=6000&delete=true&sortBy=file:name&maxMessagesPerPoll=2";
     }
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         prepareFtpServer();
@@ -41,7 +39,7 @@ public class FtpConsumerMaxMessagesPerPollTest extends FtpServerTestSupport {
     @Test
     public void testMaxMessagesPerPoll() throws Exception {
         // start route
-        context.startRoute("foo");
+        context.getRouteController().startRoute("foo");
 
         MockEndpoint mock = getMockEndpoint("mock:result");
         mock.expectedBodiesReceived("Bye World", "Godday World");
@@ -56,13 +54,14 @@ public class FtpConsumerMaxMessagesPerPollTest extends FtpServerTestSupport {
 
         assertMockEndpointsSatisfied();
     }
-    
+
     private void prepareFtpServer() throws Exception {
         sendFile(getFtpUrl(), "Bye World", "bye.txt");
         sendFile(getFtpUrl(), "Hello World", "hello.txt");
         sendFile(getFtpUrl(), "Godday World", "godday.txt");
     }
 
+    @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {

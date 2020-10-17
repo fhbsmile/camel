@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,20 +18,18 @@ package org.apache.camel.component.http;
 
 import java.util.Optional;
 
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpMethod;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
 
 public final class HttpUtil {
     private HttpUtil() {
     }
 
-    public static Optional<Header> responseHeader(HttpMethod method, String headerName) {
-        return Optional.ofNullable(method.getResponseHeader(headerName));
+    public static Optional<Header> responseHeader(HttpResponse response, String headerName) {
+        return Optional.ofNullable(response.getFirstHeader(headerName));
     }
 
-    public static Optional<String> responseHeaderValue(HttpMethod method, String headerName) {
-        return responseHeader(method, headerName)
-            .map(m -> Optional.ofNullable(m.getValue()))
-            .orElseGet(Optional::empty);
+    public static Optional<String> responseHeaderValue(HttpResponse response, String headerName) {
+        return responseHeader(response, headerName).map(Header::getValue);
     }
 }

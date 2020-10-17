@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,19 +20,20 @@ import java.util.Map;
 
 import com.notnoop.apns.ApnsService;
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
 import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
 
 /**
  * For sending notifications to Apple iOS devices
  */
-public class ApnsComponent extends UriEndpointComponent {
+@Component("apns")
+public class ApnsComponent extends DefaultComponent {
 
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private ApnsService apnsService;
 
     public ApnsComponent() {
-        super(ApnsEndpoint.class);
     }
 
     public ApnsComponent(ApnsService apnsService) {
@@ -40,6 +41,7 @@ public class ApnsComponent extends UriEndpointComponent {
         this.apnsService = apnsService;
     }
 
+    @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         ApnsEndpoint endpoint = new ApnsEndpoint(uri, this);
         endpoint.setName(remaining);

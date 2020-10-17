@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,15 +16,14 @@
  */
 package org.apache.camel.spring;
 
-
-import org.apache.camel.CamelContext;
 import org.apache.camel.FailedToCreateRouteException;
-import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.util.IOHelper;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class CircularComponentCreationTest {
     @Test
@@ -32,9 +31,9 @@ public class CircularComponentCreationTest {
         try {
             doTest("org/apache/camel/spring/CircularComponentCreationSimpleTest.xml");
 
-            Assert.fail("Exception should have been thrown");
-        } catch (RuntimeCamelException e) {
-            Assert.assertTrue(e.getCause() instanceof FailedToCreateRouteException);
+            fail("Exception should have been thrown");
+        } catch (Exception e) {
+            assertTrue(e instanceof FailedToCreateRouteException);
         }
     }
 
@@ -49,10 +48,9 @@ public class CircularComponentCreationTest {
 
     private void doTest(String path) {
         AbstractXmlApplicationContext applicationContext = null;
-        CamelContext camelContext = null;
         try {
             applicationContext = new ClassPathXmlApplicationContext(path);
-            camelContext = new SpringCamelContext(applicationContext);
+            new SpringCamelContext(applicationContext);
         } finally {
             IOHelper.close(applicationContext);
         }

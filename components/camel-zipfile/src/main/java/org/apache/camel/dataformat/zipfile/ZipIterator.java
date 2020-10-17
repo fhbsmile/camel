@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,14 +27,14 @@ import java.util.zip.ZipInputStream;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.RuntimeCamelException;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultMessage;
 import org.apache.camel.util.IOHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Iterator which can go through the ZipInputStream according to ZipEntry
- * Based on the thread <a href="http://camel.465427.n5.nabble.com/zip-file-best-practices-td5713437.html">zip file best practices</a>
+ * The Iterator which can go through the ZipInputStream according to ZipEntry Based on the thread
+ * <a href="http://camel.465427.n5.nabble.com/zip-file-best-practices-td5713437.html">zip file best practices</a>
  */
 public class ZipIterator implements Iterator<Message>, Closeable {
     static final Logger LOGGER = LoggerFactory.getLogger(ZipIterator.class);
@@ -74,7 +74,6 @@ public class ZipIterator implements Iterator<Message>, Closeable {
             }
             return availableDataInCurrentEntry;
         } catch (IOException exception) {
-            //Just wrap the IOException as CamelRuntimeException
             throw new RuntimeCamelException(exception);
         }
     }
@@ -112,7 +111,6 @@ public class ZipIterator implements Iterator<Message>, Closeable {
                 return null;
             }
         } catch (IOException exception) {
-            //Just wrap the IOException as CamelRuntimeException
             throw new RuntimeCamelException(exception);
         }
     }

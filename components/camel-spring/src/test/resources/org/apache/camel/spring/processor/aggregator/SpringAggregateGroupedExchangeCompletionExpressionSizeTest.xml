@@ -27,16 +27,18 @@
     <camelContext xmlns="http://camel.apache.org/schema/spring">
         <route>
             <from uri="direct:start"/>
-            <aggregate groupExchanges="true">
+            <aggregate strategyRef="aggregatorStrategy" eagerCheckCompletion="true">
                 <correlationExpression>
                     <constant>true</constant>
                 </correlationExpression>
-                <completionSize>
+                <completionSizeExpression>
                     <header>size</header>
-                </completionSize>
+                </completionSizeExpression>
                 <to uri="mock:result"/>
             </aggregate>
         </route>
     </camelContext>
+
+    <bean id="aggregatorStrategy" class="org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy"/>
 
 </beans>

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,10 +17,8 @@
 package org.apache.camel.component.crypto.cms.exception;
 
 /**
- * This exception is thrown if the verification of a SignedData signature fails
- * because the hash calculated over the content does not match to the value of
- * signed MessageDigest attribute value.
- * 
+ * This exception is thrown if the verification of a SignedData signature fails because the hash calculated over the
+ * content does not match to the value of signed MessageDigest attribute value.
  */
 public class CryptoCmsSignatureInvalidContentHashException extends CryptoCmsSignatureException {
 

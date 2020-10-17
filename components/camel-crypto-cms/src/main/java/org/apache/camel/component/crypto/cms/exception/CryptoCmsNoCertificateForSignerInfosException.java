@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,8 +17,8 @@
 package org.apache.camel.component.crypto.cms.exception;
 
 /**
- * Is thrown when the signature validation fails because no certificate is found
- * in the keystore which corresponds to the sent signer infos.
+ * Is thrown when the signature validation fails because no certificate is found in the keystore which corresponds to
+ * the sent signer infos.
  */
 public class CryptoCmsNoCertificateForSignerInfosException extends CryptoCmsSignatureException {
 

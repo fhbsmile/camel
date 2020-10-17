@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HL7MLLPDecoder that is aware that a HL7 message can span several buffers.
- * In addition, it avoids rescanning packets by keeping state in the IOSession.
+ * HL7MLLPDecoder that is aware that a HL7 message can span several buffers. In addition, it avoids rescanning packets
+ * by keeping state in the IOSession.
  */
 class HL7MLLPDecoder extends CumulativeProtocolDecoder {
 
@@ -64,7 +64,8 @@ class HL7MLLPDecoder extends CumulativeProtocolDecoder {
                     // Save the current buffer pointers and reset them to surround the identifier message
                     int currentPosition = in.position();
                     int currentLimit = in.limit();
-                    LOG.debug("Message ends at position {} with length {}", previousPosition, previousPosition - state.start() + 1);
+                    LOG.debug("Message ends at position {} with length {}", previousPosition,
+                            previousPosition - state.start() + 1);
                     in.position(state.start());
                     in.limit(currentPosition);
                     LOG.debug("Set start to position {} and limit to {}", in.position(), in.limit());
@@ -101,7 +102,7 @@ class HL7MLLPDecoder extends CumulativeProtocolDecoder {
             // Could not find a complete message in the buffer.
             // Reset to the initial position (just as nothing had been read yet)
             // and return false so that this method is called again with more data.
-            LOG.debug("No complete message yet at position {} ", in.position());
+            LOG.debug("No complete message yet at position {}", in.position());
             state.markCurrent(in.position());
             in.position(0);
         }
@@ -160,8 +161,8 @@ class HL7MLLPDecoder extends CumulativeProtocolDecoder {
             CharsetDecoder decoder = (CharsetDecoder) session.getAttribute(CHARSET_DECODER);
             if (decoder == null) {
                 decoder = config.getCharset().newDecoder()
-                    .onMalformedInput(config.getMalformedInputErrorAction())
-                    .onUnmappableCharacter(config.getUnmappableCharacterErrorAction());
+                        .onMalformedInput(config.getMalformedInputErrorAction())
+                        .onUnmappableCharacter(config.getUnmappableCharacterErrorAction());
                 session.setAttribute(CHARSET_DECODER, decoder);
             }
             return decoder;

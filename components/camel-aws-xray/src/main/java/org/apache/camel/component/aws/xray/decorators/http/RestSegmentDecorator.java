@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -67,7 +67,7 @@ public class RestSegmentDecorator extends AbstractHttpSegmentDecorator {
                 if (index != -1) {
                     path = path.substring(0, index);
                 }
-                path = path.replaceAll(":", "");
+                path = path.replace(":", "");
                 try {
                     path = URLDecoder.decode(path, "UTF-8");
                 } catch (UnsupportedEncodingException e) {

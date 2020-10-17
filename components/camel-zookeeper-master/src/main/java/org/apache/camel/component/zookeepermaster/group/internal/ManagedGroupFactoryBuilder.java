@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,8 +18,10 @@ package org.apache.camel.component.zookeepermaster.group.internal;
 
 import java.util.concurrent.Callable;
 
-import org.apache.camel.spi.ClassResolver;
-import org.apache.camel.util.IntrospectionSupport;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ExtendedCamelContext;
+import org.apache.camel.spi.BeanIntrospection;
+import org.apache.camel.support.ObjectHelper;
 import org.apache.curator.framework.CuratorFramework;
 
 public final class ManagedGroupFactoryBuilder {
@@ -27,18 +29,22 @@ public final class ManagedGroupFactoryBuilder {
     private ManagedGroupFactoryBuilder() {
     }
 
-    public static ManagedGroupFactory create(CuratorFramework curator,
-                                             ClassLoader loader,
-                                             ClassResolver resolver,
-                                             Callable<CuratorFramework> factory) throws Exception {
+    public static ManagedGroupFactory create(
+            CuratorFramework curator,
+            ClassLoader loader,
+            CamelContext camelContext,
+            Callable<CuratorFramework> factory)
+            throws Exception {
         if (curator != null) {
             return new StaticManagedGroupFactory(curator, false);
         }
         try {
-            Class<?> clazz = resolver.resolveClass("org.apache.camel.component.zookeepermaster.group.internal.osgi.OsgiManagedGroupFactory");
+            Class<?> clazz = camelContext.getClassResolver()
+                    .resolveClass("org.apache.camel.component.zookeepermaster.group.internal.osgi.OsgiManagedGroupFactory");
             if (clazz != null) {
-                Object instance = clazz.newInstance();
-                IntrospectionSupport.setProperty(instance, "classLoader", loader);
+                Object instance = ObjectHelper.newInstance(clazz);
+                BeanIntrospection beanIntrospection = camelContext.adapt(ExtendedCamelContext.class).getBeanIntrospection();
+                beanIntrospection.setProperty(camelContext, instance, "classLoader", loader);
                 return (ManagedGroupFactory) instance;
             }
         } catch (Throwable e) {

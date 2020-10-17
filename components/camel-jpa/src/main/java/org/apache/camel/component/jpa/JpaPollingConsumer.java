@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -32,8 +33,8 @@ import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.PollingConsumerSupport;
-import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.RuntimeCamelException;
+import org.apache.camel.support.PollingConsumerSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.TransactionStatus;
@@ -44,7 +45,8 @@ import static org.apache.camel.component.jpa.JpaHelper.getTargetEntityManager;
 
 public class JpaPollingConsumer extends PollingConsumerSupport {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JpaProducer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JpaPollingConsumer.class);
+
     private transient ExecutorService executorService;
     private final EntityManagerFactory entityManagerFactory;
     private final TransactionTemplate transactionTemplate;
@@ -200,7 +202,7 @@ public class JpaPollingConsumer extends PollingConsumerSupport {
         try {
             return future.get(timeout, TimeUnit.MILLISECONDS);
         } catch (ExecutionException | InterruptedException e) {
-            throw ObjectHelper.wrapRuntimeCamelException(e);
+            throw RuntimeCamelException.wrapRuntimeCamelException(e);
         } catch (TimeoutException e) {
             // ignore as we hit timeout then return null
         }
@@ -209,11 +211,14 @@ public class JpaPollingConsumer extends PollingConsumerSupport {
     }
 
     @Override
-    protected void doStart() throws Exception {
+    protected void doInit() throws Exception {
+        super.doInit();
+
         if (queryFactory == null) {
             queryFactory = createQueryFactory();
             if (queryFactory == null) {
-                throw new IllegalArgumentException("No queryType property configured on this consumer, nor an entityType configured on the endpoint so cannot consume");
+                throw new IllegalArgumentException(
+                        "No queryType property configured on this consumer, nor an entityType configured on the endpoint so cannot consume");
             }
         }
     }

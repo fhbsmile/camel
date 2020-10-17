@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,11 +19,9 @@ package org.apache.camel.component.crypto.cms;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 
 public class CryptoCmsProducer extends DefaultProducer {
-    // private static final Logger LOG =
-    // LoggerFactory.getLogger(CmsProducer.class);
 
     private Processor processor;
 
@@ -33,15 +31,8 @@ public class CryptoCmsProducer extends DefaultProducer {
     }
 
     @Override
-    public void process(Exchange exchange) throws Exception { // NOPMD a
-                                                              // processor can
-                                                              // throw any
-                                                              // exception
-        // try {
+    public void process(Exchange exchange) throws Exception {
         processor.process(exchange);
-        // } catch (Exception e) {
-        // exchange.setException(e);
-        // }
     }
 
 }

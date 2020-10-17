@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@ package org.apache.camel.dataformat.bindy.format.factories;
 
 import java.math.BigDecimal;
 import java.util.Locale;
+
 import org.apache.camel.dataformat.bindy.Format;
 import org.apache.camel.dataformat.bindy.FormattingOptions;
 import org.apache.camel.dataformat.bindy.format.AbstractNumberFormat;
@@ -38,7 +39,8 @@ public class FloatFormatFactory extends AbstractFormatFactory {
 
     @Override
     public Format<?> build(FormattingOptions formattingOptions) {
-        return new FloatFormat(formattingOptions.isImpliedDecimalSeparator(),
+        return new FloatFormat(
+                formattingOptions.isImpliedDecimalSeparator(),
                 formattingOptions.getPrecision(),
                 formattingOptions.getLocale());
     }
@@ -49,12 +51,14 @@ public class FloatFormatFactory extends AbstractFormatFactory {
             super(impliedDecimalPosition, precision, locale);
         }
 
+        @Override
         public String format(Float object) throws Exception {
             return !super.hasImpliedDecimalPosition()
                     ? super.getFormat().format(object)
                     : super.getFormat().format(object * super.getMultiplier());
         }
 
+        @Override
         public Float parse(String string) throws Exception {
             Float value;
             if (!super.hasImpliedDecimalPosition()) {

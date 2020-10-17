@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,7 +24,7 @@ import org.apache.camel.Message;
 import org.apache.camel.component.openstack.common.OpenstackConstants;
 import org.apache.camel.component.openstack.keystone.KeystoneConstants;
 import org.apache.camel.component.openstack.keystone.KeystoneEndpoint;
-import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.StringHelper;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.ActionResponse;
@@ -41,23 +41,23 @@ public class UserProducer extends AbstractKeystoneProducer {
     public void process(Exchange exchange) throws Exception {
         final String operation = getOperation(exchange);
         switch (operation) {
-        case OpenstackConstants.CREATE:
-            doCreate(exchange);
-            break;
-        case OpenstackConstants.GET:
-            doGet(exchange);
-            break;
-        case OpenstackConstants.GET_ALL:
-            doGetAll(exchange);
-            break;
-        case OpenstackConstants.UPDATE:
-            doUpdate(exchange);
-            break;
-        case OpenstackConstants.DELETE:
-            doDelete(exchange);
-            break;
-        default:
-            throw new IllegalArgumentException("Unsupported operation " + operation);
+            case OpenstackConstants.CREATE:
+                doCreate(exchange);
+                break;
+            case OpenstackConstants.GET:
+                doGet(exchange);
+                break;
+            case OpenstackConstants.GET_ALL:
+                doGetAll(exchange);
+                break;
+            case OpenstackConstants.UPDATE:
+                doUpdate(exchange);
+                break;
+            case OpenstackConstants.DELETE:
+                doDelete(exchange);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
@@ -69,8 +69,9 @@ public class UserProducer extends AbstractKeystoneProducer {
 
     private void doGet(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String id = msg.getHeader(OpenstackConstants.ID, msg.getHeader(KeystoneConstants.USER_ID, String.class), String.class);
-        ObjectHelper.notEmpty(id, "User ID");
+        final String id
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(KeystoneConstants.USER_ID, String.class), String.class);
+        StringHelper.notEmpty(id, "User ID");
         final User result = osV3Client.identity().users().get(id);
         msg.setBody(result);
     }
@@ -89,10 +90,11 @@ public class UserProducer extends AbstractKeystoneProducer {
 
     private void doDelete(Exchange exchange) {
         final Message msg = exchange.getIn();
-        final String id = msg.getHeader(OpenstackConstants.ID, msg.getHeader(KeystoneConstants.USER_ID, String.class), String.class);
-        ObjectHelper.notEmpty(id, "User ID");
+        final String id
+                = msg.getHeader(OpenstackConstants.ID, msg.getHeader(KeystoneConstants.USER_ID, String.class), String.class);
+        StringHelper.notEmpty(id, "User ID");
         final ActionResponse response = osV3Client.identity().users().delete(id);
-        checkFailure(response, msg, "Delete user with ID " + id);
+        checkFailure(response, exchange, "Delete user with ID " + id);
     }
 
     private User messageToUser(Message message) {
@@ -102,7 +104,7 @@ public class UserProducer extends AbstractKeystoneProducer {
             Map headers = message.getHeaders();
             UserBuilder builder = Builders.user();
 
-            ObjectHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
+            StringHelper.notEmpty(message.getHeader(OpenstackConstants.NAME, String.class), "Name");
             builder.name(message.getHeader(OpenstackConstants.NAME, String.class));
 
             if (headers.containsKey(KeystoneConstants.DOMAIN_ID)) {
@@ -120,7 +122,6 @@ public class UserProducer extends AbstractKeystoneProducer {
             if (headers.containsKey(KeystoneConstants.EMAIL)) {
                 builder.email(message.getHeader(KeystoneConstants.EMAIL, String.class));
             }
-
 
             project = builder.build();
         }

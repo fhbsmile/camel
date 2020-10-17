@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,7 +28,7 @@ import org.apache.camel.component.docker.DockerComponent;
 import org.apache.camel.component.docker.DockerConstants;
 import org.apache.camel.component.docker.DockerEndpoint;
 import org.apache.camel.component.docker.DockerHelper;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,17 +46,18 @@ public class DockerStatsConsumer extends DefaultConsumer {
     public DockerStatsConsumer(DockerEndpoint endpoint, Processor processor) throws Exception {
         super(endpoint, processor);
         this.endpoint = endpoint;
-        this.component = (DockerComponent)endpoint.getComponent();
+        this.component = (DockerComponent) endpoint.getComponent();
     }
 
     @Override
     public DockerEndpoint getEndpoint() {
-        return (DockerEndpoint)super.getEndpoint();
+        return (DockerEndpoint) super.getEndpoint();
     }
 
     @Override
     protected void doStart() throws Exception {
-        String containerId = DockerHelper.getProperty(DockerConstants.DOCKER_CONTAINER_ID, endpoint.getConfiguration(), null, String.class);
+        String containerId = DockerHelper.getProperty(DockerConstants.DOCKER_CONTAINER_ID, endpoint.getConfiguration(), null,
+                String.class);
 
         this.statsCmd = DockerClientFactory.getDockerClient(component, endpoint.getConfiguration(), null).statsCmd(containerId);
         this.statsCmd.exec(new StatsCallback());
@@ -73,8 +74,9 @@ public class DockerStatsConsumer extends DefaultConsumer {
 
     protected class StatsCallback extends ResultCallbackTemplate<StatsCallback, Statistics> {
 
+        @Override
         public void onNext(Statistics statistics) {
-            LOGGER.debug("Received Docker Statistics Event: " + statistics);
+            LOGGER.debug("Received Docker Statistics Event: {}", statistics);
 
             final Exchange exchange = getEndpoint().createExchange();
             Message message = exchange.getIn();

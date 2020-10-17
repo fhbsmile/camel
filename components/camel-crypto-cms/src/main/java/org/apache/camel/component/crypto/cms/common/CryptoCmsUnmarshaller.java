@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -42,12 +42,12 @@ public abstract class CryptoCmsUnmarshaller implements Processor {
 
     @Override
     public void process(Exchange exchange) throws Exception { // NOPMD all
-                                                              // exceptions must
-                                                              // be caught to
-                                                              // react on
-                                                              // exception case
-                                                              // and re-thrown,
-                                                              // see code below
+                                                             // exceptions must
+                                                             // be caught to
+                                                             // react on
+                                                             // exception case
+                                                             // and re-thrown,
+                                                             // see code below
 
         InputStream stream = exchange.getIn().getMandatoryBody(InputStream.class);
         try {
@@ -56,7 +56,7 @@ public abstract class CryptoCmsUnmarshaller implements Processor {
             Message out = exchange.getOut();
             out.copyFrom(exchange.getIn());
 
-            if (config.isFromBase64(exchange)) {
+            if (config.isFromBase64()) {
                 stream = new Base64InputStream(stream);
             }
             Object result = unmarshalInternal(stream, exchange);

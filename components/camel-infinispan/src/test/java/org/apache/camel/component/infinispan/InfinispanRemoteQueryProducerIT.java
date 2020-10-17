@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,77 +19,60 @@ package org.apache.camel.component.infinispan;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.camel.BindToRegistry;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.client.hotrod.marshall.MarshallerUtil;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.protostream.sampledomain.User;
 import org.infinispan.protostream.sampledomain.marshallers.GenderMarshaller;
 import org.infinispan.protostream.sampledomain.marshallers.UserMarshaller;
-import org.infinispan.query.dsl.Query;
-import org.infinispan.query.dsl.QueryFactory;
-import org.infinispan.query.remote.client.MarshallerRegistration;
 import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
-import org.junit.Test;
+import org.infinispan.query.remote.client.impl.MarshallerRegistration;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.camel.component.infinispan.InfinispanConstants.OPERATION;
-import static org.apache.camel.component.infinispan.InfinispanConstants.QUERY;
 import static org.apache.camel.component.infinispan.InfinispanConstants.QUERY_BUILDER;
 import static org.apache.camel.component.infinispan.util.UserUtils.USERS;
 import static org.apache.camel.component.infinispan.util.UserUtils.createKey;
 import static org.apache.camel.component.infinispan.util.UserUtils.hasUser;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InfinispanRemoteQueryProducerIT extends CamelTestSupport {
 
-    private static final InfinispanQueryBuilder NO_RESULT_QUERY_BUILDER = new InfinispanQueryBuilder() {
-        @Override
-        public Query build(QueryFactory queryFactory) {
-            return queryFactory.from(User.class)
-                .having("name").like("%abc%")
-                .toBuilder().build();
-        }
-    };
+    @BindToRegistry("noResultQueryBuilder")
+    private static final InfinispanQueryBuilder NO_RESULT_QUERY_BUILDER = queryFactory -> queryFactory.from(User.class)
+            .having("name").like("%abc%").build();
 
-    private static final InfinispanQueryBuilder WITH_RESULT_QUERY_BUILDER = new InfinispanQueryBuilder() {
-        @Override
-        public Query build(QueryFactory queryFactory) {
-            return queryFactory.from(User.class)
-                .having("name").like("%A")
-                .toBuilder().build();
-        }
-    };
+    @BindToRegistry("withResultQueryBuilder")
+    private static final InfinispanQueryBuilder WITH_RESULT_QUERY_BUILDER = queryFactory -> queryFactory.from(User.class)
+            .having("name").like("%A").build();
 
+    @BindToRegistry("myCustomContainer")
     private RemoteCacheManager manager;
 
     @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry registry = super.createRegistry();
-        registry.bind("myCustomContainer", manager);
-        registry.bind("noResultQueryBuilder", NO_RESULT_QUERY_BUILDER);
-        registry.bind("withResultQueryBuilder", WITH_RESULT_QUERY_BUILDER);
-
-        return registry;
-    }
-
-    @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             @Override
             public void configure() {
                 from("direct:start")
-                    .to("infinispan:remote_query?cacheContainer=#myCustomContainer");
+                        .to("infinispan:remote_query?cacheContainer=#myCustomContainer");
                 from("direct:noQueryResults")
-                    .to("infinispan:remote_query?cacheContainer=#myCustomContainer&queryBuilder=#noResultQueryBuilder");
+                        .to("infinispan:remote_query?cacheContainer=#myCustomContainer&queryBuilder=#noResultQueryBuilder");
                 from("direct:queryWithResults")
-                    .to("infinispan:remote_query?cacheContainer=#myCustomContainer&queryBuilder=#withResultQueryBuilder");
+                        .to("infinispan:remote_query?cacheContainer=#myCustomContainer&queryBuilder=#withResultQueryBuilder");
             }
         };
     }
@@ -97,30 +80,30 @@ public class InfinispanRemoteQueryProducerIT extends CamelTestSupport {
     @Override
     protected void doPreSetup() throws IOException {
         ConfigurationBuilder builder = new ConfigurationBuilder()
-            .addServer()
+                .addServer()
                 .host("localhost")
                 .port(11222)
-            .marshaller(new ProtoStreamMarshaller());
+                .marshaller(new ProtoStreamMarshaller());
 
         manager = new RemoteCacheManager(builder.build());
 
-        RemoteCache<String, String> metadataCache = manager.getCache(ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+        RemoteCache<String, String> metadataCache
+                = manager.getCache(ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
         metadataCache.put(
-            "sample_bank_account/bank.proto",
-            Util.read(InfinispanRemoteQueryProducerIT.class.getResourceAsStream("/sample_bank_account/bank.proto"))
-        );
+                "sample_bank_account/bank.proto",
+                Util.read(InfinispanRemoteQueryProducerIT.class.getResourceAsStream("/sample_bank_account/bank.proto")));
 
-        MarshallerRegistration.registerMarshallers(ProtoStreamMarshaller.getSerializationContext(manager));
-        SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(manager);
+        MarshallerRegistration.init(MarshallerUtil.getSerializationContext(manager));
+        SerializationContext serCtx = MarshallerUtil.getSerializationContext(manager);
         serCtx.registerProtoFiles(FileDescriptorSource.fromResources("/sample_bank_account/bank.proto"));
         serCtx.registerMarshaller(new UserMarshaller());
         serCtx.registerMarshaller(new GenderMarshaller());
     }
 
     @Override
-    protected void doPostSetup() throws Exception {
+    protected void doPostSetup() {
         // pre-load data
-        RemoteCache<Object, Object> cache = manager.getCache("remote_query");
+        RemoteCache<Object, Object> cache = manager.administration().getOrCreateCache("remote_query", (String) null);
         assertNotNull(cache);
 
         cache.clear();
@@ -135,13 +118,9 @@ public class InfinispanRemoteQueryProducerIT extends CamelTestSupport {
     }
 
     @Test
-    public void producerQueryOperationWithoutQueryBuilder() throws Exception {
-        Exchange request = template.request("direct:start", new Processor() {
-            @Override
-            public void process(Exchange exchange) throws Exception {
-                exchange.getIn().setHeader(OPERATION, QUERY);
-            }
-        });
+    public void producerQueryOperationWithoutQueryBuilder() {
+        Exchange request = template.request("direct:start",
+                exchange -> exchange.getIn().setHeader(OPERATION, InfinispanOperation.QUERY));
         assertNull(request.getException());
 
         List<User> queryResult = request.getIn().getBody(List.class);
@@ -149,16 +128,16 @@ public class InfinispanRemoteQueryProducerIT extends CamelTestSupport {
     }
 
     @Test
-    public void producerQueryWithoutResult() throws Exception {
+    public void producerQueryWithoutResult() {
         producerQueryWithoutResult("direct:start", NO_RESULT_QUERY_BUILDER);
     }
 
     @Test
-    public void producerQueryWithoutResultAndQueryBuilderFromConfig() throws Exception {
+    public void producerQueryWithoutResultAndQueryBuilderFromConfig() {
         producerQueryWithoutResult("direct:noQueryResults", null);
     }
 
-    private void producerQueryWithoutResult(String endpoint, final InfinispanQueryBuilder builder) throws Exception {
+    private void producerQueryWithoutResult(String endpoint, final InfinispanQueryBuilder builder) {
         Exchange request = template.request(endpoint, createQueryProcessor(builder));
 
         assertNull(request.getException());
@@ -169,16 +148,16 @@ public class InfinispanRemoteQueryProducerIT extends CamelTestSupport {
     }
 
     @Test
-    public void producerQueryWithResult() throws Exception {
+    public void producerQueryWithResult() {
         producerQueryWithResult("direct:start", WITH_RESULT_QUERY_BUILDER);
     }
 
     @Test
-    public void producerQueryWithResultAndQueryBuilderFromConfig() throws Exception {
+    public void producerQueryWithResultAndQueryBuilderFromConfig() {
         producerQueryWithResult("direct:queryWithResults", null);
     }
 
-    private void producerQueryWithResult(String endpoint, final InfinispanQueryBuilder builder) throws Exception {
+    private void producerQueryWithResult(String endpoint, final InfinispanQueryBuilder builder) {
         Exchange request = template.request(endpoint, createQueryProcessor(builder));
         assertNull(request.getException());
 
@@ -190,13 +169,10 @@ public class InfinispanRemoteQueryProducerIT extends CamelTestSupport {
     }
 
     private Processor createQueryProcessor(final InfinispanQueryBuilder builder) {
-        return new Processor() {
-            @Override
-            public void process(Exchange exchange) throws Exception {
-                exchange.getIn().setHeader(OPERATION, QUERY);
-                if (builder != null) {
-                    exchange.getIn().setHeader(QUERY_BUILDER, builder);
-                }
+        return exchange -> {
+            exchange.getIn().setHeader(OPERATION, InfinispanOperation.QUERY);
+            if (builder != null) {
+                exchange.getIn().setHeader(QUERY_BUILDER, builder);
             }
         };
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,24 +16,20 @@
  */
 package org.apache.camel.component.infinispan;
 
+import org.apache.camel.BindToRegistry;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.JndiRegistry;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class InfinispanLocalConsumerCustomListenerIT extends InfinispanTestSupport {
     private static final String CUSTOM_CACHE_NAME = "customCacheName";
 
-    @EndpointInject(uri = "mock:result")
-    private MockEndpoint mockResult;
+    @BindToRegistry("myCustomListener")
+    MyEmbeddedCustomListener c = new MyEmbeddedCustomListener(CUSTOM_CACHE_NAME);
 
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry registry = super.createRegistry();
-        registry.bind("myCustomListener", new MyEmbeddedCustomListener(CUSTOM_CACHE_NAME));
-        return registry;
-    }
+    @EndpointInject("mock:result")
+    private MockEndpoint mockResult;
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
@@ -41,7 +37,7 @@ public class InfinispanLocalConsumerCustomListenerIT extends InfinispanTestSuppo
             @Override
             public void configure() {
                 fromF("infinispan:%s?cacheContainer=#cacheContainer&customListener=#myCustomListener", CUSTOM_CACHE_NAME)
-                    .to("mock:result");
+                        .to("mock:result");
             }
         };
     }
@@ -53,9 +49,9 @@ public class InfinispanLocalConsumerCustomListenerIT extends InfinispanTestSuppo
 
         basicCacheContainer.getCache(CUSTOM_CACHE_NAME).put("newKey", "newValue");
 
-        mockResult.message(0).outHeader(InfinispanConstants.IS_PRE).isEqualTo(true);
-        mockResult.message(0).outHeader(InfinispanConstants.KEY).isEqualTo("newKey");
-        mockResult.message(1).outHeader(InfinispanConstants.IS_PRE).isEqualTo(false);
+        mockResult.message(0).header(InfinispanConstants.IS_PRE).isEqualTo(true);
+        mockResult.message(0).header(InfinispanConstants.KEY).isEqualTo("newKey");
+        mockResult.message(1).header(InfinispanConstants.IS_PRE).isEqualTo(false);
 
         mockResult.assertIsSatisfied();
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -58,7 +58,7 @@ public class DropboxGetProducer extends DropboxProducer {
             exchange.getIn().setHeader(DropboxResultHeader.DOWNLOADED_FILES.name(), pathsExtracted.toString());
             exchange.getIn().setBody(map);
         }
-        LOG.debug("Downloaded: {}", result.toString());
+        LOG.debug("Downloaded: {}", result);
     }
 
 }

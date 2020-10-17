@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,9 +25,8 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.PubsubTestSupport;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.junit.jupiter.api.Test;
 
 public class AcknowledgementTest extends PubsubTestSupport {
 
@@ -35,23 +34,23 @@ public class AcknowledgementTest extends PubsubTestSupport {
     private static final String SUBSCRIPTION_NAME = "failureSub";
     private static Boolean fail = false;
 
-    @EndpointInject(uri = "direct:in")
+    @EndpointInject("direct:in")
     private Endpoint directIn;
 
-    @EndpointInject(uri = "google-pubsub:{{project.id}}:" + TOPIC_NAME)
+    @EndpointInject("google-pubsub:{{project.id}}:" + TOPIC_NAME)
     private Endpoint pubsubTopic;
 
-    @EndpointInject(uri = "google-pubsub:{{project.id}}:" + SUBSCRIPTION_NAME)
+    @EndpointInject("google-pubsub:{{project.id}}:" + SUBSCRIPTION_NAME + "?synchronousPull=true")
     private Endpoint pubsubSubscription;
 
-    @EndpointInject(uri = "mock:receiveResult")
+    @EndpointInject("mock:receiveResult")
     private MockEndpoint receiveResult;
 
-    @Produce(uri = "direct:in")
+    @Produce("direct:in")
     private ProducerTemplate producer;
 
-    @BeforeClass
-    public static void createTopicSubscription() throws Exception {
+    @Override
+    public void createTopicSubscription() {
         createTopicSubscriptionPair(TOPIC_NAME, SUBSCRIPTION_NAME);
     }
 
@@ -59,41 +58,26 @@ public class AcknowledgementTest extends PubsubTestSupport {
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() {
-                from(directIn)
-                        .routeId("Send_to_Fail")
-                        .to(pubsubTopic);
+                from(directIn).routeId("Send_to_Fail").to(pubsubTopic);
 
-                from(pubsubSubscription)
-                        .routeId("Fail_Receive")
-                        .autoStartup(true)
-                        .process(
-                                new Processor() {
-                                    @Override
-                                    public void process(Exchange exchange) throws Exception {
-                                        if (AcknowledgementTest.fail) {
-                                            Thread.sleep(750);
-                                            throw new Exception("fail");
-                                        }
-                                    }
-                                }
-                        )
-                        .to(receiveResult);
+                from(pubsubSubscription).routeId("Fail_Receive").autoStartup(true).process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        if (AcknowledgementTest.fail) {
+                            Thread.sleep(750);
+                            throw new Exception("fail");
+                        }
+                    }
+                }).to(receiveResult);
             }
         };
     }
 
     /**
-     * Testing acknowledgements.
-     * Three checks to be performed.
-     *
-     * Check 1 : Successful round trip.
-     * Message received and acknowledged.
-     * If the ACK fails for the first message, it will be delivered again for the second check and the body comparison will fail.
-     *
-     * Check 2 : Failure. As the route throws and exception and the message is NACK'ed.
-     * The message should remain in the PubSub Subscription for the third check.
-     *
-     * Check 3 : Success for the second message.
+     * Testing acknowledgements. Three checks to be performed. Check 1 : Successful round trip. Message received and
+     * acknowledged. If the ACK fails for the first message, it will be delivered again for the second check and the
+     * body comparison will fail. Check 2 : Failure. As the route throws and exception and the message is NACK'ed. The
+     * message should remain in the PubSub Subscription for the third check. Check 3 : Success for the second message.
      * The message received should match the second message sent.
      *
      * @throws Exception

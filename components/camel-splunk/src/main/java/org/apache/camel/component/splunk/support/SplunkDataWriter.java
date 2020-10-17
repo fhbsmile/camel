@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 
 import com.splunk.Args;
 import com.splunk.Service;
-
 import org.apache.camel.component.splunk.SplunkEndpoint;
 import org.apache.camel.component.splunk.event.SplunkEvent;
 import org.slf4j.Logger;
@@ -46,16 +45,18 @@ public abstract class SplunkDataWriter implements DataWriter {
 
     protected abstract Socket createSocket(Service service) throws IOException;
 
+    @Override
     public void write(SplunkEvent event) throws Exception {
         doWrite(event.toString());
     }
 
+    @Override
     public void write(String event) throws Exception {
         doWrite(event + SplunkEvent.LINEBREAK);
     }
 
     protected synchronized void doWrite(String event) throws IOException {
-        LOG.debug("writing event to splunk:" + event);
+        LOG.debug("writing event to splunk:{}", event);
         OutputStream ostream = socket.getOutputStream();
         Writer writer = new OutputStreamWriter(ostream, StandardCharsets.UTF_8);
         writer.write(event);
@@ -85,6 +86,7 @@ public abstract class SplunkDataWriter implements DataWriter {
         }
     }
 
+    @Override
     public boolean isConnected() {
         return connected;
     }

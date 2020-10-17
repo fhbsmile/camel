@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,14 +24,14 @@ import java.util.Map;
 import org.apache.camel.CamelExchangeException;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.slack.helper.SlackMessage;
-import org.apache.camel.impl.DefaultProducer;
-import org.apache.camel.util.IOHelper;
+import org.apache.camel.support.DefaultProducer;
+import org.apache.camel.support.ExchangeHelper;
+import org.apache.camel.util.json.JsonObject;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.json.simple.JSONObject;
 
 public class SlackProducer extends DefaultProducer {
 
@@ -54,7 +54,7 @@ public class SlackProducer extends DefaultProducer {
         Object payload = exchange.getIn().getBody();
         if (payload instanceof SlackMessage) {
             slackMessage = (SlackMessage) payload;
-        } else { 
+        } else {
             slackMessage = new SlackMessage();
             slackMessage.setText(exchange.getIn().getBody(String.class));
         }
@@ -64,7 +64,7 @@ public class SlackProducer extends DefaultProducer {
         slackMessage.setIconEmoji(slackEndpoint.getIconEmoji());
 
         // use charset from exchange or fallback to the default charset
-        String charset = IOHelper.getCharsetName(exchange, true);
+        String charset = ExchangeHelper.getCharsetName(exchange, true);
 
         // Set the post body
         String json = asJson(slackMessage);
@@ -90,41 +90,38 @@ public class SlackProducer extends DefaultProducer {
         Map<String, Object> jsonMap = new HashMap<>();
 
         // Put the values in a map
-        jsonMap.put("text", message.getText());
-        jsonMap.put("channel", message.getChannel());
-        jsonMap.put("username", message.getUsername());
-        jsonMap.put("icon_url", message.getIconUrl());
-        jsonMap.put("icon_emoji", message.getIconEmoji());
+        jsonMap.put(SlackConstants.SLACK_TEXT_FIELD, message.getText());
+        jsonMap.put(SlackConstants.SLACK_CHANNEL_FIELD, message.getChannel());
+        jsonMap.put(SlackConstants.SLACK_USERNAME_FIELD, message.getUsername());
+        jsonMap.put(SlackConstants.SLACK_ICON_URL_FIELD, message.getIconUrl());
+        jsonMap.put(SlackConstants.SLACK_ICON_EMOJI_FIELD, message.getIconEmoji());
 
         List<SlackMessage.Attachment> attachments = message.getAttachments();
         if (attachments != null && !attachments.isEmpty()) {
             buildAttachmentJson(jsonMap, attachments);
         }
 
-        // Generate a JSONObject
-        JSONObject jsonObject = new JSONObject(jsonMap);
-
         // Return the string based on the JSON Object
-        return JSONObject.toJSONString(jsonObject);
+        return new JsonObject(jsonMap).toJson();
     }
 
     private void buildAttachmentJson(Map<String, Object> jsonMap, List<SlackMessage.Attachment> attachments) {
         List<Map<String, Object>> attachmentsJson = new ArrayList<>(attachments.size());
         attachments.forEach(attachment -> {
             Map<String, Object> attachmentJson = new HashMap<>();
-            attachmentJson.put("fallback", attachment.getFallback());
-            attachmentJson.put("color", attachment.getColor());
-            attachmentJson.put("pretext", attachment.getPretext());
-            attachmentJson.put("author_name", attachment.getAuthorName());
-            attachmentJson.put("author_link", attachment.getAuthorLink());
-            attachmentJson.put("author_icon", attachment.getAuthorIcon());
-            attachmentJson.put("title", attachment.getTitle());
-            attachmentJson.put("title_link", attachment.getTitleLink());
-            attachmentJson.put("text", attachment.getText());
-            attachmentJson.put("image_url", attachment.getImageUrl());
-            attachmentJson.put("footer", attachment.getFooter());
-            attachmentJson.put("footer_icon", attachment.getFooterIcon());
-            attachmentJson.put("ts", attachment.getTs());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_FALLBACK_FIELD, attachment.getFallback());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_COLOR_FIELD, attachment.getColor());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_PRETEXT_FIELD, attachment.getPretext());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_AUTHOR_NAME_FIELD, attachment.getAuthorName());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_AUTHOR_LINK_FIELD, attachment.getAuthorLink());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_AUTHOR_ICON_FIELD, attachment.getAuthorIcon());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_TITLE_FIELD, attachment.getTitle());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_TITLE_LINK_FIELD, attachment.getTitleLink());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_TEXT_FIELD, attachment.getText());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_IMAGE_URL_FIELD, attachment.getImageUrl());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_FOOTER_FIELD, attachment.getFooter());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_FOOTER_ICON_FIELD, attachment.getFooterIcon());
+            attachmentJson.put(SlackConstants.SLACK_ATTACHMENT_TS_FIELD, attachment.getTs());
 
             List<SlackMessage.Attachment.Field> fields = attachment.getFields();
             if (fields != null && !fields.isEmpty()) {
@@ -132,7 +129,7 @@ public class SlackProducer extends DefaultProducer {
             }
             attachmentsJson.add(attachmentJson);
         });
-        jsonMap.put("attachments", attachmentsJson);
+        jsonMap.put(SlackConstants.SLACK_ATTACHMENTS_FIELD, attachmentsJson);
     }
 
     private void buildAttachmentFieldJson(Map<String, Object> attachmentJson, List<SlackMessage.Attachment.Field> fields) {

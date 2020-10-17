@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,9 +21,6 @@ import org.apache.camel.management.ManagedNamePatternTest;
 
 import static org.apache.camel.spring.processor.SpringTestHelper.createSpringCamelContext;
 
-/**
- * @version 
- */
 public class SpringManagedNamePatternTest extends ManagedNamePatternTest {
 
     @Override
@@ -31,6 +28,7 @@ public class SpringManagedNamePatternTest extends ManagedNamePatternTest {
         return true;
     }
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
         return createSpringCamelContext(this, "org/apache/camel/spring/management/SpringManagedNamePatternTest.xml");
     }

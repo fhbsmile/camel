@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -35,53 +35,50 @@ import org.apache.camel.component.crypto.cms.common.DefaultCryptoCmsUnMarshaller
 import org.apache.camel.component.crypto.cms.exception.CryptoCmsException;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
-import org.apache.camel.util.jsse.KeyStoreParameters;
+import org.apache.camel.support.jsse.KeyStoreParameters;
 
 /**
- * The defualt implementation fetches the private key and certificate from a
- * keystore.
+ * The defualt implementation fetches the private key and certificate from a keystore.
  */
 @UriParams
-public class DefaultEnvelopedDataDecryptorConfiguration extends DefaultCryptoCmsUnMarshallerConfiguration implements EnvelopedDataDecryptorConfiguration, Cloneable {
+public class DefaultEnvelopedDataDecryptorConfiguration extends DefaultCryptoCmsUnMarshallerConfiguration
+        implements EnvelopedDataDecryptorConfiguration, Cloneable {
 
     @UriParam(label = "decrypt")
     private char[] password;
 
     public DefaultEnvelopedDataDecryptorConfiguration() {
-        super();
     }
 
     /**
-     * Sets the password of the private keys. It is assumed that all private
-     * keys in the keystore have the same password. If not set then it is
-     * assumed that the password of the private keys is given by the keystore
-     * password given in the {@link KeyStoreParameters}.
+     * Sets the password of the private keys. It is assumed that all private keys in the keystore have the same
+     * password. If not set then it is assumed that the password of the private keys is given by the keystore password
+     * given in the {@link KeyStoreParameters}.
      */
     public void setPassword(char[] password) {
         this.password = password;
     }
 
-    protected char[] getPassword(Exchange exchange) throws CryptoCmsException {
+    public char[] getPassword() {
         if (password == null) {
             if (getKeyStoreParameters() != null) {
                 String passwordS = getKeyStoreParameters().getPassword();
                 if (passwordS == null) {
-                    throw new CryptoCmsException("Password for private keys not configured");
+                    throw new RuntimeException("Password for private keys not configured");
                 } else {
                     return passwordS.toCharArray();
                 }
             } else {
-                throw new CryptoCmsException("Password for private keys not configured");
+                throw new RuntimeException("Password for private keys not configured");
             }
         } else {
             return password;
         }
-
     }
 
     @Override
-    public Collection<PrivateKeyWithCertificate> getPrivateKeyCertificateCollection(Exchange exchange) throws CryptoCmsException {
-
+    public Collection<PrivateKeyWithCertificate> getPrivateKeyCertificateCollection(Exchange exchange)
+            throws CryptoCmsException {
         KeyStore keystore = getKeyStore();
         try {
             List<PrivateKeyWithCertificate> privateKeys = new ArrayList<>(keystore.size());
@@ -91,13 +88,11 @@ public class DefaultEnvelopedDataDecryptorConfiguration extends DefaultCryptoCms
                     // only key entries are relevant!
                     continue;
                 }
-                Key privateKey = keystore.getKey(alias, getPassword(exchange));
-                if (privateKey instanceof PrivateKey) { // we currently only
-                                                        // support
-                                                        // assymmetric keys
+                Key privateKey = keystore.getKey(alias, getPassword());
+                if (privateKey instanceof PrivateKey) { // we currently only support assymmetric keys
                     Certificate cert = keystore.getCertificate(alias);
                     if (cert instanceof X509Certificate) {
-                        privateKeys.add(new PrivateKeyWithCertificate((PrivateKey)privateKey, (X509Certificate)cert));
+                        privateKeys.add(new PrivateKeyWithCertificate((PrivateKey) privateKey, (X509Certificate) cert));
                     }
                 }
             }
@@ -110,9 +105,10 @@ public class DefaultEnvelopedDataDecryptorConfiguration extends DefaultCryptoCms
         }
     }
 
+    @Override
     public DefaultEnvelopedDataDecryptorConfiguration copy() {
         try {
-            return (DefaultEnvelopedDataDecryptorConfiguration)clone();
+            return (DefaultEnvelopedDataDecryptorConfiguration) clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeCamelException(e); // should never happen
         }

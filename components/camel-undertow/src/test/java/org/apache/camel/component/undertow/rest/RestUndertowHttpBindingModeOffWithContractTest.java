@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,17 +16,18 @@
  */
 package org.apache.camel.component.undertow.rest;
 
-import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
-import org.apache.camel.TypeConverters;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.undertow.BaseUndertowTest;
 import org.apache.camel.model.dataformat.JsonDataFormat;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
-import org.apache.camel.model.rest.RestDefinition;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RestUndertowHttpBindingModeOffWithContractTest extends BaseUndertowTest {
 
@@ -37,16 +38,17 @@ public class RestUndertowHttpBindingModeOffWithContractTest extends BaseUndertow
         mock.message(0).body().isInstanceOf(UserPojoEx.class);
 
         String body = "{\"id\": 123, \"name\": \"Donald Duck\"}";
-        Object answer = template.requestBodyAndHeader("undertow:http://localhost:{{port}}/users/new", body, Exchange.CONTENT_TYPE, "application/json");
+        Object answer = template.requestBodyAndHeader("undertow:http://localhost:{{port}}/users/new", body,
+                Exchange.CONTENT_TYPE, "application/json");
         assertNotNull(answer);
-        String answerString = new String((byte[])answer);
-        assertTrue("Unexpected response: " + answerString, answerString.contains("\"active\":true"));
+        String answerString = new String((byte[]) answer);
+        assertTrue(answerString.contains("\"active\":true"), "Unexpected response: " + answerString);
 
         assertMockEndpointsSatisfied();
 
         Object obj = mock.getReceivedExchanges().get(0).getIn().getBody();
         assertEquals(UserPojoEx.class, obj.getClass());
-        UserPojoEx user = (UserPojoEx)obj;
+        UserPojoEx user = (UserPojoEx) obj;
         assertNotNull(user);
         assertEquals(123, user.getId());
         assertEquals("Donald Duck", user.getName());
@@ -62,20 +64,20 @@ public class RestUndertowHttpBindingModeOffWithContractTest extends BaseUndertow
 
                 JsonDataFormat jsondf = new JsonDataFormat();
                 jsondf.setLibrary(JsonLibrary.Jackson);
-                jsondf.setAllowUnmarshallType(true);
+                jsondf.allowUnmarshallType(true);
                 jsondf.setUnmarshalType(UserPojoEx.class);
                 transformer()
-                    .fromType("json")
-                    .toType(UserPojoEx.class)
-                    .withDataFormat(jsondf);
+                        .fromType("json")
+                        .toType(UserPojoEx.class)
+                        .withDataFormat(jsondf);
                 transformer()
-                    .fromType(UserPojoEx.class)
-                    .toType("json")
-                    .withDataFormat(jsondf);
+                        .fromType(UserPojoEx.class)
+                        .toType("json")
+                        .withDataFormat(jsondf);
                 rest("/users/")
-                    // REST binding does nothing
-                    .post("new")
-                    .route()
+                        // REST binding does nothing
+                        .post("new")
+                        .route()
                         // contract advice converts betweeen JSON and UserPojoEx directly
                         .inputType(UserPojoEx.class)
                         .outputType("json")

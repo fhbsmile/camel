@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,13 +25,12 @@ import javax.annotation.Generated;
 import javax.lang.model.element.Modifier;
 
 import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
-
 import io.swagger.models.Info;
 import io.swagger.models.Swagger;
-
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.util.ObjectHelper;
 
@@ -65,7 +64,7 @@ public abstract class RestDslSourceCodeGenerator<T> extends RestDslGenerator<Res
 
     public RestDslSourceCodeGenerator<T> withClassName(final String className) {
         notEmpty(className, "className");
-        this.classNameGenerator = (s) -> className;
+        this.classNameGenerator = s -> className;
 
         return this;
     }
@@ -84,7 +83,7 @@ public abstract class RestDslSourceCodeGenerator<T> extends RestDslGenerator<Res
 
     public RestDslSourceCodeGenerator<T> withPackageName(final String packageName) {
         notEmpty(packageName, "packageName");
-        this.packageNameGenerator = (s) -> packageName;
+        this.packageNameGenerator = s -> packageName;
 
         return this;
     }
@@ -97,11 +96,24 @@ public abstract class RestDslSourceCodeGenerator<T> extends RestDslGenerator<Res
 
     MethodSpec generateConfigureMethod(final Swagger swagger) {
         final MethodSpec.Builder configure = MethodSpec.methodBuilder("configure").addModifiers(Modifier.PUBLIC)
-            .returns(void.class).addJavadoc("Defines Apache Camel routes using REST DSL fluent API.\n");
+                .returns(void.class).addJavadoc("Defines Apache Camel routes using REST DSL fluent API.\n");
 
         final MethodBodySourceCodeEmitter emitter = new MethodBodySourceCodeEmitter(configure);
 
-        final PathVisitor<MethodSpec> restDslStatement = new PathVisitor<>(emitter, filter, destinationGenerator());
+        if (restComponent != null) {
+            configure.addCode("\n");
+            configure.addCode("restConfiguration().component(\"" + restComponent + "\")");
+            if (restContextPath != null) {
+                configure.addCode(".contextPath(\"" + restContextPath + "\")");
+            }
+            if (ObjectHelper.isNotEmpty(apiContextPath)) {
+                configure.addCode(".apiContextPath(\"" + apiContextPath + "\")");
+            }
+            configure.addCode(";\n\n");
+        }
+
+        final PathVisitor<MethodSpec> restDslStatement
+                = new PathVisitor<>(swagger.getBasePath(), emitter, filter, destinationGenerator());
         swagger.getPaths().forEach(restDslStatement::visit);
 
         return emitter.result();
@@ -117,20 +129,25 @@ public abstract class RestDslSourceCodeGenerator<T> extends RestDslGenerator<Res
         final String classNameToUse = classNameGenerator.apply(swagger);
 
         final AnnotationSpec.Builder generatedAnnotation = AnnotationSpec.builder(Generated.class).addMember("value",
-            "$S", getClass().getName());
-
+                "$S", getClass().getName());
         if (sourceCodeTimestamps) {
             generatedAnnotation.addMember("date", "$S", generated());
         }
 
-        final TypeSpec generatedRouteBulder = TypeSpec.classBuilder(classNameToUse).superclass(RouteBuilder.class)
-            .addModifiers(Modifier.PUBLIC, Modifier.FINAL).addMethod(methodSpec)
-            .addAnnotation(generatedAnnotation.build())
-            .addJavadoc("Generated from Swagger specification by Camel REST DSL generator.\n").build();
+        TypeSpec.Builder builder = TypeSpec.classBuilder(classNameToUse).superclass(RouteBuilder.class)
+                .addModifiers(Modifier.PUBLIC, Modifier.FINAL).addMethod(methodSpec)
+                .addAnnotation(generatedAnnotation.build())
+                .addJavadoc("Generated from Swagger specification by Camel REST DSL generator.\n");
+        if (springComponent) {
+            final AnnotationSpec.Builder springAnnotation
+                    = AnnotationSpec.builder(ClassName.bestGuess("org.springframework.stereotype.Component"));
+            builder.addAnnotation(springAnnotation.build());
+        }
+        TypeSpec generatedRouteBuilder = builder.build();
 
         final String packageNameToUse = packageNameGenerator.apply(swagger);
 
-        return JavaFile.builder(packageNameToUse, generatedRouteBulder).indent(indent).build();
+        return JavaFile.builder(packageNameToUse, generatedRouteBuilder).indent(indent).build();
     }
 
     RestDslSourceCodeGenerator<T> withGeneratedTime(final Instant generated) {
@@ -151,8 +168,8 @@ public abstract class RestDslSourceCodeGenerator<T> extends RestDslGenerator<Res
         }
 
         final String className = title.chars().filter(Character::isJavaIdentifierPart).filter(c -> c < 'z').boxed()
-            .collect(Collector.of(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append,
-                StringBuilder::toString));
+                .collect(Collector.of(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append,
+                        StringBuilder::toString));
 
         if (className.isEmpty() || !Character.isJavaIdentifierStart(className.charAt(0))) {
             return DEFAULT_CLASS_NAME;

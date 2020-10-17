@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,13 +23,10 @@ import java.util.List;
 
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 
-/**
- * @version 
- */
 public class Main {
 
     private final StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
-    private final List<Option> options = new ArrayList<Option>();
+    private final List<Option> options = new ArrayList<>();
     private String command;
     private String password;
     private String input;
@@ -81,6 +78,7 @@ public class Main {
             this.parameterName = parameterName;
         }
 
+        @Override
         protected void doProcess(String arg, LinkedList<String> remainingArgs) {
             if (remainingArgs.isEmpty()) {
                 System.err.println("Expected fileName for ");
@@ -91,9 +89,10 @@ public class Main {
             }
         }
 
+        @Override
         public String getInformation() {
             return "  " + getAbbreviation() + " or " + getFullName()
-                    + " <" + parameterName + "> = " + getDescription();
+                   + " <" + parameterName + "> = " + getDescription();
         }
 
         protected abstract void doProcess(String arg, String parameter, LinkedList<String> remainingArgs);
@@ -152,7 +151,7 @@ public class Main {
     }
 
     private boolean parseArguments(String[] arguments) {
-        LinkedList<String> args = new LinkedList<String>(Arrays.asList(arguments));
+        LinkedList<String> args = new LinkedList<>(Arrays.asList(arguments));
 
         boolean valid = true;
         while (!args.isEmpty()) {

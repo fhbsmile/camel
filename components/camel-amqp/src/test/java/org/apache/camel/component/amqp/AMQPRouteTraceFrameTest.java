@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,11 +22,11 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.AvailablePortFinder;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.qpid.jms.JmsConnectionFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.camel.component.amqp.AMQPComponent.amqpComponent;
 import static org.apache.camel.component.amqp.AMQPConnectionDetails.AMQP_PORT;
@@ -37,12 +37,12 @@ public class AMQPRouteTraceFrameTest extends CamelTestSupport {
 
     static BrokerService broker;
 
-    @EndpointInject(uri = "mock:result")
+    @EndpointInject("mock:result")
     MockEndpoint resultEndpoint;
 
     String expectedBody = "Hello there!";
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
         broker = new BrokerService();
         broker.setPersistent(false);
@@ -52,7 +52,7 @@ public class AMQPRouteTraceFrameTest extends CamelTestSupport {
         System.setProperty(AMQP_PORT, amqpPort + "");
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         broker.stop();
     }
@@ -65,24 +65,27 @@ public class AMQPRouteTraceFrameTest extends CamelTestSupport {
         resultEndpoint.assertIsSatisfied();
     }
 
+    @Override
     protected CamelContext createCamelContext() throws Exception {
         CamelContext camelContext = super.createCamelContext();
 
-        JmsConnectionFactory connectionFactory = new JmsConnectionFactory("amqp://localhost:" + amqpPort + "?amqp.traceFrames=true");
+        JmsConnectionFactory connectionFactory
+                = new JmsConnectionFactory("amqp://localhost:" + amqpPort + "?amqp.traceFrames=true");
 
         AMQPComponent amqp = amqpComponent("amqp://localhost:" + amqpPort);
-        amqp.setConnectionFactory(connectionFactory);
+        amqp.getConfiguration().setConnectionFactory(connectionFactory);
 
         camelContext.addComponent("amqp-customized", amqp);
         return camelContext;
     }
 
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    @Override
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
-            public void configure() throws Exception {
+            public void configure() {
                 from("amqp-customized:queue:ping")
-                    .to("log:routing")
-                    .to("mock:result");
+                        .to("log:routing")
+                        .to("mock:result");
             }
         };
     }

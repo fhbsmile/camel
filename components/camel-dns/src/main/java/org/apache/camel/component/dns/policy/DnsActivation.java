@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,19 +18,14 @@ package org.apache.camel.component.dns.policy;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.UnknownHostException;
-
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
 import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.InitialDirContext;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +34,11 @@ import org.slf4j.LoggerFactory;
  * Check if a hostname resolves to a specified cname or an ip
  */
 public class DnsActivation {
-    private static final transient String[] DNS_TYPES = {"CNAME", "A"}; 
+    private static final transient String[] DNS_TYPES = { "CNAME", "A" };
     private static final transient Logger LOG = LoggerFactory.getLogger(DnsActivation.class);
 
     private String hostname;
-    private final List<String> resolvesTo = new ArrayList<String>();
+    private List<String> resolvesTo = new ArrayList<>();
 
     public DnsActivation() {
     }
@@ -57,29 +52,39 @@ public class DnsActivation {
         this.hostname = hostname;
     }
 
+    public String getHostname() {
+        return hostname;
+    }
+
     public void setResolvesTo(List<String> resolvesTo) {
+        this.resolvesTo = new ArrayList<>();
         this.resolvesTo.addAll(resolvesTo);
     }
 
     public void setResolvesTo(String resolvesTo) {
+        this.resolvesTo = new ArrayList<>();
         this.resolvesTo.add(resolvesTo);
     }
 
-    public boolean isActive() {
+    public List<String> getResolvesTo() {
+        return resolvesTo;
+    }
+
+    public boolean isActive() throws Exception {
         if (resolvesTo.isEmpty()) {
             try {
                 resolvesTo.addAll(getLocalIps());
             } catch (Exception e) {
                 LOG.warn("Failed to get local ips and resolvesTo not specified. Identifying as inactive.", e);
-                return false;
+                throw e;
             }
         }
 
-        LOG.debug("Resolving " + hostname);
-        List<String> hostnames = new ArrayList<String>();
+        LOG.debug("Resolving {}", hostname);
+        List<String> hostnames = new ArrayList<>();
         hostnames.add(hostname);
 
-        List<String> resolved = new ArrayList<String>();
+        List<String> resolved = new ArrayList<>();
         while (!hostnames.isEmpty()) {
             NamingEnumeration attributeEnumeration = null;
             try {
@@ -89,14 +94,14 @@ public class DnsActivation {
                 Attributes attributes = initialDirContext.getAttributes("dns:/" + inetAddress.getHostName(), DNS_TYPES);
                 attributeEnumeration = attributes.getAll();
                 while (attributeEnumeration.hasMore()) {
-                    Attribute attribute = (Attribute)attributeEnumeration.next();
+                    Attribute attribute = (Attribute) attributeEnumeration.next();
                     String id = attribute.getID();
-                    String value = (String)attribute.get();
+                    String value = (String) attribute.get();
                     if (resolvesTo.contains(value)) {
-                        LOG.debug(id + " = " + value + " matched. Identifying as active.");
+                        LOG.debug("{} = {} matched. Identifying as active.", id, value);
                         return true;
                     }
-                    LOG.debug(id + " = " + value);
+                    LOG.debug("{} = {}", id, value);
                     if (id.equals("CNAME") && !resolved.contains(value)) {
                         hostnames.add(value);
                     }
@@ -104,6 +109,7 @@ public class DnsActivation {
                 }
             } catch (Exception e) {
                 LOG.warn(hostname, e);
+                throw e;
             } finally {
                 if (attributeEnumeration != null) {
                     try {
@@ -115,11 +121,12 @@ public class DnsActivation {
                 }
             }
         }
+
         return false;
     }
 
     private List<String> getLocalIps() throws Exception {
-        List<String> localIps = new ArrayList<String>();
+        List<String> localIps = new ArrayList<>();
 
         Enumeration<NetworkInterface> networkInterfacesEnumeration = NetworkInterface.getNetworkInterfaces();
         while (networkInterfacesEnumeration.hasMoreElements()) {
@@ -129,11 +136,10 @@ public class DnsActivation {
             while (inetAddressesEnumeration.hasMoreElements()) {
                 InetAddress inetAddress = inetAddressesEnumeration.nextElement();
                 String ip = inetAddress.getHostAddress();
-                LOG.debug("Local ip: " + ip);
+                LOG.debug("Local ip: {}", ip);
                 localIps.add(ip);
             }
         }
         return localIps;
     }
 }
-

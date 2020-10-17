@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,9 @@
 package org.apache.camel.component.wordpress.api.service.impl;
 
 import java.util.Collections;
+
 import javax.ws.rs.core.MediaType;
+
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.camel.component.wordpress.api.auth.WordpressAuthentication;
 import org.apache.camel.component.wordpress.api.service.WordpressService;
@@ -27,6 +29,7 @@ import org.apache.cxf.jaxrs.client.JAXRSClientFactory;
 import org.apache.cxf.jaxrs.client.WebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.emptyToNull;
 
@@ -43,7 +46,8 @@ abstract class AbstractWordpressServiceAdapter<A> implements WordpressService {
         this.apiVersion = apiVersion;
 
         // @formatter:off
-        this.spi = JAXRSClientFactory.create(wordpressUrl, this.getSpiType(), Collections.singletonList(new JacksonJsonProvider()));
+        this.spi = JAXRSClientFactory.create(wordpressUrl, this.getSpiType(),
+                Collections.singletonList(new JacksonJsonProvider()));
         // @formatter:on
         WebClient.client(spi).type(MediaType.APPLICATION_JSON_TYPE);
         WebClient.client(spi).accept(MediaType.APPLICATION_JSON_TYPE);
@@ -56,10 +60,6 @@ abstract class AbstractWordpressServiceAdapter<A> implements WordpressService {
          */
         WebClient.getConfig(spi).getInInterceptors().add(new LoggingInInterceptor());
         WebClient.getConfig(spi).getOutInterceptors().add(new LoggingOutInterceptor());
-
-        if (this.authentication != null) {
-            this.authentication.configureAuthentication(spi);
-        }
 
         LOGGER.info("******* {} API initialized *********", spi.getClass().getSimpleName());
     }
@@ -77,5 +77,8 @@ abstract class AbstractWordpressServiceAdapter<A> implements WordpressService {
     @Override
     public final void setWordpressAuthentication(WordpressAuthentication authentication) {
         this.authentication = authentication;
+        if (this.authentication != null) {
+            this.authentication.configureAuthentication(spi);
+        }
     }
 }

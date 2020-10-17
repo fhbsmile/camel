@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,23 +19,26 @@ package org.apache.camel.component.vertx;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import org.apache.camel.AsyncEndpoint;
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.MultipleConsumersSupport;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.apache.camel.support.DefaultEndpoint;
 
 /**
- * The vertx component is used for sending and receive messages from a vertx event bus.
+ * Send and receive messages to/from Vert.x Event Bus.
  */
-@UriEndpoint(firstVersion = "2.12.0", scheme = "vertx", title = "Vert.x", syntax = "vertx:address", consumerClass = VertxConsumer.class, label = "eventbus,reactive")
+@UriEndpoint(firstVersion = "2.12.0", scheme = "vertx", title = "Vert.x", syntax = "vertx:address",
+             category = { Category.EVENTBUS, Category.REACTIVE })
 public class VertxEndpoint extends DefaultEndpoint implements AsyncEndpoint, MultipleConsumersSupport {
 
-    @UriPath @Metadata(required = "true")
+    @UriPath
+    @Metadata(required = true)
     private String address;
     @UriParam
     private Boolean pubSub;
@@ -50,18 +53,16 @@ public class VertxEndpoint extends DefaultEndpoint implements AsyncEndpoint, Mul
         return (VertxComponent) super.getComponent();
     }
 
+    @Override
     public Producer createProducer() throws Exception {
         return new VertxProducer(this);
     }
 
+    @Override
     public Consumer createConsumer(Processor processor) throws Exception {
         VertxConsumer consumer = new VertxConsumer(this, processor);
         configureConsumer(consumer);
         return consumer;
-    }
-
-    public boolean isSingleton() {
-        return true;
     }
 
     @Override

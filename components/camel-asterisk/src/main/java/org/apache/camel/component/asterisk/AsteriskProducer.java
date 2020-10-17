@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,7 +19,7 @@ package org.apache.camel.component.asterisk;
 import java.io.IOException;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.apache.camel.util.ObjectHelper;
 import org.asteriskjava.manager.AuthenticationFailedException;
 import org.asteriskjava.manager.TimeoutException;
@@ -32,12 +32,14 @@ import org.slf4j.LoggerFactory;
  * The Asterisk producer.
  */
 public class AsteriskProducer extends DefaultProducer {
+
     private static final Logger LOG = LoggerFactory.getLogger(AsteriskProducer.class);
 
     private final AsteriskEndpoint endpoint;
     private final AsteriskConnection connection;
 
-    public AsteriskProducer(AsteriskEndpoint endpoint) throws IllegalStateException, IOException, AuthenticationFailedException, TimeoutException, CamelAsteriskException {
+    public AsteriskProducer(AsteriskEndpoint endpoint) throws IllegalStateException, IOException, AuthenticationFailedException,
+                                                       TimeoutException, CamelAsteriskException {
         super(endpoint);
 
         this.endpoint = endpoint;
@@ -70,7 +72,7 @@ public class AsteriskProducer extends DefaultProducer {
         // Action must be set
         ObjectHelper.notNull(action, "action");
 
-        LOG.debug("Send action {} ", action);
+        LOG.debug("Send action {}", action);
 
         ManagerAction managerAction = action.apply(exchange);
         ManagerResponse managerResponse = connection.sendAction(managerAction);

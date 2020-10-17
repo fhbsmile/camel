@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,12 @@ import java.io.File;
 import java.util.Map;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JsonPathSplitTest extends CamelTestSupport {
 
@@ -31,9 +35,9 @@ public class JsonPathSplitTest extends CamelTestSupport {
             @Override
             public void configure() throws Exception {
                 from("direct:start")
-                    .split().jsonpath("$.store.book[*]")
-                    .to("mock:authors")
-                    .convertBodyTo(String.class);
+                        .split().jsonpath("$.store.book[*]")
+                        .to("mock:authors")
+                        .convertBodyTo(String.class);
             }
         };
     }

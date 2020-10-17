@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,28 +20,33 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.test.spring.CamelSpringTestSupport;
+import org.apache.camel.test.spring.junit5.CamelSpringTestSupport;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.Image;
 import org.jclouds.compute.domain.NodeMetadata;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
 
-    @EndpointInject(uri = "mock:result")
+    @EndpointInject("mock:result")
     protected MockEndpoint result;
-    
-    @EndpointInject(uri = "mock:resultlist")
+
+    @EndpointInject("mock:resultlist")
     protected MockEndpoint resultlist;
 
-    @After
+    @Override
+    @AfterEach
     public void tearDown() throws Exception {
         template.sendBodyAndHeaders("direct:start", null, destroyHeaders(null, null));
     }
@@ -97,7 +102,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
         if (exchanges != null && !exchanges.isEmpty()) {
             for (Exchange exchange : exchanges) {
                 Set<?> nodeMetadatas = exchange.getIn().getBody(Set.class);
-                assertEquals("Nodes should be 0", 0, nodeMetadatas.size());
+                assertEquals(0, nodeMetadatas.size(), "Nodes should be 0");
             }
         }
     }
@@ -113,11 +118,10 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
         if (exchanges != null && !exchanges.isEmpty()) {
             for (Exchange exchange : exchanges) {
                 Set<?> nodeMetadatas = exchange.getIn().getBody(Set.class);
-                assertEquals("Nodes should be 1", 1, nodeMetadatas.size());
+                assertEquals(1, nodeMetadatas.size(), "Nodes should be 1");
             }
         }
     }
-
 
     @Test
     public void testCreateAndListWithPredicates() throws InterruptedException {
@@ -147,7 +151,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
         if (exchanges != null && !exchanges.isEmpty()) {
             for (Exchange exchange : exchanges) {
                 Set<?> nodeMetadatas = exchange.getIn().getBody(Set.class);
-                assertEquals("There should be no node running", 1, nodeMetadatas.size());
+                assertEquals(1, nodeMetadatas.size(), "There should be no node running");
 
                 for (Object obj : nodeMetadatas) {
                     NodeMetadata nodeMetadata = (NodeMetadata) obj;
@@ -156,7 +160,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
             }
         }
     }
-    
+
     @Test
     public void testCreateAndRebootNode() throws InterruptedException {
         result.expectedMessageCount(1);
@@ -167,7 +171,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
         if (exchanges != null && !exchanges.isEmpty()) {
             for (Exchange exchange : exchanges) {
                 Set<?> nodeMetadatas = exchange.getIn().getBody(Set.class);
-                assertEquals("There should be one node running", 1, nodeMetadatas.size());
+                assertEquals(1, nodeMetadatas.size(), "There should be one node running");
 
                 for (Object obj : nodeMetadatas) {
                     NodeMetadata nodeMetadata = (NodeMetadata) obj;
@@ -176,7 +180,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
             }
         }
     }
-    
+
     @Test
     public void testCreateAndSuspendNode() throws InterruptedException {
         result.expectedMessageCount(1);
@@ -187,7 +191,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
         if (exchanges != null && !exchanges.isEmpty()) {
             for (Exchange exchange : exchanges) {
                 Set<?> nodeMetadatas = exchange.getIn().getBody(Set.class);
-                assertEquals("There should be one node running", 1, nodeMetadatas.size());
+                assertEquals(1, nodeMetadatas.size(), "There should be one node running");
 
                 for (Object obj : nodeMetadatas) {
                     NodeMetadata nodeMetadata = (NodeMetadata) obj;
@@ -196,7 +200,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
             }
         }
     }
-    
+
     @Test
     public void testCreateSuspendAndResumeNode() throws InterruptedException {
         result.expectedMessageCount(1);
@@ -207,7 +211,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
         if (exchanges != null && !exchanges.isEmpty()) {
             for (Exchange exchange : exchanges) {
                 Set<?> nodeMetadatas = exchange.getIn().getBody(Set.class);
-                assertEquals("There should be one node running", 1, nodeMetadatas.size());
+                assertEquals(1, nodeMetadatas.size(), "There should be one node running");
 
                 for (Object obj : nodeMetadatas) {
                     NodeMetadata nodeMetadata = (NodeMetadata) obj;
@@ -215,24 +219,24 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
                 }
             }
         }
-    }   
+    }
 
     @SuppressWarnings("unchecked")
-    @Ignore("For now not possible to combine stub provider with ssh module, required for runScript")
+    @Disabled("For now not possible to combine stub provider with ssh module, required for runScript")
     @Test
     public void testRunScript() throws InterruptedException {
-        Map<String, Object> runScriptHeaders = new HashMap<String, Object>();
+        Map<String, Object> runScriptHeaders = new HashMap<>();
         runScriptHeaders.put(JcloudsConstants.OPERATION, JcloudsConstants.RUN_SCRIPT);
 
-        Set<? extends NodeMetadata> nodeMetadatas = (Set<? extends NodeMetadata>) template.requestBodyAndHeaders("direct:in-out", null, createHeaders("1", "default"));
-        assertEquals("There should be a node running", 1, nodeMetadatas.size());
+        Set<? extends NodeMetadata> nodeMetadatas = (Set<? extends NodeMetadata>) template
+                .requestBodyAndHeaders("direct:in-out", null, createHeaders("1", "default"));
+        assertEquals(1, nodeMetadatas.size(), "There should be a node running");
         for (NodeMetadata nodeMetadata : nodeMetadatas) {
             runScriptHeaders.put(JcloudsConstants.NODE_ID, nodeMetadata.getId());
             template.requestBodyAndHeaders("direct:in-out", null, runScriptHeaders);
             template.sendBodyAndHeaders("direct:in-out", null, destroyHeaders(nodeMetadata.getId(), null));
         }
     }
-
 
     /**
      * Returns a {@Map} with the create headers.
@@ -241,13 +245,12 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
      * @param group   The group to be assigned to the node.
      */
     protected Map<String, Object> createHeaders(String imageId, String group) {
-        Map<String, Object> createHeaders = new HashMap<String, Object>();
+        Map<String, Object> createHeaders = new HashMap<>();
         createHeaders.put(JcloudsConstants.OPERATION, JcloudsConstants.CREATE_NODE);
         createHeaders.put(JcloudsConstants.IMAGE_ID, imageId);
         createHeaders.put(JcloudsConstants.GROUP, group);
         return createHeaders;
     }
-
 
     /**
      * Returns a {@Map} with the destroy headers.
@@ -256,7 +259,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
      * @param group  The group of the node to destroy.
      */
     protected Map<String, Object> destroyHeaders(String nodeId, String group) {
-        Map<String, Object> destroyHeaders = new HashMap<String, Object>();
+        Map<String, Object> destroyHeaders = new HashMap<>();
         destroyHeaders.put(JcloudsConstants.OPERATION, JcloudsConstants.DESTROY_NODE);
         if (nodeId != null) {
             destroyHeaders.put(JcloudsConstants.NODE_ID, nodeId);
@@ -274,7 +277,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
      * @param group  The group of the node to destroy.
      */
     protected Map<String, Object> listNodeHeaders(String nodeId, String group, Object state) {
-        Map<String, Object> listHeaders = new HashMap<String, Object>();
+        Map<String, Object> listHeaders = new HashMap<>();
         listHeaders.put(JcloudsConstants.OPERATION, JcloudsConstants.LIST_NODES);
         if (nodeId != null) {
             listHeaders.put(JcloudsConstants.NODE_ID, nodeId);
@@ -290,7 +293,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
 
         return listHeaders;
     }
-    
+
     /**
      * Returns a {@Map} with the reboot headers.
      *
@@ -298,7 +301,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
      * @param group  The group of the node to reboot.
      */
     protected Map<String, Object> rebootHeaders(String nodeId, String group) {
-        Map<String, Object> rebootHeaders = new HashMap<String, Object>();
+        Map<String, Object> rebootHeaders = new HashMap<>();
         rebootHeaders.put(JcloudsConstants.OPERATION, JcloudsConstants.REBOOT_NODE);
         if (nodeId != null) {
             rebootHeaders.put(JcloudsConstants.NODE_ID, nodeId);
@@ -308,7 +311,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
         }
         return rebootHeaders;
     }
-    
+
     /**
      * Returns a {@Map} with the suspend headers.
      *
@@ -316,7 +319,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
      * @param group  The group of the node to suspend.
      */
     protected Map<String, Object> suspendHeaders(String nodeId, String group) {
-        Map<String, Object> rebootHeaders = new HashMap<String, Object>();
+        Map<String, Object> rebootHeaders = new HashMap<>();
         rebootHeaders.put(JcloudsConstants.OPERATION, JcloudsConstants.SUSPEND_NODE);
         if (nodeId != null) {
             rebootHeaders.put(JcloudsConstants.NODE_ID, nodeId);
@@ -326,7 +329,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
         }
         return rebootHeaders;
     }
-    
+
     /**
      * Returns a {@Map} with the suspend headers.
      *
@@ -334,7 +337,7 @@ public class JcloudsSpringComputeTest extends CamelSpringTestSupport {
      * @param group  The group of the node to resume.
      */
     protected Map<String, Object> resumeHeaders(String nodeId, String group) {
-        Map<String, Object> rebootHeaders = new HashMap<String, Object>();
+        Map<String, Object> rebootHeaders = new HashMap<>();
         rebootHeaders.put(JcloudsConstants.OPERATION, JcloudsConstants.RESUME_NODE);
         if (nodeId != null) {
             rebootHeaders.put(JcloudsConstants.NODE_ID, nodeId);

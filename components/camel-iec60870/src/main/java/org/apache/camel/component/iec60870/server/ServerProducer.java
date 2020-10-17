@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,7 @@
 package org.apache.camel.component.iec60870.server;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.eclipse.neoscada.protocol.iec60870.asdu.types.Value;
 
 public class ServerProducer extends DefaultProducer {
@@ -41,19 +41,19 @@ public class ServerProducer extends DefaultProducer {
         final Object body = exchange.getIn().getBody();
 
         if (body instanceof Value<?>) {
-            return (Value<?>)body;
+            return (Value<?>) body;
         }
 
         if (body instanceof Float || body instanceof Double) {
-            return Value.ok(((Number)body).floatValue());
+            return Value.ok(((Number) body).floatValue());
         }
 
         if (body instanceof Boolean) {
-            return Value.ok((Boolean)body);
+            return Value.ok((Boolean) body);
         }
 
         if (body instanceof Short || body instanceof Byte || body instanceof Integer || body instanceof Long) {
-            return convertToShort(((Number)body).longValue());
+            return convertToShort(((Number) body).longValue());
         }
 
         throw new IllegalArgumentException("Unable to map body to a value: " + body);
@@ -61,8 +61,9 @@ public class ServerProducer extends DefaultProducer {
 
     private Value<?> convertToShort(final long value) {
         if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
-            throw new IllegalArgumentException(String.format("Value must be between %s and %s", Short.MIN_VALUE, Short.MAX_VALUE));
+            throw new IllegalArgumentException(
+                    String.format("Value must be between %s and %s", Short.MIN_VALUE, Short.MAX_VALUE));
         }
-        return Value.ok((short)value);
+        return Value.ok((short) value);
     }
 }

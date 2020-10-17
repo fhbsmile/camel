@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,14 +23,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
-import org.apache.camel.FallbackConverter;
 import org.apache.camel.InvalidPayloadException;
 import org.apache.camel.spi.TypeConverterRegistry;
+import org.bson.Document;
 
-@Converter
+@Converter(generateLoader = true)
 public final class MongoDbFallbackConverter {
 
     // Jackson's ObjectMapper is thread-safe, so no need to create a pool nor synchronize access to it
@@ -39,29 +38,30 @@ public final class MongoDbFallbackConverter {
     private MongoDbFallbackConverter() {
     }
 
-    @FallbackConverter
+    @Converter(fallback = true)
+    @SuppressWarnings("unchecked")
     public static Object convertTo(Class<?> type, Exchange exchange, Object value, TypeConverterRegistry registry)
-        throws InvalidPayloadException {
+            throws InvalidPayloadException {
 
         // if the source is a string and we attempt to convert to one of the known mongodb json classes then try that
         if (String.class == value.getClass()) {
 
             if (type == DBObject.class) {
-                Object out = JSON.parse(value.toString());
+                Object out = BasicDBObject.parse(value.toString());
                 if (out instanceof DBObject) {
                     return out;
                 } else {
                     throw new InvalidPayloadException(exchange, type);
                 }
             } else if (type == BasicDBList.class) {
-                Object out = JSON.parse(value.toString());
+                Object out = BasicDBObject.parse(value.toString());
                 if (out instanceof BasicDBList) {
                     return out;
                 } else {
                     throw new InvalidPayloadException(exchange, type);
                 }
             } else if (type == BasicDBObject.class) {
-                Object out = JSON.parse(value.toString());
+                Object out = BasicDBObject.parse(value.toString());
                 if (out instanceof BasicDBObject) {
                     return out;
                 } else {
@@ -74,17 +74,27 @@ public final class MongoDbFallbackConverter {
         if (type == DBObject.class) {
             Map<?, ?> m = OBJECT_MAPPER.convertValue(value, Map.class);
             // workaround problem with mongodb for BigDecimal should be Double
-            for (Map.Entry entry : m.entrySet()) {
-                Object v = entry.getValue();
-                if (v instanceof BigDecimal) {
-                    v = Double.valueOf(v.toString());
-                    entry.setValue(v);
-                }
-            }
+            mapMongoDBBigDecimalIssue(m);
             return new BasicDBObject(m);
+        } else if (type == Document.class) {
+            Map<String, Object> m = OBJECT_MAPPER.convertValue(value, Map.class);
+            // workaround problem with mongodb for BigDecimal should be Double
+            mapMongoDBBigDecimalIssue(m);
+            return new Document(m);
         }
 
         return null;
     }
 
+    @SuppressWarnings("unchecked")
+    private static void mapMongoDBBigDecimalIssue(Map<?, ?> m) {
+        // workaround problem with mongodb for BigDecimal should be Double
+        for (Map.Entry entry : m.entrySet()) {
+            Object v = entry.getValue();
+            if (v instanceof BigDecimal) {
+                v = Double.valueOf(v.toString());
+                entry.setValue(v);
+            }
+        }
+    }
 }

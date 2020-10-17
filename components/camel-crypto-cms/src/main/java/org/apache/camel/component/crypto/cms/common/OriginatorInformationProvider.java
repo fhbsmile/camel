@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.component.crypto.cms.common;
 
 import org.apache.camel.Exchange;
@@ -22,8 +21,7 @@ import org.apache.camel.component.crypto.cms.exception.CryptoCmsException;
 import org.bouncycastle.cms.OriginatorInformation;
 
 /**
- * Provides originator information. Used in Enveloped Data object. See
- * EnvelopedDataEncryptorConfiguration.
+ * Provides originator information. Used in Enveloped Data object. See EnvelopedDataEncryptorConfiguration.
  */
 public interface OriginatorInformationProvider {
 

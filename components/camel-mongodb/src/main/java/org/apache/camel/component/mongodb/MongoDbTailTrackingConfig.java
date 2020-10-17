@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,10 +17,18 @@
 package org.apache.camel.component.mongodb;
 
 public class MongoDbTailTrackingConfig {
-    
-    static final String DEFAULT_COLLECTION = "camelTailTracking";
-    static final String DEFAULT_FIELD = "lastTrackingValue";
 
+    public static final String DEFAULT_COLLECTION = "camelTailTracking";
+    public static final String DEFAULT_FIELD = "lastTrackingValue";
+
+    /**
+     * See {@link MongoDbEndpoint#setTailTrackIncreasingField(String)}
+     */
+    public final String increasingField;
+    /**
+     * See {@link MongoDbEndpoint#setPersistentTailTracking(boolean)}
+     */
+    public final boolean persistent;
     /**
      * See {@link MongoDbEndpoint#setTailTrackDb(String)}
      */
@@ -30,35 +38,22 @@ public class MongoDbTailTrackingConfig {
      */
     public final String collection;
     /**
-     * See {@link MongoDbEndpoint#setTailTrackIncreasingField(String)}
-     */
-    final String increasingField;
-    /**
-     * See {@link MongoDbEndpoint#setPersistentTailTracking(boolean)}
-     */
-    final boolean persistent;
-    /**
      * See {@link MongoDbEndpoint#setTailTrackField(String)}
      */
-    final String field;
+    public final String field;
     /**
      * See {@link MongoDbEndpoint#setPersistentId(String)}
      */
-    final String persistentId;
+    public final String persistentId;
 
-    /**
-     * See {@link MongoDbEndpoint#setTailTrackingStrategy(MongoDBTailTrackingEnum)}
-     */
-    final MongoDBTailTrackingEnum mongoDBTailTrackingStrategy;
-    
     public MongoDbTailTrackingConfig(boolean persistentTailTracking, String tailTrackIncreasingField, String tailTrackDb,
-            String tailTrackCollection, String tailTrackField, String persistentId, MongoDBTailTrackingEnum mongoDBTailTrackingStrategy) {
+                                     String tailTrackCollection, String tailTrackField,
+                                     String persistentId) {
         this.increasingField = tailTrackIncreasingField;
         this.persistent = persistentTailTracking;
         this.db = tailTrackDb;
         this.persistentId = persistentId;
-        this.collection = tailTrackCollection == null ? MongoDbTailTrackingConfig.DEFAULT_COLLECTION : tailTrackCollection;
-        this.field = tailTrackField == null ? MongoDbTailTrackingConfig.DEFAULT_FIELD : tailTrackField;
-        this.mongoDBTailTrackingStrategy = mongoDBTailTrackingStrategy == null ? MongoDBTailTrackingEnum.LITERAL : mongoDBTailTrackingStrategy;
+        this.collection = tailTrackCollection == null ? DEFAULT_COLLECTION : tailTrackCollection;
+        this.field = tailTrackField == null ? DEFAULT_FIELD : tailTrackField;
     }
 }

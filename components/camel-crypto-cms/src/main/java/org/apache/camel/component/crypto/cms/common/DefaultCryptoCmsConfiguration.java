@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,10 +20,9 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 
-import org.apache.camel.component.crypto.cms.exception.CryptoCmsException;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
-import org.apache.camel.util.jsse.KeyStoreParameters;
+import org.apache.camel.support.jsse.KeyStoreParameters;
 
 @UriParams
 public abstract class DefaultCryptoCmsConfiguration {
@@ -35,38 +34,33 @@ public abstract class DefaultCryptoCmsConfiguration {
     private KeyStore keyStore;
 
     /**
-     * Keystore containing signer private keys, verifier public keys, encryptor
-     * public keys, decryptor private keys depending on the operation. Use
-     * either this parameter or the parameter 'keystore'.
+     * Keystore containing signer private keys, verifier public keys, encryptor public keys, decryptor private keys
+     * depending on the operation. Use either this parameter or the parameter 'keystore'.
      */
-    public void setKeyStoreParameters(KeyStoreParameters keyStoreParameters) throws CryptoCmsException {
+    public void setKeyStoreParameters(KeyStoreParameters keyStoreParameters) {
         this.keyStoreParameters = keyStoreParameters;
         if (keyStoreParameters != null) {
             try {
                 this.keyStore = keyStoreParameters.createKeyStore();
             } catch (GeneralSecurityException | IOException e) {
-                throw new CryptoCmsException("Problem during generating the keystore", e);
+                throw new RuntimeException("Problem during generating the keystore", e);
             }
         }
     }
 
     /**
-     * Keystore which contains signer private keys, verifier public keys,
-     * encryptor public keys, decryptor private keys depending on the operation.
-     * Use either this parameter or the parameter 'keyStoreParameters'.
+     * Keystore which contains signer private keys, verifier public keys, encryptor public keys, decryptor private keys
+     * depending on the operation. Use either this parameter or the parameter 'keyStoreParameters'.
      */
     public void setKeyStore(KeyStore keyStore) {
         this.keyStore = keyStore;
     }
 
-    protected KeyStore getKeyStore() throws CryptoCmsException {
-        if (keyStore == null) {
-            throw new CryptoCmsException("Keystore not configured");
-        }
+    public KeyStore getKeyStore() {
         return keyStore;
     }
 
-    protected KeyStoreParameters getKeyStoreParameters() {
+    public KeyStoreParameters getKeyStoreParameters() {
         return keyStoreParameters;
     }
 }

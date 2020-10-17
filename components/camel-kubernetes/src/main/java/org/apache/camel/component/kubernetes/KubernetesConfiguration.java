@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,7 +17,6 @@
 package org.apache.camel.component.kubernetes;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
-
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
@@ -28,7 +27,7 @@ import org.apache.camel.spi.UriPath;
 public class KubernetesConfiguration implements Cloneable {
 
     @UriPath
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String masterUrl;
 
     @Deprecated
@@ -81,22 +80,25 @@ public class KubernetesConfiguration implements Cloneable {
 
     @UriParam(label = "consumer")
     private String namespace;
-    
+
     @UriParam(label = "consumer")
     private String labelKey;
-    
+
     @UriParam(label = "consumer")
     private String labelValue;
-    
+
     @UriParam(label = "consumer")
     private String resourceName;
 
     @UriParam
     private String portName;
 
+    @UriParam(defaultValue = "tcp")
+    private String portProtocol = "tcp";
+
     @UriParam
     private String dnsDomain;
-    
+
     @UriParam(label = "consumer", defaultValue = "1")
     private int poolSize = 1;
 
@@ -312,6 +314,17 @@ public class KubernetesConfiguration implements Cloneable {
         this.portName = portName;
     }
 
+    public String getPortProtocol() {
+        return portProtocol;
+    }
+
+    /**
+     * The port protocol, used for ServiceCall EIP
+     */
+    public void setPortProtocol(String portProtocol) {
+        this.portProtocol = portProtocol;
+    }
+
     public String getDnsDomain() {
         return dnsDomain;
     }
@@ -349,7 +362,7 @@ public class KubernetesConfiguration implements Cloneable {
     public void setPoolSize(int poolSize) {
         this.poolSize = poolSize;
     }
-   
+
     /**
      * The Consumer Label key when watching at some resources
      */
@@ -371,7 +384,6 @@ public class KubernetesConfiguration implements Cloneable {
     public void setLabelValue(String labelValue) {
         this.labelValue = labelValue;
     }
-    
 
     /**
      * The Consumer Resource Name we would like to watch
@@ -410,14 +422,16 @@ public class KubernetesConfiguration implements Cloneable {
     @Override
     public String toString() {
         return "KubernetesConfiguration [masterUrl=" + masterUrl + ", category=" + category + ", kubernetesClient="
-                + kubernetesClient + ", username=" + username + ", password=" + password + ", operation=" + operation
-                + ", apiVersion=" + apiVersion + ", caCertData=" + caCertData + ", caCertFile=" + caCertFile
-                + ", clientCertData=" + clientCertData + ", clientCertFile=" + clientCertFile + ", clientKeyAlgo="
-                + clientKeyAlgo + ", clientKeyData=" + clientKeyData + ", clientKeyFile=" + clientKeyFile
-                + ", clientKeyPassphrase=" + clientKeyPassphrase + ", oauthToken=" + oauthToken + ", trustCerts="
-                + trustCerts + ", namespace=" + namespace + ", labelKey=" + labelKey + ", labelValue=" + labelValue
-                + ", resourceName=" + resourceName + ", portName=" + portName + ", dnsDomain=" + dnsDomain
-                + ", poolSize=" + poolSize + ", connectionTimeout=" + connectionTimeout + "]";
+               + kubernetesClient + ", username=" + username + ", password="
+               + password + ", operation=" + operation + ", apiVersion=" + apiVersion + ", caCertData=" + caCertData
+               + ", caCertFile=" + caCertFile + ", clientCertData="
+               + clientCertData + ", clientCertFile=" + clientCertFile + ", clientKeyAlgo=" + clientKeyAlgo + ", clientKeyData="
+               + clientKeyData + ", clientKeyFile="
+               + clientKeyFile + ", clientKeyPassphrase=" + clientKeyPassphrase + ", oauthToken=" + oauthToken + ", trustCerts="
+               + trustCerts + ", namespace=" + namespace
+               + ", labelKey=" + labelKey + ", labelValue=" + labelValue + ", resourceName=" + resourceName + ", portName="
+               + portName + ", dnsDomain=" + dnsDomain + ", poolSize="
+               + poolSize + ", connectionTimeout=" + connectionTimeout + "]";
     }
 
 }

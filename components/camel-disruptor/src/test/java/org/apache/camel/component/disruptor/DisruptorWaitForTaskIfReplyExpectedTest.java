@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,24 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.component.disruptor;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DisruptorWaitForTaskIfReplyExpectedTest extends CamelTestSupport {
 
     @Test
-    public void testInOut() throws Exception {
+    void testInOut() throws Exception {
         getMockEndpoint("mock:result").expectedBodiesReceived("Bye World");
         final String out = template.requestBody("direct:start", "Hello World", String.class);
         assertEquals("Bye World", out);
@@ -40,7 +37,7 @@ public class DisruptorWaitForTaskIfReplyExpectedTest extends CamelTestSupport {
     }
 
     @Test
-    public void testInOnly() throws Exception {
+    void testInOnly() throws Exception {
         getMockEndpoint("mock:result").expectedBodiesReceived("Bye World");
         final Exchange out = template.send("direct:start", new Processor() {
             @Override
@@ -59,10 +56,10 @@ public class DisruptorWaitForTaskIfReplyExpectedTest extends CamelTestSupport {
     }
 
     @Override
-    protected RouteBuilder createRouteBuilder() throws Exception {
+    protected RouteBuilder createRouteBuilder() {
         return new RouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 from("direct:start").to("disruptor:foo?waitForTaskToComplete=IfReplyExpected");
                 from("disruptor:foo").transform(constant("Bye World")).to("mock:result");
             }

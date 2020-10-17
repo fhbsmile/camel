@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,18 +19,20 @@ package org.apache.camel.test.patterns;
 import org.apache.camel.RoutesBuilder;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.reifier.RouteReifier;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Test;
 
 public class SimpleWeaveAddMockLastTest extends CamelTestSupport {
 
+    @Override
     public boolean isUseAdviceWith() {
         return true;
     }
 
     @Test
     public void testWeaveAddMockLast() throws Exception {
-        context.getRouteDefinitions().get(0).adviceWith(context, new AdviceWithRouteBuilder() {
+        RouteReifier.adviceWith(context.getRouteDefinitions().get(0), context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveAddLast().to("mock:result");
@@ -51,8 +53,8 @@ public class SimpleWeaveAddMockLastTest extends CamelTestSupport {
             @Override
             public void configure() throws Exception {
                 from("seda:start")
-                    .transform(simple("Bye ${body}"))
-                    .to("seda:queue");
+                        .transform(simple("Bye ${body}"))
+                        .to("seda:queue");
             }
         };
     }

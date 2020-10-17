@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,33 +16,30 @@
  */
 package org.apache.camel.component.azure.queue;
 
+import org.apache.camel.Category;
 import org.apache.camel.Component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.camel.support.DefaultEndpoint;
 
 /**
- * The azure-queue component is used for storing and retrieving messages from Azure Storage Queue Service.
+ * Store and retrieve messages from Azure Storage Queue Service.
  */
+@Deprecated
 @UriEndpoint(firstVersion = "2.19.0",
              scheme = "azure-queue",
-             title = "Azure Storage Queue Service", 
-             syntax = "azure-blob:containerAndQueueUri", 
-             consumerClass = QueueServiceConsumer.class,
-             label = "cloud,queue,azure")
+             title = "Azure Storage Queue Service (Deprecated)",
+             syntax = "azure-blob:containerAndQueueUri",
+             category = { Category.CLOUD, Category.MESSAGING })
 public class QueueServiceEndpoint extends DefaultEndpoint {
 
-    private static final Logger LOG = LoggerFactory.getLogger(QueueServiceEndpoint.class);
-    
     @UriPath(description = "Container Queue compact Uri")
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String containerAndQueueUri; // to support component docs
     @UriParam
     private QueueServiceConfiguration configuration;
@@ -52,20 +49,16 @@ public class QueueServiceEndpoint extends DefaultEndpoint {
         this.configuration = configuration;
     }
 
+    @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        LOG.trace("Creating a consumer");
         QueueServiceConsumer consumer = new QueueServiceConsumer(this, processor);
         configureConsumer(consumer);
         return consumer;
     }
 
+    @Override
     public Producer createProducer() throws Exception {
-        LOG.trace("Creating a producer");
         return new QueueServiceProducer(this);
-    }
-
-    public boolean isSingleton() {
-        return true;
     }
 
     public QueueServiceConfiguration getConfiguration() {

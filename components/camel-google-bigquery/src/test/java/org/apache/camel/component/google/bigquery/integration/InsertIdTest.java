@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,40 +28,40 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryConstants;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class InsertIdTest extends BigQueryTestSupport {
     private static final String TABLE_ID = "insertId";
 
-    @EndpointInject(uri = "direct:withInsertId")
+    @EndpointInject("direct:withInsertId")
     private Endpoint directInWithInsertId;
 
-    @EndpointInject(uri = "direct:in")
+    @EndpointInject("direct:in")
     private Endpoint directIn;
 
-    @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:"
-            + TABLE_ID + "?useAsInsertId=col1")
+    @EndpointInject("google-bigquery:{{project.id}}:{{bigquery.datasetId}}:"
+                    + TABLE_ID + "?useAsInsertId=col1")
     private Endpoint bigqueryEndpointWithInsertId;
 
-    @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:"
-            + TABLE_ID)
+    @EndpointInject("google-bigquery:{{project.id}}:{{bigquery.datasetId}}:"
+                    + TABLE_ID)
     private Endpoint bigqueryEndpoint;
 
-    @EndpointInject(uri = "mock:sendResult")
+    @EndpointInject("mock:sendResult")
     private MockEndpoint sendResult;
 
-    @EndpointInject(uri = "mock:sendResultWithInsertId")
+    @EndpointInject("mock:sendResultWithInsertId")
     private MockEndpoint sendResultWithInsertId;
 
-    @Produce(uri = "direct:withInsertId")
+    @Produce("direct:withInsertId")
     private ProducerTemplate producerWithInsertId;
 
-    @Produce(uri = "direct:in")
+    @Produce("direct:in")
     private ProducerTemplate producer;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         createBqTable(TABLE_ID);
     }
@@ -83,7 +83,6 @@ public class InsertIdTest extends BigQueryTestSupport {
         };
     }
 
-
     @Test
     public void sendTwoMessagesExpectOneRowUsingConfig() throws Exception {
 
@@ -99,11 +98,9 @@ public class InsertIdTest extends BigQueryTestSupport {
         Exchange exchange2 = new DefaultExchange(context);
         String uuid2Col2 = UUID.randomUUID().toString();
 
-        Map<String, String> object2 = new HashMap<>();
         object.put("col1", uuidCol1);
         object.put("col2", uuid2Col2);
         exchange2.getIn().setBody(object);
-
 
         sendResultWithInsertId.expectedMessageCount(2);
         producerWithInsertId.send(exchange);
@@ -112,7 +109,6 @@ public class InsertIdTest extends BigQueryTestSupport {
 
         assertRowExist(TABLE_ID, object);
     }
-
 
     @Test
     public void sendTwoMessagesExpectOneRowUsingExchange() throws Exception {
@@ -130,7 +126,6 @@ public class InsertIdTest extends BigQueryTestSupport {
         Exchange exchange2 = new DefaultExchange(context);
         String uuid2Col2 = UUID.randomUUID().toString();
 
-        Map<String, String> object2 = new HashMap<>();
         object.put("col1", uuidCol1);
         object.put("col2", uuid2Col2);
         exchange2.getIn().setBody(object);
@@ -143,6 +138,5 @@ public class InsertIdTest extends BigQueryTestSupport {
 
         assertRowExist(TABLE_ID, object);
     }
-
 
 }

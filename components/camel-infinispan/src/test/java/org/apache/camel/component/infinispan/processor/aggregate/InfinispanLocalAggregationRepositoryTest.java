@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,36 +16,33 @@
  */
 package org.apache.camel.component.infinispan.processor.aggregate;
 
+import org.apache.camel.AggregationStrategy;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 
 public class InfinispanLocalAggregationRepositoryTest extends CamelTestSupport {
 
     private static final String MOCK_GOTCHA = "mock:gotcha";
     private static final String DIRECT_ONE = "direct:one";
 
-    @EndpointInject(uri = MOCK_GOTCHA)
+    @EndpointInject(MOCK_GOTCHA)
     private MockEndpoint mock;
 
-    @Produce(uri = DIRECT_ONE)
+    @Produce(DIRECT_ONE)
     private ProducerTemplate produceOne;
-
 
     @Test
     public void checkAggregationFromOneRoute() throws Exception {
         Configuration conf = new ConfigurationBuilder().build();
-        final InfinispanLocalAggregationRepository repoOne =
-                new InfinispanLocalAggregationRepository();
+        final InfinispanLocalAggregationRepository repoOne = new InfinispanLocalAggregationRepository();
         repoOne.setConfiguration(conf);
 
         final int completionSize = 4;
@@ -73,7 +70,7 @@ public class InfinispanLocalAggregationRepositoryTest extends CamelTestSupport {
         produceOne.sendBodyAndHeader(3, correlator, correlator);
         produceOne.sendBodyAndHeader(4, correlator, correlator);
         produceOne.sendBodyAndHeader(5, correlator, correlator);
-        
+
         produceOne.sendBodyAndHeader(6, correlator, correlator);
         produceOne.sendBodyAndHeader(7, correlator, correlator);
         produceOne.sendBodyAndHeader(20, correlator, correlator);
@@ -81,7 +78,7 @@ public class InfinispanLocalAggregationRepositoryTest extends CamelTestSupport {
 
         mock.assertIsSatisfied();
     }
-    
+
     class SumOfIntsAggregationStrategy implements AggregationStrategy {
         @Override
         public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {

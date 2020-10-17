@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,15 +23,18 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.DispatcherType;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.SSLContextParametersAware;
-import org.apache.camel.impl.UriEndpointComponent;
 import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
+import org.apache.camel.support.jsse.SSLContextParameters;
 import org.apache.camel.util.ObjectHelper;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.util.StringHelper;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -55,10 +58,11 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebsocketComponent extends UriEndpointComponent implements SSLContextParametersAware {
+@Component("websocket")
+public class WebsocketComponent extends DefaultComponent implements SSLContextParametersAware {
 
     protected static final Logger LOG = LoggerFactory.getLogger(WebsocketComponent.class);
-    protected static final HashMap<String, ConnectorRef> CONNECTORS = new HashMap<String, ConnectorRef>();
+    protected static final HashMap<String, ConnectorRef> CONNECTORS = new HashMap<>();
 
     protected Map<String, WebSocketFactory> socketFactory;
     protected Server staticResourcesServer;
@@ -92,7 +96,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     /**
      * Map for storing servlets. {@link WebsocketComponentServlet} is identified by pathSpec {@link String}.
      */
-    private Map<String, WebsocketComponentServlet> servlets = new HashMap<String, WebsocketComponentServlet>();
+    private Map<String, WebsocketComponentServlet> servlets = new HashMap<>();
 
     class ConnectorRef {
         Server server;
@@ -101,7 +105,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         MemoryWebsocketStore memoryStore;
         int refCount;
 
-        ConnectorRef(Server server, ServerConnector connector, WebsocketComponentServlet servlet, MemoryWebsocketStore memoryStore) {
+        ConnectorRef(Server server, ServerConnector connector, WebsocketComponentServlet servlet,
+                     MemoryWebsocketStore memoryStore) {
             this.server = server;
             this.connector = connector;
             this.servlet = servlet;
@@ -123,10 +128,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     public WebsocketComponent() {
-        super(WebsocketEndpoint.class);
-
         if (this.socketFactory == null) {
-            this.socketFactory = new HashMap<String, WebSocketFactory>();
+            this.socketFactory = new HashMap<>();
             this.socketFactory.put("default", new DefaultWebsocketFactory());
         }
     }
@@ -174,7 +177,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
 
                 // Create ServletContextHandler
                 ServletContextHandler context = createContext(server, connector, endpoint.getHandlers());
-                // setup the WebSocketComponentServlet initial parameters 
+                // setup the WebSocketComponentServlet initial parameters
                 setWebSocketComponentServletInitialParameter(context, endpoint);
                 server.setHandler(context);
 
@@ -187,7 +190,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
                 }
 
                 MemoryWebsocketStore memoryStore = new MemoryWebsocketStore();
-                
+
                 // Don't provide a Servlet object as Producer/Consumer will create them later on
                 connectorRef = new ConnectorRef(server, connector, null, memoryStore);
 
@@ -224,13 +227,12 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
                 WebsocketProducer producer = WebsocketProducer.class.cast(prodcon);
                 producer.setStore(connectorRef.memoryStore);
             }
-            
+
         }
     }
 
     /**
-     * Disconnects the URL specified on the endpoint from the specified
-     * processor.
+     * Disconnects the URL specified on the endpoint from the specified processor.
      */
     public void disconnect(WebsocketProducerConsumer prodcon) throws Exception {
         // If the connector is not needed anymore then stop it
@@ -241,7 +243,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
             ConnectorRef connectorRef = CONNECTORS.get(connectorKey);
             if (connectorRef != null) {
                 if (connectorRef.decrement() == 0) {
-                    LOG.info("Stopping Jetty Server as the last connector is disconnecting: {}:{}", connectorRef.connector.getHost(), connectorRef.connector.getPort());
+                    LOG.info("Stopping Jetty Server as the last connector is disconnecting: {}:{}",
+                            connectorRef.connector.getHost(), connectorRef.connector.getPort());
                     servlets.remove(createPathSpec(endpoint.getResourceUri()));
                     connectorRef.server.removeConnector(connectorRef.connector);
                     if (connectorRef.connector != null) {
@@ -279,7 +282,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
 
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        SSLContextParameters sslContextParameters = resolveAndRemoveReferenceParameter(parameters, "sslContextParameters", SSLContextParameters.class);
+        SSLContextParameters sslContextParameters
+                = resolveAndRemoveReferenceParameter(parameters, "sslContextParameters", SSLContextParameters.class);
 
         Boolean enableJmx = getAndRemoveParameter(parameters, "enableJmx", Boolean.class);
         String staticResources = getAndRemoveParameter(parameters, "staticResources", String.class);
@@ -320,7 +324,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         setProperties(endpoint, parameters);
         return endpoint;
     }
-    
+
     protected void setWebSocketComponentServletInitialParameter(ServletContextHandler context, WebsocketEndpoint endpoint) {
         if (endpoint.getBufferSize() != null) {
             context.setInitParameter("bufferSize", endpoint.getBufferSize().toString());
@@ -349,7 +353,9 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         // configure thread pool if min/max given
         if (minThreads != null || maxThreads != null) {
             if (getThreadPool() != null) {
-                throw new IllegalArgumentException("You cannot configure both minThreads/maxThreads and a custom threadPool on JettyHttpComponent: " + this);
+                throw new IllegalArgumentException(
+                        "You cannot configure both minThreads/maxThreads and a custom threadPool on JettyHttpComponent: "
+                                                   + this);
             }
             QueuedThreadPool qtp = new QueuedThreadPool();
             if (minThreads != null) {
@@ -389,7 +395,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         if (home != null) {
             String[] resources = home.split(":");
             if (LOG.isDebugEnabled()) {
-                LOG.debug(">>> Protocol found: " + resources[0] + ", and resource: " + resources[1]);
+                LOG.debug(">>> Protocol found: {}, and resource: {}", resources[0], resources[1]);
             }
 
             if (resources[0].equals("classpath")) {
@@ -411,7 +417,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         return server;
     }
 
-    protected Server createStaticResourcesServer(ServletContextHandler context, String host, int port, String home) throws Exception {
+    protected Server createStaticResourcesServer(ServletContextHandler context, String host, int port, String home)
+            throws Exception {
         Server server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
@@ -421,7 +428,9 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         return createStaticResourcesServer(server, context, home);
     }
 
-    protected WebsocketComponentServlet addServlet(NodeSynchronization sync, WebsocketProducerConsumer prodcon, String resourceUri) throws Exception {
+    protected WebsocketComponentServlet addServlet(
+            NodeSynchronization sync, WebsocketProducerConsumer prodcon, String resourceUri)
+            throws Exception {
 
         // Get Connector from one of the Jetty Instances to add WebSocket Servlet
         WebsocketEndpoint endpoint = prodcon.getEndpoint();
@@ -438,7 +447,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
                 ServletContextHandler context = (ServletContextHandler) connectorRef.server.getHandler();
                 servlet = createServlet(sync, pathSpec, servlets, context);
                 connectorRef.servlet = servlet;
-                LOG.debug("WebSocket servlet added for the following path : " + pathSpec + ", to the Jetty Server : " + key);
+                LOG.debug("WebSocket servlet added for the following path : {}, to the Jetty Server : {}", pathSpec, key);
             }
 
             return servlet;
@@ -447,7 +456,9 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         }
     }
 
-    protected WebsocketComponentServlet createServlet(NodeSynchronization sync, String pathSpec, Map<String, WebsocketComponentServlet> servlets, ServletContextHandler handler) {
+    protected WebsocketComponentServlet createServlet(
+            NodeSynchronization sync, String pathSpec, Map<String, WebsocketComponentServlet> servlets,
+            ServletContextHandler handler) {
         WebsocketComponentServlet servlet = new WebsocketComponentServlet(sync, pathSpec, socketFactory);
         servlets.put(pathSpec, servlet);
         ServletHolder servletHolder = new ServletHolder(servlet);
@@ -459,7 +470,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     protected ServletContextHandler createContext(Server server, Connector connector, List<Handler> handlers) throws Exception {
-        ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler context
+                = new ServletContextHandler(server, "/", ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         server.addConnector(connector);
 
         if (handlers != null && !handlers.isEmpty()) {
@@ -484,7 +496,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         if (context.getSessionHandler() == null) {
             SessionHandler sessionHandler = new SessionHandler();
             if (context.isStarted()) {
-                throw new IllegalStateException("Server has already been started. Cannot enabled sessionSupport on " + connectorKey);
+                throw new IllegalStateException(
+                        "Server has already been started. Cannot enabled sessionSupport on " + connectorKey);
             } else {
                 context.setSessionHandler(sessionHandler);
             }
@@ -495,10 +508,12 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         ServerConnector sslSocketConnector = null;
         if (sslContextParameters != null) {
             SslContextFactory sslContextFactory = new WebSocketComponentSslContextFactory();
+            sslContextFactory.setEndpointIdentificationAlgorithm(null);
             sslContextFactory.setSslContext(sslContextParameters.createSSLContext(getCamelContext()));
             sslSocketConnector = new ServerConnector(server, sslContextFactory);
         } else {
             SslContextFactory sslContextFactory = new SslContextFactory();
+            sslContextFactory.setEndpointIdentificationAlgorithm(null);
             sslContextFactory.setKeyStorePassword(sslKeyPassword);
             sslContextFactory.setKeyManagerPassword(sslPassword);
             if (sslKeystore != null) {
@@ -511,8 +526,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     /**
-     * Override the key/trust store check method as it does not account for a factory that has
-     * a pre-configured {@link javax.net.ssl.SSLContext}.
+     * Override the key/trust store check method as it does not account for a factory that has a pre-configured
+     * {@link javax.net.ssl.SSLContext}.
      */
     private static final class WebSocketComponentSslContextFactory extends SslContextFactory {
         // This method is for Jetty 7.0.x ~ 7.4.x
@@ -546,7 +561,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         // Is not correct as it does not support to add port in the URI
         //return String.format("/%s/*", remaining);
 
-        int index = remaining.indexOf("/");
+        int index = remaining.indexOf('/');
         if (index != -1) {
             return remaining.substring(index, remaining.length());
         } else {
@@ -555,8 +570,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     private int extractPortNumber(String remaining) {
-        int index1 = remaining.indexOf(":");
-        int index2 = remaining.indexOf("/");
+        int index1 = remaining.indexOf(':');
+        int index2 = remaining.indexOf('/');
 
         if ((index1 != -1) && (index2 != -1)) {
             String result = remaining.substring(index1 + 1, index2);
@@ -567,7 +582,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     private String extractHostName(String remaining) {
-        int index = remaining.indexOf(":");
+        int index = remaining.indexOf(':');
         if (index != -1) {
             return remaining.substring(0, index);
         } else {
@@ -610,11 +625,10 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     /**
      * Set a resource path for static resources (such as .html files etc).
      * <p/>
-     * The resources can be loaded from classpath, if you prefix with <tt>classpath:</tt>,
-     * otherwise the resources is loaded from file system or from JAR files.
+     * The resources can be loaded from classpath, if you prefix with <tt>classpath:</tt>, otherwise the resources is
+     * loaded from file system or from JAR files.
      * <p/>
-     * For example to load from root classpath use <tt>classpath:.</tt>, or
-     * <tt>classpath:WEB-INF/static</tt>
+     * For example to load from root classpath use <tt>classpath:.</tt>, or <tt>classpath:WEB-INF/static</tt>
      * <p/>
      * If not configured (eg <tt>null</tt>) then no static resource is in use.
      */
@@ -678,7 +692,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     /**
-     * If this option is true, Jetty JMX support will be enabled for this endpoint. See Jetty JMX support for more details.
+     * If this option is true, Jetty JMX support will be enabled for this endpoint. See Jetty JMX support for more
+     * details.
      */
     public void setEnableJmx(boolean enableJmx) {
         this.enableJmx = enableJmx;
@@ -693,8 +708,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     /**
-     * To set a value for minimum number of threads in server thread pool. MaxThreads/minThreads or threadPool fields are required due to switch to Jetty9.
-     * The default values for minThreads is 1.
+     * To set a value for minimum number of threads in server thread pool. MaxThreads/minThreads or threadPool fields
+     * are required due to switch to Jetty9. The default values for minThreads is 1.
      */
     public void setMinThreads(Integer minThreads) {
         this.minThreads = minThreads;
@@ -705,8 +720,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     /**
-     * To set a value for maximum number of threads in server thread pool. MaxThreads/minThreads or threadPool fields are required due to switch to Jetty9.
-     * The default values for maxThreads is 1 + 2 * noCores.
+     * To set a value for maximum number of threads in server thread pool. MaxThreads/minThreads or threadPool fields
+     * are required due to switch to Jetty9. The default values for maxThreads is 1 + 2 * noCores.
      */
     public void setMaxThreads(Integer maxThreads) {
         this.maxThreads = maxThreads;
@@ -717,7 +732,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     /**
-     * To use a custom thread pool for the server. MaxThreads/minThreads or threadPool fields are required due to switch to Jetty9.
+     * To use a custom thread pool for the server. MaxThreads/minThreads or threadPool fields are required due to switch
+     * to Jetty9.
      */
     public void setThreadPool(ThreadPool threadPool) {
         this.threadPool = threadPool;
@@ -752,7 +768,8 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
     }
 
     /**
-     * To configure a map which contains custom WebSocketFactory for sub protocols. The key in the map is the sub protocol.
+     * To configure a map which contains custom WebSocketFactory for sub protocols. The key in the map is the sub
+     * protocol.
      * <p/>
      * The <tt>default</tt> key is reserved for the default implementation.
      */
@@ -774,10 +791,10 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
 
         if (staticResources != null) {
             // host and port must be configured
-            ObjectHelper.notEmpty(host, "host", this);
+            StringHelper.notEmpty(host, "host", this);
             ObjectHelper.notNull(port, "port", this);
 
-            LOG.info("Starting static resources server {}:{} with static resource: {}", new Object[]{host, port, staticResources});
+            LOG.info("Starting static resources server {}:{} with static resource: {}", host, port, staticResources);
             ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
             staticResourcesServer = createStaticResourcesServer(context, host, port, staticResources);
             staticResourcesServer.start();
@@ -811,7 +828,7 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         CONNECTORS.clear();
 
         if (staticResourcesServer != null) {
-            LOG.info("Stopping static resources server {}:{} with static resource: {}", new Object[]{host, port, staticResources});
+            LOG.info("Stopping static resources server {}:{} with static resource: {}", host, port, staticResources);
             staticResourcesServer.stop();
             staticResourcesServer.destroy();
             staticResourcesServer = null;
@@ -820,4 +837,3 @@ public class WebsocketComponent extends UriEndpointComponent implements SSLConte
         servlets.clear();
     }
 }
-

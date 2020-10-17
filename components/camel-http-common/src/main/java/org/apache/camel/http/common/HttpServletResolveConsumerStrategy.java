@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.camel.support.RestConsumerContextPathMatcher;
@@ -48,20 +49,18 @@ public class HttpServletResolveConsumerStrategy implements ServletResolveConsume
         HttpConsumer answer = consumers.get(path);
 
         List<HttpConsumer> candidates = resolveCandidates(request, method, consumers);
+        // extra filter by restrict
+        candidates = candidates.stream().filter(c -> matchRestMethod(method, c.getEndpoint().getHttpMethodRestrict()))
+                .collect(Collectors.toList());
         if (candidates.size() == 1) {
             answer = candidates.get(0);
-        } else {
-            // extra filter by restrict
-            candidates = candidates.stream().filter(c -> matchRestMethod(method, c.getEndpoint().getHttpMethodRestrict())).collect(Collectors.toList());
-            if (candidates.size() == 1) {
-                answer = candidates.get(0);
-            }
         }
 
         return answer;
     }
 
-    private List<HttpConsumer> resolveCandidates(HttpServletRequest request, String method, Map<String, HttpConsumer> consumers) {
+    private List<HttpConsumer> resolveCandidates(
+            HttpServletRequest request, String method, Map<String, HttpConsumer> consumers) {
         String path = request.getPathInfo();
 
         List<HttpConsumer> candidates = new ArrayList<>();
@@ -81,6 +80,5 @@ public class HttpServletResolveConsumerStrategy implements ServletResolveConsume
     private static boolean matchRestMethod(String method, String restrict) {
         return restrict == null || restrict.toLowerCase(Locale.ENGLISH).contains(method.toLowerCase(Locale.ENGLISH));
     }
-
 
 }

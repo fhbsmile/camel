@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -26,12 +26,12 @@ public abstract class Olingo4BatchRequest {
 
     protected String resourceUri;
     protected String resourcePath;
-    protected Map<String, String> headers = new HashMap<String, String>();
+    protected Map<String, String> headers = new HashMap<>();
 
     public String getResourceUri() {
         return resourceUri;
     }
-    
+
     public String getResourcePath() {
         return resourcePath;
     }
@@ -40,5 +40,6 @@ public abstract class Olingo4BatchRequest {
         return headers;
     }
 
+    @Override
     public abstract String toString();
 }

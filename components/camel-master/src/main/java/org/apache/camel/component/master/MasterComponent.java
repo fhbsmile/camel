@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,21 +21,21 @@ import java.util.Map;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.cluster.CamelClusterService;
-import org.apache.camel.impl.DefaultComponent;
-import org.apache.camel.impl.cluster.ClusterServiceHelper;
-import org.apache.camel.impl.cluster.ClusterServiceSelectors;
 import org.apache.camel.spi.Metadata;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.DefaultComponent;
+import org.apache.camel.support.cluster.ClusterServiceHelper;
+import org.apache.camel.support.cluster.ClusterServiceSelectors;
 import org.apache.camel.util.ObjectHelper;
 import org.apache.camel.util.StringHelper;
 
 /**
- * The master camel component provides a way to ensures that only a single endpoint
- * in a cluster is active at any point in time with automatic failover if the
- * JVM dies or the leadership is lot for any reason.
+ * The master camel component provides a way to ensures that only a single endpoint in a cluster is active at any point
+ * in time with automatic failover if the JVM dies or the leadership is lot for any reason.
  * <p>
- * This feature is useful if you need to consume from a backend that does not
- * support concurrent consumption.
+ * This feature is useful if you need to consume from a backend that does not support concurrent consumption.
  */
+@Component("master")
 public class MasterComponent extends DefaultComponent {
     @Metadata(label = "advanced")
     private CamelClusterService service;
@@ -68,12 +68,17 @@ public class MasterComponent extends DefaultComponent {
         }
 
         return new MasterEndpoint(
-            uri,
-            this,
-            getClusterService(),
-            namespace,
-            delegateUri
-        );
+                uri,
+                this,
+                getClusterService(),
+                namespace,
+                delegateUri);
+    }
+
+    @Override
+    public boolean useRawUri() {
+        // disable URI encoding at master endpoint level to avoid encoding URI twice
+        return true;
     }
 
     public CamelClusterService getService() {
@@ -110,8 +115,7 @@ public class MasterComponent extends DefaultComponent {
             ObjectHelper.notNull(context, "Camel Context");
 
             service = ClusterServiceHelper.lookupService(context, serviceSelector).orElseThrow(
-                () -> new IllegalStateException("No cluster service found")
-            );
+                    () -> new IllegalStateException("No cluster service found"));
         }
 
         return service;

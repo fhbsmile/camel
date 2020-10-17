@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,8 +16,8 @@
  */
 package org.apache.camel.component.twitter;
 
+import org.apache.camel.BindToRegistry;
 import org.apache.camel.component.twitter.search.TwitterSearchComponent;
-import org.apache.camel.impl.JndiRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +26,8 @@ import org.slf4j.LoggerFactory;
  */
 public class SearchDirectCustomComponentTest extends CamelTwitterConsumerTestSupport {
 
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry registry = super.createRegistry();
-        registry.bind("my-twitter", new TwitterSearchComponent());
-
-        return registry;
-    }
+    @BindToRegistry("my-twitter")
+    private TwitterSearchComponent component = new TwitterSearchComponent();
 
     @Override
     protected String getUri() {

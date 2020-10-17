@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,18 +22,19 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.component.sql.stored.template.TemplateParser;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.apache.camel.support.DefaultEndpoint;
 import org.apache.camel.util.UnsafeUriCharactersEncoder;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * The sql component allows you to work with databases using JDBC Stored Procedure queries.
+ * Perform SQL queries as a JDBC Stored Procedures using Spring JDBC.
  */
-@UriEndpoint(firstVersion = "2.17.0", scheme = "sql-stored", title = "SQL Stored Procedure", syntax = "sql-stored:template", producerOnly = true, label = "database,sql")
+@UriEndpoint(firstVersion = "2.17.0", scheme = "sql-stored", title = "SQL Stored Procedure", syntax = "sql-stored:template",
+             producerOnly = true, label = "database,sql")
 public class SqlStoredEndpoint extends DefaultEndpoint {
 
     private CallableStatementWrapperFactory wrapperFactory;
@@ -43,7 +44,7 @@ public class SqlStoredEndpoint extends DefaultEndpoint {
     private DataSource dataSource;
 
     @UriPath(description = "Sets the StoredProcedure template to perform")
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String template;
     @UriParam(description = "Enables or disables batch mode")
     private boolean batch;
@@ -52,8 +53,8 @@ public class SqlStoredEndpoint extends DefaultEndpoint {
     @UriParam(description = "If set, will ignore the results of the template and use the existing IN message as the OUT message for the continuation of processing")
     private boolean noop;
     @UriParam(description = "Store the template result in a header instead of the message body. By default, outputHeader == null and the template result is stored"
-            + " in the message body, any existing content in the message body is discarded. If outputHeader is set, the value is used as the name of the header"
-            + " to store the template result and the original message body is preserved.")
+                            + " in the message body, any existing content in the message body is discarded. If outputHeader is set, the value is used as the name of the header"
+                            + " to store the template result and the original message body is preserved.")
     private String outputHeader;
     @UriParam(description = "Whether this call is for a function.")
     private boolean function;
@@ -63,6 +64,7 @@ public class SqlStoredEndpoint extends DefaultEndpoint {
         setJdbcTemplate(jdbcTemplate);
     }
 
+    @Override
     public Producer createProducer() throws Exception {
         return new SqlStoredProducer(this);
     }
@@ -78,10 +80,15 @@ public class SqlStoredEndpoint extends DefaultEndpoint {
         return "sql-stored:" + UnsafeUriCharactersEncoder.encode(this.template);
     }
 
+    protected CallableStatementWrapperFactory getWrapperFactory() {
+        return wrapperFactory;
+    }
+
     @Override
-    protected void doStart() throws Exception {
-        this.wrapperFactory = new CallableStatementWrapperFactory(jdbcTemplate, new TemplateParser(getCamelContext().getClassResolver()), isFunction());
-        super.doStart();
+    protected void doInit() throws Exception {
+        super.doInit();
+        this.wrapperFactory = new CallableStatementWrapperFactory(
+                jdbcTemplate, new TemplateParser(getCamelContext().getClassResolver()), isFunction());
     }
 
     @Override
@@ -156,12 +163,4 @@ public class SqlStoredEndpoint extends DefaultEndpoint {
         this.function = function;
     }
 
-    @Override
-    public boolean isSingleton() {
-        return false;
-    }
-
-    public CallableStatementWrapperFactory getWrapperFactory() {
-        return wrapperFactory;
-    }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,12 +19,15 @@ package org.apache.camel.component.leveldb;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.apache.camel.test.junit5.TestSupport.deleteDirectory;
 
 public class LevelDBAggregateRecoverWithRedeliveryPolicyTest extends CamelTestSupport {
 
@@ -32,6 +35,7 @@ public class LevelDBAggregateRecoverWithRedeliveryPolicyTest extends CamelTestSu
     private LevelDBAggregationRepository repo;
 
     @Override
+    @BeforeEach
     public void setUp() throws Exception {
         deleteDirectory("target/data");
         repo = new LevelDBAggregationRepository("repo1", "target/data/leveldb.dat");
@@ -46,7 +50,7 @@ public class LevelDBAggregateRecoverWithRedeliveryPolicyTest extends CamelTestSu
     public void testLevelDBAggregateRecover() throws Exception {
         getMockEndpoint("mock:aggregated").setResultWaitTime(20000);
         getMockEndpoint("mock:result").setResultWaitTime(20000);
-        
+
         // should fail the first 3 times and then recover
         getMockEndpoint("mock:aggregated").expectedMessageCount(4);
         getMockEndpoint("mock:result").expectedBodiesReceived("ABCDE");
@@ -70,29 +74,32 @@ public class LevelDBAggregateRecoverWithRedeliveryPolicyTest extends CamelTestSu
         return new RouteBuilder() {
             @Override
             public void configure() throws Exception {
+                // CHECKSTYLE:OFF
                 from("direct:start")
-                    .aggregate(header("id"), new MyAggregationStrategy())
-                        .completionSize(5).aggregationRepository(repo)
-                        // this is the output from the aggregator
-                        .log("aggregated exchange id ${exchangeId} with ${body}")
-                        .to("mock:aggregated")
-                        // simulate errors the first three times
-                        .process(new Processor() {
-                            public void process(Exchange exchange) throws Exception {
-                                int count = counter.incrementAndGet();
-                                if (count <= 3) {
-                                    throw new IllegalArgumentException("Damn");
+                        .aggregate(header("id"), new MyAggregationStrategy())
+                            .completionSize(5).aggregationRepository(repo)
+                            // this is the output from the aggregator
+                            .log("aggregated exchange id ${exchangeId} with ${body}")
+                            .to("mock:aggregated")
+                            // simulate errors the first three times
+                            .process(new Processor() {
+                                public void process(Exchange exchange) throws Exception {
+                                    int count = counter.incrementAndGet();
+                                    if (count <= 3) {
+                                        throw new IllegalArgumentException("Damn");
+                                    }
                                 }
-                            }
-                        })
-                        .to("mock:result")
-                    .end();
+                            })
+                            .to("mock:result")
+                        .end();
+                // CHECKSTYLE:ON
             }
         };
     }
 
     public static class MyAggregationStrategy implements AggregationStrategy {
 
+        @Override
         public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
             if (oldExchange == null) {
                 return newExchange;

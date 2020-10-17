@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,7 +22,6 @@ import java.util.Set;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,20 +42,15 @@ public final class ConfigMapLockUtils {
     }
 
     public static ConfigMap createNewConfigMap(String configMapName, LeaderInfo leaderInfo) {
-        return new ConfigMapBuilder().
-                withNewMetadata()
-                    .withName(configMapName)
-                    .addToLabels("provider", "camel")
-                    .addToLabels("kind", "locks").
-                endMetadata()
+        return new ConfigMapBuilder().withNewMetadata().withName(configMapName).addToLabels("provider", "camel")
+                .addToLabels("kind", "locks").endMetadata()
                 .addToData(LEADER_PREFIX + leaderInfo.getGroupName(), leaderInfo.getLeader())
                 .addToData(LOCAL_TIMESTAMP_PREFIX + leaderInfo.getGroupName(), formatDate(leaderInfo.getLocalTimestamp()))
                 .build();
     }
 
     public static ConfigMap getConfigMapWithNewLeader(ConfigMap configMap, LeaderInfo leaderInfo) {
-        return new ConfigMapBuilder(configMap)
-                .addToData(LEADER_PREFIX + leaderInfo.getGroupName(), leaderInfo.getLeader())
+        return new ConfigMapBuilder(configMap).addToData(LEADER_PREFIX + leaderInfo.getGroupName(), leaderInfo.getLeader())
                 .addToData(LOCAL_TIMESTAMP_PREFIX + leaderInfo.getGroupName(), formatDate(leaderInfo.getLocalTimestamp()))
                 .build();
     }
@@ -76,7 +70,7 @@ public final class ConfigMapLockUtils {
         try {
             return new SimpleDateFormat(DATE_TIME_FORMAT).format(date);
         } catch (Exception e) {
-            LOG.warn("Unable to format date '" + date + "' using format " + DATE_TIME_FORMAT, e);
+            LOG.warn("Unable to format date '{}' using format {}", date, DATE_TIME_FORMAT, e);
         }
 
         return null;
@@ -91,7 +85,7 @@ public final class ConfigMapLockUtils {
         try {
             return new SimpleDateFormat(DATE_TIME_FORMAT).parse(timestamp);
         } catch (Exception e) {
-            LOG.warn("Unable to parse time string '" + timestamp + "' using format " + DATE_TIME_FORMAT, e);
+            LOG.warn("Unable to parse time string '{}' using format {}", timestamp, DATE_TIME_FORMAT, e);
         }
 
         return null;

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,25 +24,27 @@ import org.apache.camel.Producer;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.converter.IOConverter;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * @version 
- */
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class FromFileToFtpDefaultRootRenameStrategyTest extends FtpServerTestSupport {
 
-    @Before
+    @Override
+    @BeforeEach
     public void setUp() throws Exception {
         super.setUp();
         prepareFtpServer();
     }
 
     /*
-     * This is our poll we want to test (no folder specified). Uses the rename strategy
+     * This is our poll we want to test (no folder specified). Uses the rename
+     * strategy
      */
     private String getFtpPollingUrl() {
-        return "ftp://admin@localhost:" + getPort() + "?password=admin&delete=true&binary=true&delay=1000&initialDelay=1500&readLock=rename";
+        return "ftp://admin@localhost:" + getPort()
+               + "?password=admin&delete=true&binary=true&delay=1000&initialDelay=1500&readLock=rename";
     }
 
     /*
@@ -55,7 +57,8 @@ public class FromFileToFtpDefaultRootRenameStrategyTest extends FtpServerTestSup
     @Test
     public void testFromFileToFtp() throws Exception {
         File expectedOnFtpServer = new File(FTP_ROOT_DIR + "/logo.jpeg");
-        // the poller won't start for 1.5 seconds, so we check to make sure the file
+        // the poller won't start for 1.5 seconds, so we check to make sure the
+        // file
         // is there first check 1 - is the file there (default root location)
         assertTrue(expectedOnFtpServer.exists());
 
@@ -83,6 +86,7 @@ public class FromFileToFtpDefaultRootRenameStrategyTest extends FtpServerTestSup
         producer.stop();
     }
 
+    @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() throws Exception {

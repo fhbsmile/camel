@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,22 +20,24 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import javax.mail.search.SearchTerm;
 
+import com.sun.mail.imap.SortTerm;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.SSLContextParametersAware;
-import org.apache.camel.impl.UriEndpointComponent;
 import org.apache.camel.spi.Metadata;
-import org.apache.camel.util.IntrospectionSupport;
-import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.spi.annotations.Component;
+import org.apache.camel.support.HeaderFilterStrategyComponent;
+import org.apache.camel.util.PropertiesHelper;
+import org.apache.camel.util.StringHelper;
 
 /**
  * Component for JavaMail.
- *
- * @version
  */
-public class MailComponent extends UriEndpointComponent implements SSLContextParametersAware {
+@Component("imap,imaps,pop3,pop3s,smtp,smtps")
+public class MailComponent extends HeaderFilterStrategyComponent implements SSLContextParametersAware {
 
     @Metadata(label = "advanced")
     private MailConfiguration configuration;
@@ -45,16 +47,14 @@ public class MailComponent extends UriEndpointComponent implements SSLContextPar
     private boolean useGlobalSslContextParameters;
 
     public MailComponent() {
-        super(MailEndpoint.class);
     }
 
     public MailComponent(MailConfiguration configuration) {
-        super(MailEndpoint.class);
         this.configuration = configuration;
     }
 
     public MailComponent(CamelContext context) {
-        super(context, MailEndpoint.class);
+        super(context);
     }
 
     @Override
@@ -76,30 +76,45 @@ public class MailComponent extends UriEndpointComponent implements SSLContextPar
             SearchTerm st;
             if (searchTerm instanceof SimpleSearchTerm) {
                 // okay its a SimpleSearchTerm then lets convert that to SearchTerm
-                st = MailConverters.toSearchTerm((SimpleSearchTerm) searchTerm, getCamelContext().getTypeConverter());
+                st = MailConverters.toSearchTerm((SimpleSearchTerm) searchTerm);
             } else {
                 st = getCamelContext().getTypeConverter().mandatoryConvertTo(SearchTerm.class, searchTerm);
             }
             endpoint.setSearchTerm(st);
         }
 
-        endpoint.setContentTypeResolver(contentTypeResolver);
-        setProperties(endpoint.getConfiguration(), parameters);
-        setProperties(endpoint, parameters);
+        // special for sort term
+        Object sortTerm = getAndRemoveOrResolveReferenceParameter(parameters, "sortTerm", Object.class);
+        if (sortTerm != null) {
+            SortTerm[] st;
+            if (sortTerm instanceof String) {
+                // okay its a String then lets convert that to SortTerm
+                st = MailConverters.toSortTerm((String) sortTerm);
+            } else if (sortTerm instanceof SortTerm[]) {
+                st = (SortTerm[]) sortTerm;
+            } else {
+                throw new IllegalArgumentException("SortTerm must either be SortTerm[] or a String value");
+            }
+            endpoint.setSortTerm(st);
+        }
 
         // special for searchTerm.xxx options
-        Map<String, Object> sstParams = IntrospectionSupport.extractProperties(parameters, "searchTerm.");
+        Map<String, Object> sstParams = PropertiesHelper.extractProperties(parameters, "searchTerm.");
         if (!sstParams.isEmpty()) {
             // use SimpleSearchTerm as POJO to store the configuration and then convert that to the actual SearchTerm
             SimpleSearchTerm sst = new SimpleSearchTerm();
             setProperties(sst, sstParams);
-            SearchTerm st = MailConverters.toSearchTerm(sst, getCamelContext().getTypeConverter());
+            SearchTerm st = MailConverters.toSearchTerm(sst);
             endpoint.setSearchTerm(st);
         }
 
+        endpoint.setContentTypeResolver(contentTypeResolver);
+        setEndpointHeaderFilterStrategy(endpoint);
+        setProperties(endpoint, parameters);
+
         // sanity check that we know the mail server
-        ObjectHelper.notEmpty(config.getHost(), "host");
-        ObjectHelper.notEmpty(config.getProtocol(), "protocol");
+        StringHelper.notEmpty(config.getHost(), "host");
+        StringHelper.notEmpty(config.getProtocol(), "protocol");
 
         // Use global ssl if present
         if (endpoint.getConfiguration().getSslContextParameters() == null) {
@@ -111,7 +126,7 @@ public class MailComponent extends UriEndpointComponent implements SSLContextPar
 
     private void configureAdditionalJavaMailProperties(MailConfiguration config, Map<String, Object> parameters) {
         // we cannot remove while iterating, as we will get a modification exception
-        Set<Object> toRemove = new HashSet<Object>();
+        Set<Object> toRemove = new HashSet<>();
 
         for (Map.Entry<String, Object> entry : parameters.entrySet()) {
             if (entry.getKey().toString().startsWith("mail.")) {

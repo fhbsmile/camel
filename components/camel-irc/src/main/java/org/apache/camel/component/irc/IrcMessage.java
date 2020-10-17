@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,8 @@ import java.util.Map;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultMessage;
-import org.apache.camel.util.ExchangeHelper;
+import org.apache.camel.support.DefaultMessage;
+import org.apache.camel.support.ExchangeHelper;
 import org.schwering.irc.lib.IRCUser;
 
 public class IrcMessage extends DefaultMessage {
@@ -54,7 +54,8 @@ public class IrcMessage extends DefaultMessage {
         setBody(message);
     }
 
-    public IrcMessage(CamelContext camelContext, String messageType, String target, IRCUser user, String whoWasKickedNick, String message) {
+    public IrcMessage(CamelContext camelContext, String messageType, String target, IRCUser user, String whoWasKickedNick,
+                      String message) {
         super(camelContext);
         this.messageType = messageType;
         this.target = target;

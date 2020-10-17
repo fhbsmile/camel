@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,9 +23,12 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.component.jackson.JacksonConstants;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Test;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class JacksonConversionsSimpleTest extends CamelTestSupport {
 
@@ -37,8 +40,9 @@ public class JacksonConversionsSimpleTest extends CamelTestSupport {
     @Override
     protected CamelContext createCamelContext() throws Exception {
         CamelContext context = super.createCamelContext();
-        // enable jackson type converter by setting this property on CamelContext
-        context.getProperties().put(JacksonConstants.ENABLE_TYPE_CONVERTER, "true");
+        // enable jackson type converter by setting this property on
+        // CamelContext
+        context.getGlobalOptions().put(JacksonConstants.ENABLE_TYPE_CONVERTER, "true");
         return context;
     }
 
@@ -46,7 +50,7 @@ public class JacksonConversionsSimpleTest extends CamelTestSupport {
     public void shouldNotConvertMapToString() {
         Exchange exchange = new DefaultExchange(context);
 
-        Map<String, String> body = new HashMap<String, String>();
+        Map<String, String> body = new HashMap<>();
         Object convertedObject = context.getTypeConverter().convertTo(String.class, exchange, body);
         // will do a toString which is an empty map
         assertEquals(body.toString(), convertedObject);

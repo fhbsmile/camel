@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,22 +19,39 @@ package org.apache.camel.component.aws.xray;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.camel.builder.NotifyBuilder;
 import org.apache.camel.component.aws.xray.TestDataBuilder.TestTrace;
-import org.apache.camel.test.spring.CamelSpringTestSupport;
-import org.junit.Rule;
-import org.junit.Test;
+import org.apache.camel.test.spring.junit5.CamelSpringTestSupport;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 public class SpringAwsXRaySimpleRouteTest extends CamelSpringTestSupport {
 
-    @Rule
-    public FakeAWSDaemon socketListener = new FakeAWSDaemon();
+    protected FakeAWSDaemon socketListener = new FakeAWSDaemon();
 
     @Override
     protected AbstractApplicationContext createApplicationContext() {
         return new ClassPathXmlApplicationContext("org/apache/camel/aws/xray/AwsXRaySimpleRouteTest.xml");
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        socketListener.before();
+        super.setUp();
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
+        super.tearDown();
+        socketListener.after();
     }
 
     @Test
@@ -45,30 +62,25 @@ public class SpringAwsXRaySimpleRouteTest extends CamelSpringTestSupport {
             template.sendBody("seda:dude", "Hello World");
         }
 
-        assertTrue(notify.matches(30, TimeUnit.SECONDS));
+        assertThat("Not all exchanges were fully processed",
+                notify.matches(30, TimeUnit.SECONDS), is(equalTo(true)));
 
         List<TestTrace> testData = Arrays.asList(
-        TestDataBuilder.createTrace()
-            .withSegment(TestDataBuilder.createSegment("dude")
-                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-            ),
-        TestDataBuilder.createTrace()
-            .withSegment(TestDataBuilder.createSegment("dude")
-                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-            ),
-        TestDataBuilder.createTrace()
-            .withSegment(TestDataBuilder.createSegment("dude")
-                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-            ),
-        TestDataBuilder.createTrace()
-            .withSegment(TestDataBuilder.createSegment("dude")
-                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-            ),
-        TestDataBuilder.createTrace()
-            .withSegment(TestDataBuilder.createSegment("dude")
-                .withSubsegment(TestDataBuilder.createSubsegment("car"))
-            )
-        );
+                TestDataBuilder.createTrace()
+                        .withSegment(TestDataBuilder.createSegment("dude"))
+                        .withSegment(TestDataBuilder.createSegment("car")),
+                TestDataBuilder.createTrace()
+                        .withSegment(TestDataBuilder.createSegment("dude"))
+                        .withSegment(TestDataBuilder.createSegment("car")),
+                TestDataBuilder.createTrace()
+                        .withSegment(TestDataBuilder.createSegment("dude"))
+                        .withSegment(TestDataBuilder.createSegment("car")),
+                TestDataBuilder.createTrace()
+                        .withSegment(TestDataBuilder.createSegment("dude"))
+                        .withSegment(TestDataBuilder.createSegment("car")),
+                TestDataBuilder.createTrace()
+                        .withSegment(TestDataBuilder.createSegment("dude"))
+                        .withSegment(TestDataBuilder.createSegment("car")));
 
         Thread.sleep(2000);
 

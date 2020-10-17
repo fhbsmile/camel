@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +16,7 @@
  */
 package org.apache.camel.component.git;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
@@ -24,20 +25,20 @@ import org.apache.camel.component.git.consumer.GitCommitConsumer;
 import org.apache.camel.component.git.consumer.GitTagConsumer;
 import org.apache.camel.component.git.consumer.GitType;
 import org.apache.camel.component.git.producer.GitProducer;
-import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.apache.camel.support.DefaultEndpoint;
 
 /**
- * The git component is used for working with git repositories.
+ * Perform operations on git repositories.
  */
-@UriEndpoint(firstVersion = "2.16.0", scheme = "git", title = "Git", syntax = "git:localPath", label = "file")
+@UriEndpoint(firstVersion = "2.16.0", scheme = "git", title = "Git", syntax = "git:localPath", category = { Category.FILE })
 public class GitEndpoint extends DefaultEndpoint {
 
     @UriPath
-    @Metadata(required = "true")
+    @Metadata(required = true)
     private String localPath;
 
     @UriParam
@@ -66,7 +67,8 @@ public class GitEndpoint extends DefaultEndpoint {
     @Metadata(label = "producer")
     private boolean allowEmpty = true;
 
-    @UriParam(enums = "clone,init,add,remove,commit,commitAll,createBranch,deleteBranch,createTag,deleteTag,status,log,push,pull,showBranches,cherryPick,remoteAdd,remoteList", label = "producer")
+    @UriParam(enums = "clone,init,add,remove,commit,commitAll,createBranch,deleteBranch,createTag,deleteTag,status,log,push,pull,showBranches,cherryPick,remoteAdd,remoteList",
+              label = "producer")
     private String operation;
 
     public GitEndpoint(String uri, GitComponent component) {
@@ -89,11 +91,6 @@ public class GitEndpoint extends DefaultEndpoint {
         } else {
             throw new IllegalArgumentException("Cannot create consumer with type " + type);
         }
-    }
-
-    @Override
-    public boolean isSingleton() {
-        return true;
     }
 
     /**

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.spi.UriParam;
@@ -34,6 +35,14 @@ public class InfinispanConfiguration implements Cloneable {
     private String hosts;
     @UriParam(label = "producer", defaultValue = "PUT")
     private InfinispanOperation operation = InfinispanOperation.PUT;
+    @UriParam(label = "producer")
+    private Object key;
+    @UriParam(label = "producer")
+    private Object value;
+    @UriParam(label = "producer")
+    private Object oldValue;
+    @UriParam(label = "producer")
+    private Object defaultValue;
     @Deprecated
     @UriParam(label = "consumer", defaultValue = "PUT")
     private String command = "PUT";
@@ -59,6 +68,20 @@ public class InfinispanConfiguration implements Cloneable {
     private Object cacheContainerConfiguration;
     @UriParam(label = "advanced")
     private Object resultHeader;
+    @UriParam(label = "advanced")
+    private BiFunction remappingFunction;
+    @UriParam(label = "common", defaultValue = "false")
+    private boolean secure;
+    @UriParam(label = "common, security")
+    private String username;
+    @UriParam(label = "common, security", secret = true)
+    private String password;
+    @UriParam(label = "common, security")
+    private String saslMechanism;
+    @UriParam(label = "common, security")
+    private String securityRealm;
+    @UriParam(label = "common, security")
+    private String securityServerName;
 
     public String getCommand() {
         return operation.toString();
@@ -69,6 +92,7 @@ public class InfinispanConfiguration implements Cloneable {
      *
      * @deprecated replaced by @{link setOperation}
      */
+    @Deprecated
     public void setCommand(String command) {
         if (command.startsWith(InfinispanConstants.OPERATION)) {
             command = command.substring(InfinispanConstants.OPERATION.length()).toUpperCase();
@@ -115,8 +139,8 @@ public class InfinispanConfiguration implements Cloneable {
     }
 
     /**
-    * If true, the consumer will receive notifications synchronously
-    */
+     * If true, the consumer will receive notifications synchronously
+     */
     public boolean isSync() {
         return sync;
     }
@@ -143,9 +167,10 @@ public class InfinispanConfiguration implements Cloneable {
     /**
      * Specifies the set of event types to register by the consumer. Multiple event can be separated by comma.
      * <p/>
-     * The possible event types are: CACHE_ENTRY_ACTIVATED, CACHE_ENTRY_PASSIVATED, CACHE_ENTRY_VISITED, CACHE_ENTRY_LOADED,
-     * CACHE_ENTRY_EVICTED, CACHE_ENTRY_CREATED, CACHE_ENTRY_REMOVED, CACHE_ENTRY_MODIFIED, TRANSACTION_COMPLETED,
-     * TRANSACTION_REGISTERED, CACHE_ENTRY_INVALIDATED, DATA_REHASHED, TOPOLOGY_CHANGED, PARTITION_STATUS_CHANGED
+     * The possible event types are: CACHE_ENTRY_ACTIVATED, CACHE_ENTRY_PASSIVATED, CACHE_ENTRY_VISITED,
+     * CACHE_ENTRY_LOADED, CACHE_ENTRY_EVICTED, CACHE_ENTRY_CREATED, CACHE_ENTRY_REMOVED, CACHE_ENTRY_MODIFIED,
+     * TRANSACTION_COMPLETED, TRANSACTION_REGISTERED, CACHE_ENTRY_INVALIDATED, DATA_REHASHED, TOPOLOGY_CHANGED,
+     * PARTITION_STATUS_CHANGED
      */
     public void setEventTypes(Set<String> eventTypes) {
         this.eventTypes = eventTypes;
@@ -154,9 +179,10 @@ public class InfinispanConfiguration implements Cloneable {
     /**
      * Specifies the set of event types to register by the consumer. Multiple event can be separated by comma.
      * <p/>
-     * The possible event types are: CACHE_ENTRY_ACTIVATED, CACHE_ENTRY_PASSIVATED, CACHE_ENTRY_VISITED, CACHE_ENTRY_LOADED,
-     * CACHE_ENTRY_EVICTED, CACHE_ENTRY_CREATED, CACHE_ENTRY_REMOVED, CACHE_ENTRY_MODIFIED, TRANSACTION_COMPLETED,
-     * TRANSACTION_REGISTERED, CACHE_ENTRY_INVALIDATED, DATA_REHASHED, TOPOLOGY_CHANGED, PARTITION_STATUS_CHANGED
+     * The possible event types are: CACHE_ENTRY_ACTIVATED, CACHE_ENTRY_PASSIVATED, CACHE_ENTRY_VISITED,
+     * CACHE_ENTRY_LOADED, CACHE_ENTRY_EVICTED, CACHE_ENTRY_CREATED, CACHE_ENTRY_REMOVED, CACHE_ENTRY_MODIFIED,
+     * TRANSACTION_COMPLETED, TRANSACTION_REGISTERED, CACHE_ENTRY_INVALIDATED, DATA_REHASHED, TOPOLOGY_CHANGED,
+     * PARTITION_STATUS_CHANGED
      */
     public void setEventTypes(String eventTypes) {
         this.eventTypes = new HashSet<>(Arrays.asList(eventTypes.split(",")));
@@ -197,8 +223,8 @@ public class InfinispanConfiguration implements Cloneable {
     }
 
     /**
-     * A comma separated list of Flag to be applied by default on each cache
-     * invocation, not applicable to remote caches.
+     * A comma separated list of Flag to be applied by default on each cache invocation, not applicable to remote
+     * caches.
      */
     public void setFlags(String flagsAsString) {
         String[] flagsArray = flagsAsString.split(",");
@@ -255,7 +281,9 @@ public class InfinispanConfiguration implements Cloneable {
     }
 
     /**
-     * The CacheContainer configuration
+     * The CacheContainer configuration. Uses if the cacheContainer is not defined. Must be the following types:
+     * org.infinispan.client.hotrod.configuration.Configuration - for remote cache interaction configuration;
+     * org.infinispan.configuration.cache.Configuration - for embedded cache interaction configuration;
      */
     public void setCacheContainerConfiguration(Object cacheContainerConfiguration) {
         this.cacheContainerConfiguration = cacheContainerConfiguration;
@@ -263,7 +291,7 @@ public class InfinispanConfiguration implements Cloneable {
 
     public InfinispanConfiguration copy() {
         try {
-            return (InfinispanConfiguration)super.clone();
+            return (InfinispanConfiguration) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeCamelException(e);
         }
@@ -274,18 +302,135 @@ public class InfinispanConfiguration implements Cloneable {
     }
 
     /**
-     * Store the operation result in a header instead of the message body.
-     *
-     * By default, resultHeader == null and the query result is stored in the
-     * message body, any existing content in the message body is discarded. If
-     * resultHeader is set, the value is used as the name of the header to store
-     * the query result and the original message body is preserved.
-     *
-     * This value can be overridden by an in message header named:
-     *
-     *     CamelInfinispanOperationResultHeader
+     * Store the operation result in a header instead of the message body. By default, resultHeader == null and the
+     * query result is stored in the message body, any existing content in the message body is discarded. If
+     * resultHeader is set, the value is used as the name of the header to store the query result and the original
+     * message body is preserved. This value can be overridden by an in message header named:
+     * CamelInfinispanOperationResultHeader
      */
     public void setResultHeader(Object resultHeader) {
         this.resultHeader = resultHeader;
     }
+
+    public BiFunction getRemappingFunction() {
+        return remappingFunction;
+    }
+
+    /**
+     * Set a specific remappingFunction to use in a compute operation
+     */
+    public void setRemappingFunction(BiFunction remappingFunction) {
+        this.remappingFunction = remappingFunction;
+    }
+
+    public Object getKey() {
+        return key;
+    }
+
+    /**
+     * Set a specific key for producer operations
+     */
+    public void setKey(Object key) {
+        this.key = key;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    /**
+     * Set a specific value for producer operations
+     */
+    public void setValue(Object value) {
+        this.value = value;
+    }
+
+    public Object getOldValue() {
+        return oldValue;
+    }
+
+    /**
+     * Set a specific old value for some producer operations
+     */
+    public void setOldValue(Object oldValue) {
+        this.oldValue = oldValue;
+    }
+
+    public Object getDefaultValue() {
+        return defaultValue;
+    }
+
+    /**
+     * Set a specific default value for some producer operations
+     */
+    public void setDefaultValue(Object defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    public boolean isSecure() {
+        return secure;
+    }
+
+    /**
+     * Define if we are connecting to a secured Infinispan instance
+     */
+    public void setSecure(boolean secure) {
+        this.secure = secure;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    /**
+     * Define the username to access the infinispan instance
+     */
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    /**
+     * Define the password to access the infinispan instance
+     */
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getSaslMechanism() {
+        return saslMechanism;
+    }
+
+    /**
+     * Define the SASL Mechanism to access the infinispan instance
+     */
+    public void setSaslMechanism(String saslMechanism) {
+        this.saslMechanism = saslMechanism;
+    }
+
+    public String getSecurityRealm() {
+        return securityRealm;
+    }
+
+    /**
+     * Define the security realm to access the infinispan instance
+     */
+    public void setSecurityRealm(String securityRealm) {
+        this.securityRealm = securityRealm;
+    }
+
+    public String getSecurityServerName() {
+        return securityServerName;
+    }
+
+    /**
+     * Define the security server name to access the infinispan instance
+     */
+    public void setSecurityServerName(String securityServerName) {
+        this.securityServerName = securityServerName;
+    }
+
 }

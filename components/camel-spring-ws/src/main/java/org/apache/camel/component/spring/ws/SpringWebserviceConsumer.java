@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -30,8 +30,9 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
-import org.apache.camel.converter.jaxp.XmlConverter;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.attachment.AttachmentMessage;
+import org.apache.camel.attachment.DefaultAttachmentMessage;
+import org.apache.camel.support.DefaultConsumer;
 import org.springframework.ws.WebServiceMessage;
 import org.springframework.ws.context.MessageContext;
 import org.springframework.ws.mime.Attachment;
@@ -42,6 +43,8 @@ import org.springframework.ws.soap.SoapHeaderElement;
 import org.springframework.ws.soap.SoapMessage;
 import org.springframework.ws.soap.saaj.SaajSoapMessage;
 
+import static org.apache.camel.component.spring.ws.SpringWebserviceHelper.toResult;
+
 public class SpringWebserviceConsumer extends DefaultConsumer implements MessageEndpoint {
 
     private SpringWebserviceEndpoint endpoint;
@@ -49,40 +52,37 @@ public class SpringWebserviceConsumer extends DefaultConsumer implements Message
 
     public SpringWebserviceConsumer(Endpoint endpoint, Processor processor) {
         super(endpoint, processor);
-        this.endpoint = (SpringWebserviceEndpoint)endpoint;
+        this.endpoint = (SpringWebserviceEndpoint) endpoint;
         this.configuration = this.endpoint.getConfiguration();
     }
 
     /**
      * Invoked by Spring-WS when a {@link WebServiceMessage} is received
      */
+    @Override
     public void invoke(MessageContext messageContext) throws Exception {
         Exchange exchange = getEndpoint().createExchange(ExchangePattern.InOptionalOut);
         populateExchangeFromMessageContext(messageContext, exchange);
-        
+
         // populate camel exchange with breadcrumb from transport header        
         populateExchangeWithBreadcrumbFromMessageContext(messageContext, exchange);
-        
+
         // start message processing
         getProcessor().process(exchange);
 
         if (exchange.getException() != null) {
             throw exchange.getException();
         } else if (exchange.getPattern().isOutCapable()) {
-            Message responseMessage = exchange.hasOut() ? exchange.getOut(Message.class) : exchange.getIn(Message.class);
+            Message responseMessage = exchange.getMessage(Message.class);
             if (responseMessage != null) {
                 Source responseBody = responseMessage.getBody(Source.class);
                 WebServiceMessage response = messageContext.getResponse();
-
                 configuration.getMessageFilter().filterConsumer(exchange, response);
-
-                XmlConverter xmlConverter = configuration.getXmlConverter();
-                xmlConverter.toResult(responseBody, response.getPayloadResult());
+                toResult(responseBody, response.getPayloadResult());
             }
         }
-
     }
-    
+
     private void populateExchangeWithBreadcrumbFromMessageContext(MessageContext messageContext, Exchange exchange) {
         if (messageContext.getRequest() instanceof SaajSoapMessage) {
             SaajSoapMessage saajSoap = (SaajSoapMessage) messageContext.getRequest();
@@ -93,7 +93,7 @@ public class SpringWebserviceConsumer extends DefaultConsumer implements Message
     }
 
     private void populateExchangeWithBreadcrumbFromSaajMessage(Exchange exchange, SaajSoapMessage saajSoap) {
-        SOAPMessage soapMessageRequest = null;
+        SOAPMessage soapMessageRequest;
         if (saajSoap != null) {
             soapMessageRequest = saajSoap.getSaajMessage();
             if (soapMessageRequest != null) {
@@ -115,7 +115,7 @@ public class SpringWebserviceConsumer extends DefaultConsumer implements Message
     private void populateExchangeWithBreadcrumbFromMessageContext(Exchange exchange, MessageContext messageContext) {
         if (messageContext != null) {
             HttpServletRequest obj = (HttpServletRequest) messageContext.getProperty("transport.http.servletRequest");
-            String breadcrumbId = (String) obj.getHeader(Exchange.BREADCRUMB_ID);
+            String breadcrumbId = obj.getHeader(Exchange.BREADCRUMB_ID);
             exchange.getIn().setHeader(Exchange.BREADCRUMB_ID, breadcrumbId);
         }
     }
@@ -126,13 +126,14 @@ public class SpringWebserviceConsumer extends DefaultConsumer implements Message
         // create inbound message
         WebServiceMessage request = messageContext.getRequest();
         SpringWebserviceMessage inMessage = new SpringWebserviceMessage(exchange.getContext(), request);
-        extractSourceFromSoapHeader(inMessage.getHeaders(), request);
-        extractAttachmentsFromRequest(request, inMessage);
         exchange.setIn(inMessage);
+        extractSourceFromSoapHeader(inMessage.getHeaders(), request);
+        extractAttachmentsFromRequest(request, new DefaultAttachmentMessage(inMessage));
     }
 
-    private void populateExchangeWithPropertiesFromMessageContext(MessageContext messageContext,
-                                                                  Exchange exchange) {
+    private void populateExchangeWithPropertiesFromMessageContext(
+            MessageContext messageContext,
+            Exchange exchange) {
         // convert WebserviceMessage properties (added through interceptors) to
         // Camel exchange properties
         String[] propertyNames = messageContext.getPropertyNames();
@@ -144,16 +145,15 @@ public class SpringWebserviceConsumer extends DefaultConsumer implements Message
     }
 
     /**
-     * Extracts the SOAP headers and set them as headers in the Exchange. Also sets
-     * it as a header with the key SpringWebserviceConstants.SPRING_WS_SOAP_HEADER
-     * and a value of type Source.
+     * Extracts the SOAP headers and set them as headers in the Exchange. Also sets it as a header with the key
+     * SpringWebserviceConstants.SPRING_WS_SOAP_HEADER and a value of type Source.
      *
      * @param headers the Exchange Headers
      * @param request the WebService Request
      */
     private void extractSourceFromSoapHeader(Map<String, Object> headers, WebServiceMessage request) {
         if (request instanceof SoapMessage) {
-            SoapMessage soapMessage = (SoapMessage)request;
+            SoapMessage soapMessage = (SoapMessage) request;
             SoapHeader soapHeader = soapMessage.getSoapHeader();
 
             if (soapHeader != null) {
@@ -179,10 +179,11 @@ public class SpringWebserviceConsumer extends DefaultConsumer implements Message
         }
     }
 
-    private void extractAttachmentsFromRequest(final WebServiceMessage request,
-                                               final SpringWebserviceMessage inMessage) {
+    private void extractAttachmentsFromRequest(
+            final WebServiceMessage request,
+            final AttachmentMessage inMessage) {
         if (request instanceof MimeMessage) {
-            Iterator<Attachment> attachmentsIterator = ((MimeMessage)request).getAttachments();
+            Iterator<Attachment> attachmentsIterator = ((MimeMessage) request).getAttachments();
             while (attachmentsIterator.hasNext()) {
                 Attachment attachment = attachmentsIterator.next();
                 inMessage.addAttachment(attachment.getContentId(), attachment.getDataHandler());

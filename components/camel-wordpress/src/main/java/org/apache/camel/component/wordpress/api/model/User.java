@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,9 +19,11 @@ package org.apache.camel.component.wordpress.api.model;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 @JacksonXmlRootElement
@@ -205,7 +207,8 @@ public class User implements Serializable {
 
     @Override
     public String toString() {
-        return toStringHelper(this).addValue(this.id).addValue(this.username).addValue(this.email).addValue(this.name).toString();
+        return toStringHelper(this).addValue(this.id).addValue(this.username).addValue(this.email).addValue(this.name)
+                .toString();
     }
 
 }

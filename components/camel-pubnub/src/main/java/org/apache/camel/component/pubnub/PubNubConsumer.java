@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -23,22 +23,22 @@ import com.pubnub.api.callbacks.SubscribeCallback;
 import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.pubnub.api.enums.PNStatusCategory.PNTimeoutCategory;
 import static com.pubnub.api.enums.PNStatusCategory.PNUnexpectedDisconnectCategory;
-
 import static org.apache.camel.component.pubnub.PubNubConstants.CHANNEL;
 import static org.apache.camel.component.pubnub.PubNubConstants.TIMETOKEN;
 
 public class PubNubConsumer extends DefaultConsumer {
+
     private static final Logger LOG = LoggerFactory.getLogger(PubNubConsumer.class);
+
     private final PubNubEndpoint endpoint;
     private final PubNubConfiguration pubNubConfiguration;
 
@@ -50,7 +50,7 @@ public class PubNubConsumer extends DefaultConsumer {
 
     private void initCommunication() throws Exception {
         endpoint.getPubnub().addListener(new PubNubCallback());
-        if (pubNubConfiguration.withPresence()) {
+        if (pubNubConfiguration.isWithPresence()) {
             endpoint.getPubnub().subscribe().channels(Arrays.asList(pubNubConfiguration.getChannel())).withPresence().execute();
         } else {
             endpoint.getPubnub().subscribe().channels(Arrays.asList(pubNubConfiguration.getChannel())).execute();

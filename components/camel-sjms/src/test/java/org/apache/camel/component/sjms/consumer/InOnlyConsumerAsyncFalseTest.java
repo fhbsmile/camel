@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,8 +20,9 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.sjms.support.JmsTestSupport;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -32,7 +33,7 @@ public class InOnlyConsumerAsyncFalseTest extends JmsTestSupport {
     private static final String MOCK_RESULT = "mock:result";
     private static String beforeThreadName;
     private static String afterThreadName;
-    
+
     @Test
     public void testInOnlyConsumerAsyncTrue() throws Exception {
         getMockEndpoint(MOCK_RESULT).expectedBodiesReceived("Hello Camel", "Hello World");

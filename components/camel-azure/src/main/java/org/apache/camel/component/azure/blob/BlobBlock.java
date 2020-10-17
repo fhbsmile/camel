@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,7 +29,7 @@ public class BlobBlock {
 
     public BlobBlock(InputStream blockStream) {
         this(Base64.encode(UUID.randomUUID().toString().getBytes()),
-            blockStream);
+             blockStream);
     }
 
     public BlobBlock(String blockId, InputStream blockStream) {

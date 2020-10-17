@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,30 +22,31 @@ import org.apache.camel.Producer;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubProducer;
 import org.apache.camel.component.google.pubsub.PubsubTestSupport;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PubsubProducerTest extends PubsubTestSupport {
 
     private static final String TEST_TOPIC_NAME = "test-topic-name";
 
-    @EndpointInject(uri = "google-pubsub:{{project.id}}:" + TEST_TOPIC_NAME)
+    @EndpointInject("google-pubsub:{{project.id}}:" + TEST_TOPIC_NAME)
     private Endpoint to;
 
-    @EndpointInject(uri = "direct:from")
+    @EndpointInject("direct:from")
     private Endpoint from;
 
     @Test
     public void testProducerConfiguration() throws Exception {
         // :1 indicates first of a component type in Camel context
         Endpoint endpoint = context.hasEndpoint(String.format("google-pubsub:%s:%s:1", PROJECT_ID, TEST_TOPIC_NAME));
-        assertNotNull(String.format("Endpoint 'google-pubsub:%s:$s' is not found in Camel Context",
-                                    PROJECT_ID,
-                                    TEST_TOPIC_NAME), endpoint);
+        assertNotNull(endpoint,
+                String.format("Endpoint 'google-pubsub:%s:$s' is not found in Camel Context", PROJECT_ID, TEST_TOPIC_NAME));
 
         Producer producer = endpoint.createProducer();
         assertTrue(producer instanceof GooglePubsubProducer);
     }
-
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {

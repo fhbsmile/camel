@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,55 +37,60 @@ public class DnsActivationPolicy extends RoutePolicySupport {
     private ExceptionHandler exceptionHandler;
     private DnsActivation dnsActivation;
     private long ttl;
+    private boolean stopRoutesOnException;
 
-    private Map<String, Route> routes = new ConcurrentHashMap<String, Route>();
+    private Map<String, Route> routes = new ConcurrentHashMap<>();
     private Timer timer;
 
     public DnsActivationPolicy() {
         dnsActivation = new DnsActivation();
     }
 
+    @Override
     public void onInit(Route route) {
-        LOG.debug("onInit " + route.getId());
+        LOG.debug("onInit {}", route.getId());
         routes.put(route.getId(), route);
     }
 
+    @Override
     public void onRemove(Route route) {
-        LOG.debug("onRemove " + route.getId());
+        LOG.debug("onRemove {}", route.getId());
         // noop
     }
 
     @Override
     public void onStart(Route route) {
-        LOG.debug("onStart " + route.getId());
+        LOG.debug("onStart {}", route.getId());
         // noop
     }
 
     @Override
     public void onStop(Route route) {
-        LOG.debug("onStop " + route.getId());
+        LOG.debug("onStop {}", route.getId());
         // noop
     }
 
     @Override
     public void onSuspend(Route route) {
-        LOG.debug("onSuspend " + route.getId());
+        LOG.debug("onSuspend {}", route.getId());
         // noop
     }
 
     @Override
     public void onResume(Route route) {
-        LOG.debug("onResume " + route.getId());
+        LOG.debug("onResume {}", route.getId());
         // noop
     }
 
+    @Override
     public void onExchangeBegin(Route route, Exchange exchange) {
-        LOG.debug("onExchange start " + route.getId() + "/" + exchange.getExchangeId());
+        LOG.debug("onExchange start {}/{}", route.getId(), exchange.getExchangeId());
         // noop
     }
 
+    @Override
     public void onExchangeDone(Route route, Exchange exchange) {
-        LOG.debug("onExchange end " + route.getId() + "/" + exchange.getExchangeId());
+        LOG.debug("onExchange end {}/{}", route.getId(), exchange.getExchangeId());
         // noop
     }
 
@@ -105,19 +110,25 @@ public class DnsActivationPolicy extends RoutePolicySupport {
         }
     }
 
+    @Override
     public ExceptionHandler getExceptionHandler() {
         if (exceptionHandler == null) {
-            exceptionHandler = new LoggingExceptionHandler(getClass());
+            exceptionHandler = new LoggingExceptionHandler(null, getClass());
         }
         return exceptionHandler;
     }
 
+    @Override
     public void setExceptionHandler(ExceptionHandler exceptionHandler) {
         this.exceptionHandler = exceptionHandler;
     }
 
     public void setHostname(String hostname) {
         dnsActivation.setHostname(hostname);
+    }
+
+    public String getHostname() {
+        return dnsActivation.getHostname();
     }
 
     public void setResolvesTo(List<String> resolvesTo) {
@@ -128,21 +139,37 @@ public class DnsActivationPolicy extends RoutePolicySupport {
         dnsActivation.setResolvesTo(resolvesTo);
     }
 
-    public void setTtl(String ttl) {
+    public List<String> getResolvesTo() {
+        return dnsActivation.getResolvesTo();
+    }
+
+    public void setTtl(long ttl) throws Exception {
+        this.ttl = ttl;
+    }
+
+    public void setTtl(String ttl) throws Exception {
         this.ttl = Long.parseLong(ttl);
     }
 
+    public long getTtl() throws Exception {
+        return ttl;
+    }
+
+    public void setStopRoutesOnException(String stopRoutesOnException) throws Exception {
+        this.stopRoutesOnException = Boolean.parseBoolean(stopRoutesOnException);
+    }
+
     private void startRouteImpl(Route route) throws Exception {
-        ServiceStatus routeStatus = route.getRouteContext().getCamelContext().getRouteStatus(route.getId());
+        ServiceStatus routeStatus = controller(route).getRouteStatus(route.getId());
 
         if (routeStatus == ServiceStatus.Stopped) {
-            LOG.info("Starting " + route.getId());
+            LOG.info("Starting {}", route.getId());
             startRoute(route);
         } else if (routeStatus == ServiceStatus.Suspended) {
-            LOG.info("Resuming " + route.getId());
+            LOG.info("Resuming {}", route.getId());
             startConsumer(route.getConsumer());
         } else {
-            LOG.debug("Nothing to do " + route.getId() + " is " + routeStatus);
+            LOG.debug("Nothing to do {} is {}", route.getId(), routeStatus);
         }
     }
 
@@ -158,13 +185,13 @@ public class DnsActivationPolicy extends RoutePolicySupport {
     }
 
     private void stopRouteImpl(Route route) throws Exception {
-        ServiceStatus routeStatus = route.getRouteContext().getCamelContext().getRouteStatus(route.getId());
+        ServiceStatus routeStatus = controller(route).getRouteStatus(route.getId());
 
         if (routeStatus == ServiceStatus.Started) {
-            LOG.info("Stopping " + route.getId());
+            LOG.info("Stopping {}", route.getId());
             stopRoute(route);
         } else {
-            LOG.debug("Nothing to do " + route.getId() + " is " + routeStatus);
+            LOG.debug("Nothing to do {} is {}", route.getId(), routeStatus);
         }
     }
 
@@ -179,19 +206,25 @@ public class DnsActivationPolicy extends RoutePolicySupport {
         }
     }
 
+    protected boolean isActive() throws Exception {
+        return dnsActivation.isActive();
+    }
+
     class DnsActivationTask extends TimerTask {
+        @Override
         public void run() {
             try {
-                if (dnsActivation.isActive()) {
+                if (isActive()) {
                     startRoutes();
                 } else {
                     stopRoutes();
                 }
             } catch (Exception e) {
                 LOG.warn("DnsActivation TimerTask failed", e);
+                if (stopRoutesOnException) {
+                    stopRoutes();
+                }
             }
         }
     }
 }
-
-

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.camel.component.rabbitmq;
 
 import java.io.IOException;
@@ -27,18 +26,17 @@ import java.util.concurrent.TimeoutException;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Connection;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.DefaultMessage;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.camel.support.DefaultMessage;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 
 public class RabbitMQProducerTest {
@@ -48,12 +46,15 @@ public class RabbitMQProducerTest {
     private Message message = new DefaultMessage(new DefaultCamelContext());
     private Connection conn = Mockito.mock(Connection.class);
 
-    @Before
+    @BeforeEach
     public void before() throws IOException, TimeoutException {
+        RabbitMQMessageConverter converter = new RabbitMQMessageConverter();
+        converter.setAllowCustomHeaders(true);
         Mockito.when(exchange.getIn()).thenReturn(message);
+        Mockito.when(exchange.getMessage()).thenReturn(message);
         Mockito.when(endpoint.connect(any(ExecutorService.class))).thenReturn(conn);
         Mockito.when(conn.createChannel()).thenReturn(null);
-        Mockito.when(endpoint.getMessageConverter()).thenReturn(new RabbitMQMessageConverter());
+        Mockito.when(endpoint.getMessageConverter()).thenReturn(converter);
     }
 
     @Test
@@ -153,6 +154,14 @@ public class RabbitMQProducerTest {
     }
 
     @Test
+    public void testPropertiesOverrideNameHeader() throws IOException {
+        RabbitMQProducer producer = new RabbitMQProducer(endpoint);
+        message.setHeader(RabbitMQConstants.EXCHANGE_OVERRIDE_NAME, "qweeqwe");
+        AMQP.BasicProperties props = producer.buildProperties(exchange).build();
+        assertNull(props.getHeaders().get(RabbitMQConstants.EXCHANGE_OVERRIDE_NAME));
+    }
+
+    @Test
     public void testPropertiesUsesTimestampHeaderAsLongValue() throws IOException {
         RabbitMQProducer producer = new RabbitMQProducer(endpoint);
         message.setHeader(RabbitMQConstants.TIMESTAMP, "12345123");
@@ -172,7 +181,7 @@ public class RabbitMQProducerTest {
     @Test
     public void testPropertiesUsesCustomHeaders() throws IOException {
         RabbitMQProducer producer = new RabbitMQProducer(endpoint);
-        Map<String, Object> customHeaders = new HashMap<String, Object>();
+        Map<String, Object> customHeaders = new HashMap<>();
         customHeaders.put("stringHeader", "A string");
         customHeaders.put("bigDecimalHeader", new BigDecimal("12.34"));
         customHeaders.put("integerHeader", 42);

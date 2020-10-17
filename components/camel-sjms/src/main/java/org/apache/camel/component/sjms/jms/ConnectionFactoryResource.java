@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -53,21 +53,24 @@ public class ConnectionFactoryResource extends BasePoolableObjectFactory<Connect
         this(poolSize, connectionFactory, username, password, null);
     }
 
-    public ConnectionFactoryResource(int poolSize, ConnectionFactory connectionFactory, String username, String password, String connectionId) {
+    public ConnectionFactoryResource(int poolSize, ConnectionFactory connectionFactory, String username, String password,
+                                     String connectionId) {
         this(poolSize, connectionFactory, username, password, connectionId, DEFAULT_WAIT_TIMEOUT);
     }
 
-    public ConnectionFactoryResource(int poolSize, ConnectionFactory connectionFactory, String username, String password, String connectionId, long maxWait) {
+    public ConnectionFactoryResource(int poolSize, ConnectionFactory connectionFactory, String username, String password,
+                                     String connectionId, long maxWait) {
         this(poolSize, connectionFactory, username, password, connectionId, DEFAULT_WAIT_TIMEOUT, true);
     }
 
-    public ConnectionFactoryResource(int poolSize, ConnectionFactory connectionFactory, String username, String password, String connectionId,
+    public ConnectionFactoryResource(int poolSize, ConnectionFactory connectionFactory, String username, String password,
+                                     String connectionId,
                                      long maxWait, boolean testOnBorrow) {
         this.connectionFactory = connectionFactory;
         this.username = username;
         this.password = password;
         this.clientId = connectionId;
-        this.connections = new GenericObjectPool<Connection>(this);
+        this.connections = new GenericObjectPool<>(this);
         this.connections.setMaxWait(maxWait);
         this.connections.setMaxActive(poolSize);
         this.connections.setMaxIdle(poolSize);

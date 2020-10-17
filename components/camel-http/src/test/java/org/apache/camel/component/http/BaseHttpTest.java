@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,35 +18,31 @@ package org.apache.camel.component.http;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.apache.http.HttpStatus;
 
-/**
- * Ported from {@link org.apache.camel.component.http4.BaseHttpTest}.
- *
- */
-public abstract class BaseHttpTest extends CamelTestSupport {
+import static org.apache.http.HttpHeaders.CONTENT_LENGTH;
+import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public abstract class BaseHttpTest extends HttpServerTestSupport {
 
     protected void assertExchange(Exchange exchange) {
         assertNotNull(exchange);
 
         assertTrue(exchange.hasOut());
-        Message out = exchange.getOut();
+        Message out = exchange.getMessage();
         assertHeaders(out.getHeaders());
         assertBody(out.getBody(String.class));
     }
 
     protected void assertHeaders(Map<String, Object> headers) {
-        assertEquals(HttpServletResponse.SC_OK, headers.get(Exchange.HTTP_RESPONSE_CODE));
-        assertEquals("12", headers.get("Content-Length"));
-        assertNotNull("Should have Content-Type header", headers.get("Content-Type"));
+        assertEquals(HttpStatus.SC_OK, headers.get(Exchange.HTTP_RESPONSE_CODE));
+        assertEquals("12", headers.get(CONTENT_LENGTH));
+        assertNotNull(headers.get(CONTENT_TYPE), "Should have Content-Type header");
     }
 
     protected void assertBody(String body) {
@@ -56,17 +52,4 @@ public abstract class BaseHttpTest extends CamelTestSupport {
     protected String getExpectedContent() {
         return "camel rocks!";
     }
-
-    protected ContextHandler contextHandler(String context, Handler handler) {
-        ContextHandler contextHandler = new ContextHandler(context);
-        contextHandler.setHandler(handler);
-        return contextHandler;
-    }
-
-    protected HandlerCollection handlers(Handler... handlers) {
-        HandlerCollection collection = new ContextHandlerCollection();
-        collection.setHandlers(handlers);
-        return collection;
-    }
-
 }

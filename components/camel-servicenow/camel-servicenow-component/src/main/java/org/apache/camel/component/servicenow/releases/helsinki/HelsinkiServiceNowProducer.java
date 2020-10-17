@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,6 +37,7 @@ public class HelsinkiServiceNowProducer extends AbstractServiceNowProducer {
         bind(ServiceNowConstants.RESOURCE_SERVICE_CATALOG, new HelsinkiServiceNowServiceCatalogProcessor(endpoint));
         bind(ServiceNowConstants.RESOURCE_SERVICE_CATALOG_ITEMS, new HelsinkiServiceNowServiceCatalogItemsProcessor(endpoint));
         bind(ServiceNowConstants.RESOURCE_SERVICE_CATALOG_CARTS, new HelsinkiServiceNowServiceCatalogCartsProcessor(endpoint));
-        bind(ServiceNowConstants.RESOURCE_SERVICE_CATALOG_CATEGORIES, new HelsinkiServiceNowServiceCatalogCategoriesProcessor(endpoint));
+        bind(ServiceNowConstants.RESOURCE_SERVICE_CATALOG_CATEGORIES,
+                new HelsinkiServiceNowServiceCatalogCategoriesProcessor(endpoint));
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,20 +17,21 @@
 package org.apache.camel.spring.processor;
 
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.Constants;
 import org.apache.camel.spi.MaskingFormatter;
 import org.apache.camel.spring.SpringCamelContext;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.AbstractXmlApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SpringLogEipMaskTest {
 
     @Test
     public void testLogEipMask() throws Exception {
-        final AbstractXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("org/apache/camel/spring/processor/logEipMaskTest.xml");
-        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext);
+        final AbstractXmlApplicationContext applicationContext
+                = new ClassPathXmlApplicationContext("org/apache/camel/spring/processor/logEipMaskTest.xml");
+        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext, true);
         MockEndpoint mock = context.getEndpoint("mock:foo", MockEndpoint.class);
         mock.expectedMessageCount(1);
         context.start();
@@ -42,17 +43,20 @@ public class SpringLogEipMaskTest {
 
     @Test
     public void testCustomFormatter() throws Exception {
-        final AbstractXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("org/apache/camel/spring/processor/logEipCustomFormatterTest.xml");
-        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext);
+        final AbstractXmlApplicationContext applicationContext
+                = new ClassPathXmlApplicationContext("org/apache/camel/spring/processor/logEipCustomFormatterTest.xml");
+        SpringCamelContext context = SpringCamelContext.springCamelContext(applicationContext, true);
         context.start();
-        MockMaskingFormatter customFormatter = applicationContext.getBean(Constants.CUSTOM_LOG_MASK_REF, MockMaskingFormatter.class);
+        MockMaskingFormatter customFormatter
+                = applicationContext.getBean(MaskingFormatter.CUSTOM_LOG_MASK_REF, MockMaskingFormatter.class);
         context.createProducerTemplate().sendBody("direct:foo", "mock password=\"my passw0rd!\"");
-        Assert.assertEquals("Got mock password=\"my passw0rd!\"", customFormatter.received);
+        assertEquals("Got mock password=\"my passw0rd!\"", customFormatter.received);
         context.stop();
     }
 
     public static class MockMaskingFormatter implements MaskingFormatter {
         private String received;
+
         @Override
         public String format(String source) {
             received = source;

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,18 +18,17 @@ package org.apache.camel.component.etcd;
 
 import mousio.etcd4j.EtcdClient;
 import mousio.etcd4j.EtcdSecurityContext;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextAware;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.support.jsse.SSLContextParameters;
 
 @UriParams
 public class EtcdConfiguration implements CamelContextAware, Cloneable {
 
-    @UriParam(defaultValue = EtcdConstants.ETCD_DEFAULT_URIS)
+    @UriParam(label = "common", defaultValue = EtcdConstants.ETCD_DEFAULT_URIS)
     private String uris = EtcdConstants.ETCD_DEFAULT_URIS;
     @UriParam(label = "security")
     private SSLContextParameters sslContextParameters;
@@ -37,16 +36,16 @@ public class EtcdConfiguration implements CamelContextAware, Cloneable {
     private String userName;
     @UriParam(label = "security", secret = true)
     private String password;
-    @UriParam(label = "consumer")
+    @UriParam(label = "consumer", description = "To send an empty message in case of timeout watching for a key.")
     private boolean sendEmptyExchangeOnTimeout;
     @UriParam
     private boolean recursive;
-    @UriParam(label = "producer")
+    @UriParam(label = "producer", description = "To set the lifespan of a key in milliseconds.")
     private Integer timeToLive;
-    @UriParam
+    @UriParam(javaType = "java.time.Duration")
     private Long timeout;
-    @UriParam(label = "consumer,advanced", defaultValue = "0")
-    private Long fromIndex = 0L;
+    @UriParam(label = "consumer,advanced", defaultValue = "0", description = "The index to watch from")
+    private long fromIndex;
     @UriParam(defaultValue = "/services/")
     private String servicePath = "/services/";
 
@@ -162,14 +161,14 @@ public class EtcdConfiguration implements CamelContextAware, Cloneable {
         this.timeout = timeout;
     }
 
-    public Long getFromIndex() {
+    public long getFromIndex() {
         return fromIndex;
     }
 
     /**
      * The index to watch from
      */
-    public void setFromIndex(Long fromIndex) {
+    public void setFromIndex(long fromIndex) {
         this.fromIndex = fromIndex;
     }
 
@@ -186,19 +185,18 @@ public class EtcdConfiguration implements CamelContextAware, Cloneable {
 
     public EtcdClient createClient() throws Exception {
         return new EtcdClient(
-            new EtcdSecurityContext(
-                sslContextParameters != null
-                    ? sslContextParameters.createSSLContext(context)
-                    : null,
-                userName,
-                password),
-            EtcdHelper.resolveURIs(context, getUris())
-        );
+                new EtcdSecurityContext(
+                        sslContextParameters != null
+                                ? sslContextParameters.createSSLContext(context)
+                                : null,
+                        userName,
+                        password),
+                EtcdHelper.resolveURIs(context, getUris()));
     }
 
     public EtcdConfiguration copy() {
         try {
-            return (EtcdConfiguration)super.clone();
+            return (EtcdConfiguration) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeCamelException(e);
         }

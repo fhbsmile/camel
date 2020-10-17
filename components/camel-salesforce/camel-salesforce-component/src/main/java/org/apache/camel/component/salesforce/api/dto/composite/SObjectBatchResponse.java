@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,8 +37,9 @@ public final class SObjectBatchResponse implements Serializable {
     private final List<SObjectBatchResult> results;
 
     @JsonCreator
-    public SObjectBatchResponse(@JsonProperty("hasErrors") final boolean hasErrors,
-            @JsonProperty("results") final List<SObjectBatchResult> results) {
+    public SObjectBatchResponse(@JsonProperty("hasErrors")
+    final boolean hasErrors, @JsonProperty("results")
+    final List<SObjectBatchResult> results) {
         this.hasErrors = hasErrors;
         this.results = results;
     }

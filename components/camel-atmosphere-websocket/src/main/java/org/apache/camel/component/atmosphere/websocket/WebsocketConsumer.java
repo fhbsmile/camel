@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -46,12 +46,11 @@ public class WebsocketConsumer extends ServletConsumer {
     private AtmosphereFramework framework;
     private final AtmosphereFrameworkInitializer initializer;
 
-
     public WebsocketConsumer(WebsocketEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
         initializer = new AtmosphereFrameworkInitializer(false, true);
     }
-    
+
     public void configureEventsResending(final boolean enableEventsResending) {
         this.enableEventsResending = enableEventsResending;
     }
@@ -60,14 +59,15 @@ public class WebsocketConsumer extends ServletConsumer {
         initializer.configureFramework(config, false, false, AtmosphereFramework.class);
         this.framework = initializer.framework();
         this.framework.setUseNativeImplementation(false);
+        this.framework.addInitParameter(ApplicationConfig.ANALYTICS, "false");
         this.framework.addInitParameter(ApplicationConfig.WEBSOCKET_SUPPORT, "true");
         this.framework.addInitParameter(ApplicationConfig.WEBSOCKET_PROTOCOL,
-                                        getEndpoint().isUseStreaming() ? WebsocketStreamHandler.class.getName() : WebsocketHandler.class.getName());
+                getEndpoint().isUseStreaming() ? WebsocketStreamHandler.class.getName() : WebsocketHandler.class.getName());
         this.framework.init(config);
 
         WebSocketProtocol wsp = this.framework.getWebSocketProtocol();
         if (wsp instanceof WebsocketHandler) {
-            ((WebsocketHandler)wsp).setConsumer(this);
+            ((WebsocketHandler) wsp).setConsumer(this);
         } else {
             throw new IllegalArgumentException("Unexpected WebSocketHandler: " + wsp);
         }
@@ -75,7 +75,7 @@ public class WebsocketConsumer extends ServletConsumer {
 
     @Override
     public WebsocketEndpoint getEndpoint() {
-        return (WebsocketEndpoint)super.getEndpoint();
+        return (WebsocketEndpoint) super.getEndpoint();
     }
 
     void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {

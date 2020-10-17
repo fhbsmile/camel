@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,8 +21,9 @@ import java.io.IOException;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.DefaultExchangeHolder;
+import org.apache.camel.ExtendedExchange;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.support.DefaultExchangeHolder;
 import org.fusesource.hawtbuf.Buffer;
 import org.fusesource.hawtbuf.DataByteArrayInputStream;
 import org.fusesource.hawtbuf.DataByteArrayOutputStream;
@@ -30,13 +31,10 @@ import org.fusesource.hawtbuf.codec.Codec;
 import org.fusesource.hawtbuf.codec.ObjectCodec;
 import org.fusesource.hawtbuf.codec.StringCodec;
 
-/**
- * @version 
- */
 public final class LevelDBCamelCodec {
 
     private Codec<String> keyCodec = new StringCodec();
-    private Codec<DefaultExchangeHolder> exchangeCodec = new ObjectCodec<DefaultExchangeHolder>();
+    private Codec<DefaultExchangeHolder> exchangeCodec = new ObjectCodec<>();
 
     public Buffer marshallKey(String key) throws IOException {
         DataByteArrayOutputStream baos = new DataByteArrayOutputStream();
@@ -50,19 +48,25 @@ public final class LevelDBCamelCodec {
         return key;
     }
 
-    public Buffer marshallExchange(CamelContext camelContext, Exchange exchange, boolean allowSerializedHeaders) throws IOException {
+    public Buffer marshallExchange(CamelContext camelContext, Exchange exchange, boolean allowSerializedHeaders)
+            throws IOException {
         DataByteArrayOutputStream baos = new DataByteArrayOutputStream();
         // use DefaultExchangeHolder to marshal to a serialized object
         DefaultExchangeHolder pe = DefaultExchangeHolder.marshal(exchange, false, allowSerializedHeaders);
         // add the aggregated size and timeout property as the only properties we want to retain
-        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_SIZE, exchange.getProperty(Exchange.AGGREGATED_SIZE, Integer.class));
-        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_TIMEOUT, exchange.getProperty(Exchange.AGGREGATED_TIMEOUT, Long.class));
+        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_SIZE,
+                exchange.getProperty(Exchange.AGGREGATED_SIZE, Integer.class));
+        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_TIMEOUT,
+                exchange.getProperty(Exchange.AGGREGATED_TIMEOUT, Long.class));
         // add the aggregated completed by property to retain
-        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_COMPLETED_BY, exchange.getProperty(Exchange.AGGREGATED_COMPLETED_BY, String.class));
+        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_COMPLETED_BY,
+                exchange.getProperty(Exchange.AGGREGATED_COMPLETED_BY, String.class));
         // add the aggregated correlation key property to retain
-        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_CORRELATION_KEY, exchange.getProperty(Exchange.AGGREGATED_CORRELATION_KEY, String.class));
+        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_CORRELATION_KEY,
+                exchange.getProperty(Exchange.AGGREGATED_CORRELATION_KEY, String.class));
         // and a guard property if using the flexible toolbox aggregator
-        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_COLLECTION_GUARD, exchange.getProperty(Exchange.AGGREGATED_COLLECTION_GUARD, String.class));
+        DefaultExchangeHolder.addProperty(pe, Exchange.AGGREGATED_COLLECTION_GUARD,
+                exchange.getProperty(Exchange.AGGREGATED_COLLECTION_GUARD, String.class));
         // persist the from endpoint as well
         if (exchange.getFromEndpoint() != null) {
             DefaultExchangeHolder.addProperty(pe, "CamelAggregatedFromEndpoint", exchange.getFromEndpoint().getEndpointUri());
@@ -81,7 +85,7 @@ public final class LevelDBCamelCodec {
         if (fromEndpointUri != null) {
             Endpoint fromEndpoint = camelContext.hasEndpoint(fromEndpointUri);
             if (fromEndpoint != null) {
-                answer.setFromEndpoint(fromEndpoint);
+                answer.adapt(ExtendedExchange.class).setFromEndpoint(fromEndpoint);
             }
         }
         return answer;

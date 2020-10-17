@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,18 +17,23 @@
 package org.apache.camel.component.http;
 
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.apache.camel.component.extension.ComponentVerifierExtension;
 import org.apache.camel.component.extension.verifier.DefaultComponentVerifierExtension;
 import org.apache.camel.component.extension.verifier.ResultBuilder;
 import org.apache.camel.component.extension.verifier.ResultErrorBuilder;
-import org.apache.camel.component.extension.verifier.ResultErrorHelper;
-import org.apache.camel.http.common.HttpHelper;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpClientParams;
+import org.apache.camel.http.base.HttpHelper;
+import org.apache.camel.util.FileUtil;
+import org.apache.camel.util.ObjectHelper;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 final class HttpComponentVerifierExtension extends DefaultComponentVerifierExtension {
 
@@ -42,30 +47,24 @@ final class HttpComponentVerifierExtension extends DefaultComponentVerifierExten
 
     @Override
     protected Result verifyParameters(Map<String, Object> parameters) {
-        // The default is success
-        ResultBuilder builder = ResultBuilder.withStatusAndScope(Result.Status.OK, Scope.PARAMETERS);
+        // Default is success
+        final ResultBuilder builder
+                = ResultBuilder.withStatusAndScope(Result.Status.OK, ComponentVerifierExtension.Scope.PARAMETERS);
+        // Make a copy to avoid clashing with parent validation
+        final HashMap<String, Object> verifyParams = new HashMap<>(parameters);
+        // Check if validation is rest-related
+        final boolean isRest = verifyParams.entrySet().stream().anyMatch(e -> e.getKey().startsWith("rest."));
+
+        if (isRest) {
+            // Build the httpUri from rest configuration
+            verifyParams.put("httpUri", buildHttpUriFromRestParameters(parameters));
+
+            // Cleanup parameters map from rest related stuffs
+            verifyParams.entrySet().removeIf(e -> e.getKey().startsWith("rest."));
+        }
 
         // Validate using the catalog
-        super.verifyParametersAgainstCatalog(builder, parameters);
-
-        // Validate if the auth/proxy combination is properly set-up
-        Optional<String> authMethod = getOption(parameters, "authMethod", String.class);
-        if (authMethod.isPresent()) {
-            // If auth method is set, username and password must be provided
-            builder.error(ResultErrorHelper.requiresOption("authUsername", parameters));
-            builder.error(ResultErrorHelper.requiresOption("authPassword", parameters));
-
-            // Check if the AuthMethod is known
-            AuthMethod auth = getCamelContext().getTypeConverter().convertTo(AuthMethod.class, authMethod.get());
-            if (auth != AuthMethod.Basic && auth != AuthMethod.Digest && auth != AuthMethod.NTLM) {
-                builder.error(ResultErrorBuilder.withIllegalOption("authMethod", authMethod.get()).build());
-            }
-
-            // If auth method is NTLM, authDomain is mandatory
-            if (auth == AuthMethod.NTLM) {
-                builder.error(ResultErrorHelper.requiresOption("authDomain", parameters));
-            }
-        }
+        super.verifyParametersAgainstCatalog(builder, verifyParams);
 
         return builder.build();
     }
@@ -77,170 +76,167 @@ final class HttpComponentVerifierExtension extends DefaultComponentVerifierExten
     @Override
     protected Result verifyConnectivity(Map<String, Object> parameters) {
         // Default is success
-        ResultBuilder builder = ResultBuilder.withStatusAndScope(Result.Status.OK, Scope.CONNECTIVITY);
+        final ResultBuilder builder
+                = ResultBuilder.withStatusAndScope(Result.Status.OK, ComponentVerifierExtension.Scope.CONNECTIVITY);
+        // Make a copy to avoid clashing with parent validation
+        final HashMap<String, Object> verifyParams = new HashMap<>(parameters);
+        // Check if validation is rest-related
+        final boolean isRest = verifyParams.entrySet().stream().anyMatch(e -> e.getKey().startsWith("rest."));
 
-        Optional<String> uri = getOption(parameters, "httpUri", String.class);
-        if (!uri.isPresent()) {
-            // lack of httpUri is a blocking issue
-            builder.error(ResultErrorHelper.requiresOption("httpUri", parameters));
-        } else {
-            builder.error(parameters, this::verifyHttpConnectivity);
+        if (isRest) {
+            // Build the httpUri from rest configuration
+            verifyParams.put("httpUri", buildHttpUriFromRestParameters(parameters));
+
+            // Cleanup parameters from rest related stuffs
+            verifyParams.entrySet().removeIf(e -> e.getKey().startsWith("rest."));
+        }
+
+        String httpUri = getOption(verifyParams, "httpUri", String.class).orElse(null);
+        if (ObjectHelper.isEmpty(httpUri)) {
+            builder.error(
+                    ResultErrorBuilder.withMissingOption("httpUri")
+                            .detail("rest", isRest)
+                            .build());
+        }
+
+        try {
+            CloseableHttpClient httpclient = createHttpClient(verifyParams);
+            HttpUriRequest request = new HttpGet(httpUri);
+
+            try (CloseableHttpResponse response = httpclient.execute(request)) {
+                int code = response.getStatusLine().getStatusCode();
+                String okCodes = getOption(verifyParams, "okStatusCodeRange", String.class).orElse("200-299");
+
+                if (!HttpHelper.isStatusCodeOk(code, okCodes)) {
+                    if (code == 401) {
+                        // Unauthorized, add authUsername and authPassword to the list
+                        // of parameters in error
+                        builder.error(
+                                ResultErrorBuilder.withHttpCode(code)
+                                        .description(response.getStatusLine().getReasonPhrase())
+                                        .parameterKey("authUsername")
+                                        .parameterKey("authPassword")
+                                        .build());
+                    } else if (code >= 300 && code < 400) {
+                        // redirect
+                        builder.error(
+                                ResultErrorBuilder.withHttpCode(code)
+                                        .description(response.getStatusLine().getReasonPhrase())
+                                        .parameterKey("httpUri")
+                                        .detail(VerificationError.HttpAttribute.HTTP_REDIRECT,
+                                                () -> HttpUtil.responseHeaderValue(response, "location"))
+                                        .build());
+                    } else if (code >= 400) {
+                        // generic http error
+                        builder.error(
+                                ResultErrorBuilder.withHttpCode(code)
+                                        .description(response.getStatusLine().getReasonPhrase())
+                                        .build());
+                    }
+                }
+            } catch (UnknownHostException e) {
+                builder.error(
+                        ResultErrorBuilder.withException(e)
+                                .parameterKey("httpUri")
+                                .build());
+            }
+        } catch (Exception e) {
+            builder.error(ResultErrorBuilder.withException(e).build());
         }
 
         return builder.build();
-    }
-
-    private void verifyHttpConnectivity(ResultBuilder builder, Map<String, Object> parameters) throws Exception {
-        Optional<String> uri = getOption(parameters, "httpUri", String.class);
-
-        HttpClient httpclient = createHttpClient(builder, parameters);
-        HttpMethod method = new GetMethod(uri.get());
-
-        try {
-            int code = httpclient.executeMethod(method);
-            String okCodes = getOption(parameters, "okStatusCodeRange", String.class).orElse("200-299");
-
-            if (!HttpHelper.isStatusCodeOk(code, okCodes)) {
-                if (code == 401) {
-                    // Unauthorized, add authUsername and authPassword to the list
-                    // of parameters in error
-                    builder.error(
-                        ResultErrorBuilder.withHttpCode(code)
-                            .description(method.getStatusText())
-                            .parameterKey("authUsername")
-                            .parameterKey("authPassword")
-                            .build()
-                    );
-                } else if (code >= 300 && code < 400) {
-                    // redirect
-                    builder.error(
-                        ResultErrorBuilder.withHttpCode(code)
-                            .description(method.getStatusText())
-                            .parameterKey("httpUri")
-                            .detail(VerificationError.HttpAttribute.HTTP_REDIRECT, () -> HttpUtil.responseHeaderValue(method, "location"))
-                            .build()
-                    );
-                } else if (code >= 400) {
-                    // generic http error
-                    builder.error(
-                        ResultErrorBuilder.withHttpCode(code)
-                            .description(method.getStatusText())
-                            .build()
-                    );
-                }
-            }
-        } catch (UnknownHostException e) {
-            builder.error(
-                ResultErrorBuilder.withException(e)
-                    .parameterKey("httpUri")
-                    .build()
-            );
-        }
     }
 
     // *********************************
     // Helpers
     // *********************************
 
-    private Optional<HttpClientConfigurer> configureAuthentication(ResultBuilder builder, Map<String, Object> parameters) {
-        Optional<String> authMethod = getOption(parameters, "authMethod", String.class);
+    private String buildHttpUriFromRestParameters(Map<String, Object> parameters) {
+        // We are doing rest endpoint validation but as today the endpoint
+        // can't do any param substitution so the validation is performed
+        // against the http uri
+        String httpUri = getOption(parameters, "rest.host", String.class).orElse(null);
+        String path = getOption(parameters, "rest.path", String.class).map(FileUtil::stripLeadingSeparator).orElse(null);
 
-        if (authMethod.isPresent()) {
-            Optional<String> authUsername = getOption(parameters, "authUsername", String.class);
-            Optional<String> authPassword = getOption(parameters, "authPassword", String.class);
-
-            if (authUsername.isPresent() && authUsername.isPresent()) {
-                AuthMethod auth = getCamelContext().getTypeConverter().convertTo(AuthMethod.class, authMethod.get());
-                if (auth == AuthMethod.Basic || auth == AuthMethod.Digest) {
-                    return Optional.of(
-                        new BasicAuthenticationHttpClientConfigurer(false, authUsername.get(), authPassword.get())
-                    );
-                } else if (auth == AuthMethod.NTLM) {
-                    Optional<String> authDomain = getOption(parameters, "authDomain", String.class);
-                    Optional<String> authHost = getOption(parameters, "authHost", String.class);
-
-                    if (!authDomain.isPresent()) {
-                        builder.error(ResultErrorBuilder.withMissingOption("authDomain").build());
-                    } else {
-                        return Optional.of(
-                            new NTLMAuthenticationHttpClientConfigurer(false, authUsername.get(), authPassword.get(), authDomain.get(), authHost.orElse(null))
-                        );
-                    }
-                } else {
-                    builder.error(ResultErrorBuilder.withIllegalOption("authMethod", authMethod.get()).build());
-                }
-            } else {
-                builder.error(ResultErrorHelper.requiresOption("authUsername", parameters));
-                builder.error(ResultErrorHelper.requiresOption("authPassword", parameters));
-            }
+        if (ObjectHelper.isNotEmpty(httpUri) && ObjectHelper.isNotEmpty(path)) {
+            httpUri = httpUri + "/" + path;
         }
+
+        return httpUri;
+    }
+
+    private Optional<HttpClientConfigurer> configureAuthentication(Map<String, Object> parameters) {
+        Optional<String> authUsername = getOption(parameters, "authUsername", String.class);
+        Optional<String> authPassword = getOption(parameters, "authPassword", String.class);
+
+        if (authUsername.isPresent() && authPassword.isPresent()) {
+            Optional<String> authDomain = getOption(parameters, "authDomain", String.class);
+            Optional<String> authHost = getOption(parameters, "authHost", String.class);
+
+            return Optional.of(
+                    new BasicAuthenticationHttpClientConfigurer(
+                            authUsername.get(),
+                            authPassword.get(),
+                            authDomain.orElse(null),
+                            authHost.orElse(null)));
+        }
+
         return Optional.empty();
     }
 
-    private Optional<HttpClientConfigurer> configureProxy(ResultBuilder builder, Map<String, Object> parameters) {
-        CompositeHttpConfigurer configurer = new CompositeHttpConfigurer();
+    private Optional<HttpClientConfigurer> configureProxy(Map<String, Object> parameters) {
+        Optional<String> uri = getOption(parameters, "httpUri", String.class);
+        Optional<String> proxyAuthHost = getOption(parameters, "proxyAuthHost", String.class);
+        Optional<Integer> proxyAuthPort = getOption(parameters, "proxyAuthPort", Integer.class);
 
-        // Add a Proxy
-        Optional<String> proxyHost = getOption(parameters, "proxyAuthHost", String.class);
-        if (!proxyHost.isPresent()) {
-            proxyHost = getOption(parameters, "proxyHost", String.class);
-        }
+        if (proxyAuthHost.isPresent() && proxyAuthPort.isPresent()) {
+            Optional<String> proxyAuthScheme = getOption(parameters, "proxyAuthScheme", String.class);
+            Optional<String> proxyAuthUsername = getOption(parameters, "proxyAuthUsername", String.class);
+            Optional<String> proxyAuthPassword = getOption(parameters, "proxyAuthPassword", String.class);
+            Optional<String> proxyAuthDomain = getOption(parameters, "proxyAuthDomain", String.class);
+            Optional<String> proxyAuthNtHost = getOption(parameters, "proxyAuthNtHost", String.class);
 
-        Optional<Integer> proxyPort = getOption(parameters, "proxyAuthPort", Integer.class);
-        if (!proxyPort.isPresent()) {
-            proxyPort = getOption(parameters, "proxyPort", Integer.class);
-        }
+            if (!proxyAuthScheme.isPresent()) {
+                proxyAuthScheme = Optional.of(HttpHelper.isSecureConnection(uri.get()) ? "https" : "http");
+            }
 
-        if (proxyHost.isPresent() || proxyPort.isPresent()) {
-            configurer.addConfigurer(new HttpProxyConfigurer(proxyHost, proxyPort));
-        }
-
-
-        // Configure proxy auth
-        Optional<String> authMethod = getOption(parameters, "proxyAuthMethod", String.class);
-        if (authMethod.isPresent()) {
-            Optional<String> authUsername = getOption(parameters, "proxyAuthUsername", String.class);
-            Optional<String> authPassword = getOption(parameters, "proxyAuthPassword", String.class);
-
-            if (authUsername.isPresent() && authUsername.isPresent()) {
-                AuthMethod auth = getCamelContext().getTypeConverter().convertTo(AuthMethod.class, authMethod);
-                if (auth == AuthMethod.Basic || auth == AuthMethod.Digest) {
-                    configurer.addConfigurer(
-                        new BasicAuthenticationHttpClientConfigurer(false, authUsername.get(), authPassword.get())
-                    );
-                } else if (auth == AuthMethod.NTLM) {
-                    Optional<String> authDomain = getOption(parameters, "proxyAuthDomain", String.class);
-                    Optional<String> authHost = getOption(parameters, "proxyAuthHost", String.class);
-
-                    if (!authDomain.isPresent()) {
-                        builder.error(ResultErrorBuilder.withMissingOption("authDomain").build());
-                    } else {
-                        return Optional.of(
-                            new NTLMAuthenticationHttpClientConfigurer(false, authUsername.get(), authPassword.get(), authDomain.get(), authHost.orElse(null))
-                        );
-                    }
-                } else {
-                    builder.error(ResultErrorBuilder.withIllegalOption("authMethod", authMethod.get()).build());
-                }
+            if (proxyAuthUsername != null && proxyAuthPassword != null) {
+                return Optional.of(
+                        new ProxyHttpClientConfigurer(
+                                proxyAuthHost.get(),
+                                proxyAuthPort.get(),
+                                proxyAuthScheme.get(),
+                                proxyAuthUsername.orElse(null),
+                                proxyAuthPassword.orElse(null),
+                                proxyAuthDomain.orElse(null),
+                                proxyAuthNtHost.orElse(null)));
             } else {
-                builder.error(ResultErrorHelper.requiresOption("authUsername", parameters));
-                builder.error(ResultErrorHelper.requiresOption("authPassword", parameters));
+                return Optional.of(
+                        new ProxyHttpClientConfigurer(
+                                proxyAuthHost.get(),
+                                proxyAuthPort.get(),
+                                proxyAuthScheme.get()));
             }
         }
 
-        return Optional.of(configurer);
+        return Optional.empty();
     }
 
-    private HttpClient createHttpClient(ResultBuilder builder, Map<String, Object> parameters) throws Exception {
-        HttpClientParams clientParams = setProperties(new HttpClientParams(), "httpClient.", parameters);
-        HttpClient client = new HttpClient(clientParams);
-
+    private CloseableHttpClient createHttpClient(Map<String, Object> parameters) throws Exception {
         CompositeHttpConfigurer configurer = new CompositeHttpConfigurer();
-        configureProxy(builder, parameters).ifPresent(configurer::addConfigurer);
-        configureAuthentication(builder, parameters).ifPresent(configurer::addConfigurer);
+        configureAuthentication(parameters).ifPresent(configurer::addConfigurer);
+        configureProxy(parameters).ifPresent(configurer::addConfigurer);
 
-        configurer.configureHttpClient(client);
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        configurer.configureHttpClient(builder);
 
-        return client;
+        RequestConfig.Builder requestConfigBuilder = RequestConfig.custom();
+
+        // Apply custom http client properties like httpClient.redirectsEnabled
+        setProperties(builder, "httpClient.", parameters);
+        setProperties(requestConfigBuilder, "httpClient.", parameters);
+
+        return builder.setDefaultRequestConfig(requestConfigBuilder.build())
+                .build();
     }
 }

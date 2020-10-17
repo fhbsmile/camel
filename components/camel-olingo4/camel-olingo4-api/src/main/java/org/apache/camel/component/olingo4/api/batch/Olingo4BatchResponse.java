@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,7 +37,7 @@ public class Olingo4BatchResponse {
         this.statusCode = statusCode;
         this.statusInfo = statusInfo;
         this.contentId = contentId;
-        this.headers = Collections.unmodifiableMap(new HashMap<String, String>(headers));
+        this.headers = Collections.unmodifiableMap(new HashMap<>(headers));
         this.body = body;
     }
 

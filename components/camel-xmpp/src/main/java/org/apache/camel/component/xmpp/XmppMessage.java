@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,8 +18,10 @@ package org.apache.camel.component.xmpp;
 
 import java.util.Map;
 
-import org.apache.camel.impl.DefaultMessage;
-import org.apache.camel.util.ExchangeHelper;
+import org.apache.camel.CamelContext;
+import org.apache.camel.Exchange;
+import org.apache.camel.support.DefaultMessage;
+import org.apache.camel.support.ExchangeHelper;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Stanza;
 
@@ -29,16 +31,14 @@ import org.jivesoftware.smack.packet.Stanza;
 public class XmppMessage extends DefaultMessage {
     private Stanza xmppPacket;
 
-    public XmppMessage() {
-        this(new Message());
+    public XmppMessage(CamelContext camelContext) {
+        super(camelContext);
+        this.xmppPacket = new Message();
     }
 
-    public XmppMessage(Message message) {
-        this.xmppPacket = message;
-    }
-
-    public XmppMessage(Stanza stanza) {
-        this.xmppPacket = stanza;
+    public XmppMessage(Exchange exchange, Stanza packet) {
+        super(exchange);
+        this.xmppPacket = packet;
     }
 
     @Override
@@ -74,8 +74,7 @@ public class XmppMessage extends DefaultMessage {
 
     @Override
     public XmppMessage newInstance() {
-        XmppMessage answer = new XmppMessage();
-        answer.setCamelContext(getCamelContext());
+        XmppMessage answer = new XmppMessage(getCamelContext());
         return answer;
     }
 
@@ -84,7 +83,8 @@ public class XmppMessage extends DefaultMessage {
         if (xmppPacket != null) {
             XmppBinding binding = ExchangeHelper.getBinding(getExchange(), XmppBinding.class);
             if (binding != null) {
-                return (getHeader(XmppConstants.DOC_HEADER) == null) ? binding.extractBodyFromXmpp(getExchange(), xmppPacket) : getHeader(XmppConstants.DOC_HEADER);
+                return (getHeader(XmppConstants.DOC_HEADER) == null)
+                        ? binding.extractBodyFromXmpp(getExchange(), xmppPacket) : getHeader(XmppConstants.DOC_HEADER);
             }
         }
         return null;

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,7 +28,8 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.atomix.client.AtomixClientConstants;
 import org.apache.camel.component.atomix.client.AtomixClientTestSupport;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public class AtomixQueueConsumerTest extends AtomixClientTestSupport {
     private static final String QUEUE_NAME = UUID.randomUUID().toString();
@@ -54,6 +55,7 @@ public class AtomixQueueConsumerTest extends AtomixClientTestSupport {
     }
 
     @Override
+    @AfterEach
     public void tearDown() throws Exception {
         queue.close();
 
@@ -63,9 +65,8 @@ public class AtomixQueueConsumerTest extends AtomixClientTestSupport {
     // ************************************
     // Test
     // ************************************
-
     @Test
-    public void testEvents() throws Exception {
+    void testEvents() throws Exception {
         String val1 = context().getUuidGenerator().generateUuid();
         String val2 = context().getUuidGenerator().generateUuid();
 
@@ -97,11 +98,11 @@ public class AtomixQueueConsumerTest extends AtomixClientTestSupport {
     // ************************************
 
     @Override
-    protected RoutesBuilder createRouteBuilder() throws Exception {
+    protected RoutesBuilder createRouteBuilder() {
         return new RouteBuilder() {
             public void configure() {
                 fromF("atomix-queue:%s", QUEUE_NAME)
-                    .to("mock:result");
+                        .to("mock:result");
             }
         };
     }

@@ -27,37 +27,37 @@
     <!-- START SNIPPET: e1 -->
     <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
         
-        <!-- we define the json xstream data formats to be used (xstream is default) -->
+        <!-- we define the json xstream data formats to be used -->
         <dataFormats>
-            <json id="json" unmarshalTypeName="org.apache.camel.dataformat.xstream.PurchaseOrder"/>
-            <json id="pretty" prettyPrint="true" unmarshalTypeName="org.apache.camel.dataformat.xstream.PurchaseOrder"/>
+            <json id="json" library="XStream" unmarshalTypeName="org.apache.camel.dataformat.xstream.PurchaseOrder"/>
+            <json id="pretty" library="XStream" prettyPrint="true" unmarshalTypeName="org.apache.camel.dataformat.xstream.PurchaseOrder"/>
         </dataFormats>
 
         <route>
             <from uri="direct:in"/>
-            <marshal ref="json"/>
+            <marshal><custom ref="json"/></marshal>
             <to uri="mock:result"/>
         </route>
 
         <route>
             <from uri="direct:marshal"/>
-            <marshal ref="json"/>
+            <marshal><custom ref="json"/></marshal>
         </route>
 
         <route>
             <from uri="direct:reverse"/>
-            <unmarshal ref="json"/>
+            <unmarshal><custom ref="json"/></unmarshal>
             <to uri="mock:reverse"/>
         </route>
 
         <route>
             <from uri="direct:inPretty"/>
-            <marshal ref="pretty"/>
+            <marshal><custom ref="pretty"/></marshal>
         </route>
 
         <route>
             <from uri="direct:backPretty"/>
-            <unmarshal ref="pretty"/>
+            <unmarshal><custom ref="pretty"/></unmarshal>
             <to uri="mock:reverse"/>
         </route>
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,14 +21,13 @@ import com.google.api.services.bigquery.model.TableDataInsertAllResponse;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryConfiguration;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryEndpoint;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryProducer;
-import org.apache.camel.test.junit4.CamelTestSupport;
-import org.junit.Before;
+import org.apache.camel.test.junit5.CamelTestSupport;
+import org.junit.jupiter.api.BeforeEach;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 
 public class BaseBigQueryTest extends CamelTestSupport {
     protected GoogleBigQueryEndpoint endpoint = mock(GoogleBigQueryEndpoint.class);
@@ -41,7 +40,7 @@ public class BaseBigQueryTest extends CamelTestSupport {
     protected GoogleBigQueryConfiguration configuration = new GoogleBigQueryConfiguration();
     protected Bigquery bigquery;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         setupBigqueryMock();
         producer = createProducer();

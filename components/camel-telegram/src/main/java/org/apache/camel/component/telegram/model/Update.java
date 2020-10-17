@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -34,6 +34,15 @@ public class Update implements Serializable {
 
     private IncomingMessage message;
 
+    @JsonProperty("channel_post")
+    private IncomingMessage channelpost;
+
+    @JsonProperty("callback_query")
+    private IncomingCallbackQuery callbackQuery;
+
+    @JsonProperty("inline_query")
+    private IncomingInlineQuery inlineQuery;
+
     public Update() {
     }
 
@@ -53,11 +62,38 @@ public class Update implements Serializable {
         this.message = message;
     }
 
+    public IncomingMessage getChannelPost() {
+        return channelpost;
+    }
+
+    public void setChannelpost(IncomingMessage channelpost) {
+        this.channelpost = channelpost;
+    }
+
+    public IncomingCallbackQuery getCallbackQuery() {
+        return callbackQuery;
+    }
+
+    public void setCallbackQuery(IncomingCallbackQuery callbackQuery) {
+        this.callbackQuery = callbackQuery;
+    }
+
+    public IncomingInlineQuery getIncomingInlineQuery() {
+        return inlineQuery;
+    }
+
+    public void setIncomingInlineQuery(IncomingInlineQuery incomingInlineQuery) {
+        this.inlineQuery = incomingInlineQuery;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Update{");
         sb.append("updateId=").append(updateId);
         sb.append(", message=").append(message);
+        sb.append(", channel_post=").append(channelpost);
+        sb.append(", callbackQuery=").append(callbackQuery);
+        sb.append(", inlineQuery=").append(inlineQuery);
         sb.append('}');
         return sb.toString();
     }

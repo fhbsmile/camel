@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,9 +27,7 @@ import ca.uhn.hl7v2.parser.GenericModelClassFactory;
 import ca.uhn.hl7v2.parser.Parser;
 import ca.uhn.hl7v2.parser.ParserConfiguration;
 import ca.uhn.hl7v2.parser.UnexpectedSegmentBehaviourEnum;
-import ca.uhn.hl7v2.validation.ValidationContext;
 import ca.uhn.hl7v2.validation.impl.ValidationContextFactory;
-
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.TypeConversionException;
@@ -38,7 +36,7 @@ import org.apache.camel.converter.IOConverter;
 /**
  * HL7 converters.
  */
-@Converter
+@Converter(generateLoader = true)
 public final class HL7GenericMessageConverter {
 
     private static final HapiContext GENERIC_MESSAGE_CONTEXT;
@@ -49,7 +47,8 @@ public final class HL7GenericMessageConverter {
         parserConfiguration.setInvalidObx2Type("ST");
         parserConfiguration.setUnexpectedSegmentBehaviour(UnexpectedSegmentBehaviourEnum.ADD_INLINE);
 
-        GENERIC_MESSAGE_CONTEXT = new DefaultHapiContext(parserConfiguration, (ValidationContext)ValidationContextFactory.noValidation(), new GenericModelClassFactory());
+        GENERIC_MESSAGE_CONTEXT = new DefaultHapiContext(
+                parserConfiguration, ValidationContextFactory.noValidation(), new GenericModelClassFactory());
     }
 
     private HL7GenericMessageConverter() {
@@ -166,7 +165,6 @@ public final class HL7GenericMessageConverter {
 
         }
     }
-
 
     static <T extends Message> T toGenericMessage(Class<T> messageClass, byte[] hl7Bytes, Exchange exchange) {
         try {

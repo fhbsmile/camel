@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,26 +19,23 @@ package org.apache.camel.component.hazelcast.queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.hazelcast.collection.IQueue;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IQueue;
-
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.component.hazelcast.HazelcastDefaultConsumer;
 import org.apache.camel.component.hazelcast.listener.CamelItemListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HazelcastQueueConsumer extends HazelcastDefaultConsumer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HazelcastQueueConsumer.class);
     private final Processor processor;
     private ExecutorService executor;
     private QueueConsumerTask queueConsumerTask;
     private HazelcastQueueConfiguration config;
 
-    public HazelcastQueueConsumer(HazelcastInstance hazelcastInstance, Endpoint endpoint, Processor processor, String cacheName, final HazelcastQueueConfiguration configuration) {
+    public HazelcastQueueConsumer(HazelcastInstance hazelcastInstance, Endpoint endpoint, Processor processor, String cacheName,
+                                  final HazelcastQueueConfiguration configuration) {
         super(hazelcastInstance, endpoint, processor, cacheName);
         this.processor = processor;
         this.config = configuration;
@@ -47,7 +44,7 @@ public class HazelcastQueueConsumer extends HazelcastDefaultConsumer {
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-        executor = ((HazelcastQueueEndpoint)getEndpoint()).createExecutor();
+        executor = ((HazelcastQueueEndpoint) getEndpoint()).createExecutor();
 
         CamelItemListener camelItemListener = new CamelItemListener(this, cacheName);
         queueConsumerTask = new QueueConsumerTask(camelItemListener);
@@ -88,17 +85,14 @@ public class HazelcastQueueConsumer extends HazelcastDefaultConsumer {
                     try {
                         final Object body = queue.poll(config.getPollingTimeout(), TimeUnit.MILLISECONDS);
                         Exchange exchange = getEndpoint().createExchange();
-                        exchange.getOut().setBody(body);
+                        exchange.getIn().setBody(body);
                         try {
                             processor.process(exchange);
                         } catch (Exception e) {
                             getExceptionHandler().handleException("Error during processing", exchange, e);
                         }
                     } catch (InterruptedException e) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Hazelcast Queue Consumer Interrupted: " + e, e);
-                            continue;
-                        }
+                        // ignore
                     }
                 }
             }

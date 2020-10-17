@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,22 +16,18 @@
  */
 package org.apache.camel.component.netty.http.rest;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
+import org.apache.camel.BindToRegistry;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.netty.http.BaseNettyTest;
 import org.apache.camel.component.netty.http.RestNettyHttpBinding;
-import org.apache.camel.impl.JndiRegistry;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RestNettyHttpGetWildcardsTest extends BaseNettyTest {
-    
-    @Override
-    protected JndiRegistry createRegistry() throws Exception {
-        JndiRegistry jndi = super.createRegistry();
-        jndi.bind("mybinding", new RestNettyHttpBinding());
-        return jndi;
-    }
+
+    @BindToRegistry("mybinding")
+    private RestNettyHttpBinding binding = new RestNettyHttpBinding();
 
     @Test
     public void testProducerGet() throws Exception {
@@ -50,30 +46,28 @@ public class RestNettyHttpGetWildcardsTest extends BaseNettyTest {
         return new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                // configure to use netty4-http on localhost with the given port
-                restConfiguration().component("netty-http").host("localhost").port(getPort()).endpointProperty("nettyHttpBinding", "#mybinding");
+                // configure to use netty-http on localhost with the given port
+                restConfiguration().component("netty-http").host("localhost").port(getPort())
+                        .endpointProperty("nettyHttpBinding", "#mybinding");
 
                 // use the rest DSL to define the rest services
                 rest("/users/")
                         .get("{id}/{query}")
                         .route()
                         .to("log:query")
-                        .process(new Processor() {
-                            public void process(Exchange exchange) throws Exception {
-                                String id = exchange.getIn().getHeader("id", String.class);
-                                exchange.getOut().setBody(id + ";Goofy");
-                            }
+                        .process(exchange -> {
+                            String id = exchange.getIn().getHeader("id", String.class);
+                            exchange.getMessage().setBody(id + ";Goofy");
                         }).endRest()
                         .get("{id}/basic")
                         .route()
                         .to("log:input")
-                        .process(new Processor() {
-                            public void process(Exchange exchange) throws Exception {
-                                String id = exchange.getIn().getHeader("id", String.class);
-                                exchange.getOut().setBody(id + ";Donald Duck");
-                            }
+                        .process(exchange -> {
+                            String id = exchange.getIn().getHeader("id", String.class);
+                            exchange.getMessage().setBody(id + ";Donald Duck");
                         }).endRest();
             }
         };
     }
+
 }

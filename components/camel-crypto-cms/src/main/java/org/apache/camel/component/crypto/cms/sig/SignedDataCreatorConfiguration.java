@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -35,8 +35,10 @@ public class SignedDataCreatorConfiguration extends CryptoCmsMarshallerConfigura
     @UriParam(label = "sign", defaultValue = "true")
     private Boolean includeContent = Boolean.TRUE;
 
-    @UriParam(label = "sign", multiValue = true, description = "Signer information: reference to a bean which implements org.apache.camel.component.crypto.cms.api.SignerInfo")
-    private final List<SignerInfo> signer = new ArrayList<SignerInfo>(3);
+    @UriParam(label = "sign", javaType = "java.lang.String",
+              description = "Signer information: reference to bean(s) which implements org.apache.camel.component.crypto.cms.api.SignerInfo. Multiple values can be separated by comma")
+    private String signer;
+    private final List<SignerInfo> signerList = new ArrayList<>();
 
     public SignedDataCreatorConfiguration(CamelContext context) {
         super(context);
@@ -47,48 +49,48 @@ public class SignedDataCreatorConfiguration extends CryptoCmsMarshallerConfigura
     }
 
     /**
-     * Indicates whether the signed content should be included into the Signed
-     * Data instance. If false then a detached Signed Data instance is created
-     * in the header CamelCryptoCmsSignedData.
+     * Indicates whether the signed content should be included into the Signed Data instance. If false then a detached
+     * Signed Data instance is created in the header CamelCryptoCmsSignedData.
      */
     public void setIncludeContent(Boolean includeContent) {
         this.includeContent = includeContent;
     }
 
-    public List<SignerInfo> getSigner() {
+    public String getSigner() {
         return signer;
     }
 
-    public void setSigner(SignerInfo signer) {
-        this.signer.add(signer);
-    }
-
-    // for multi values
-    public void setSigner(List<?> signers) {
-        if (signers == null) {
-            return;
-        }
-        for (Object signerOb : signers) {
-            if (signerOb instanceof String) {
-                String signerName = (String)signerOb;
-                String valueNoHash = signerName.replaceAll("#", "");
-                if (getContext() != null && signerName != null) {
-                    SignerInfo signer = getContext().getRegistry().lookupByNameAndType(valueNoHash, SignerInfo.class);
-                    if (signer != null) {
-                        setSigner(signer);
-                    }
+    public void setSigner(String signer) {
+        String[] values = signer.split(",");
+        for (String s : values) {
+            if (s.startsWith("#")) {
+                s = s.substring(1);
+            }
+            if (getContext() != null) {
+                SignerInfo obj = getContext().getRegistry().lookupByNameAndType(s, SignerInfo.class);
+                if (obj != null) {
+                    addSigner(obj);
                 }
             }
         }
+    }
 
+    public void setSigner(SignerInfo signer) {
+        addSigner(signer);
+    }
+
+    public void addSigner(SignerInfo info) {
+        this.signerList.add(info);
+    }
+
+    public List<SignerInfo> getSignerList() {
+        return signerList;
     }
 
     public void init() throws CryptoCmsException {
-
-        if (signer.isEmpty()) {
+        if (signerList.isEmpty()) {
             logErrorAndThrow(LOG, "No signer set.");
         }
-
     }
 
 }

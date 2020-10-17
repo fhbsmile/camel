@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,9 +16,8 @@
  */
 package org.apache.camel.component.hazelcast.set;
 
+import com.hazelcast.collection.ISet;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ISet;
-
 import org.apache.camel.Consumer;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Processor;

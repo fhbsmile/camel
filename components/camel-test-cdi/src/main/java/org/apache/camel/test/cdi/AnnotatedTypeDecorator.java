@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,6 +20,7 @@ import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.enterprise.inject.spi.AnnotatedConstructor;
 import javax.enterprise.inject.spi.AnnotatedField;
 import javax.enterprise.inject.spi.AnnotatedMethod;
@@ -32,18 +33,20 @@ final class AnnotatedTypeDecorator<X> extends AnnotatedDecorator implements Anno
     private final Set<AnnotatedMethod<? super X>> decoratedMethods;
 
     AnnotatedTypeDecorator(AnnotatedType<X> decoratedType, Annotation decoratingAnnotation) {
-        this(decoratedType, decoratingAnnotation, Collections.<AnnotatedMethod<? super X>>emptySet());
+        this(decoratedType, decoratingAnnotation, Collections.<AnnotatedMethod<? super X>> emptySet());
     }
 
-    AnnotatedTypeDecorator(AnnotatedType<X> decoratedType, Annotation decoratingAnnotation, Set<AnnotatedMethod<? super X>> decoratedMethods) {
+    AnnotatedTypeDecorator(AnnotatedType<X> decoratedType, Annotation decoratingAnnotation,
+                           Set<AnnotatedMethod<? super X>> decoratedMethods) {
         this(decoratedType, Collections.singleton(decoratingAnnotation), decoratedMethods);
     }
 
     AnnotatedTypeDecorator(AnnotatedType<X> decoratedType, Set<AnnotatedMethod<? super X>> decoratedMethods) {
-        this(decoratedType, Collections.<Annotation>emptySet(), decoratedMethods);
+        this(decoratedType, Collections.<Annotation> emptySet(), decoratedMethods);
     }
 
-    AnnotatedTypeDecorator(AnnotatedType<X> decoratedType, Set<Annotation> decoratingAnnotations, Set<AnnotatedMethod<? super X>> decoratedMethods) {
+    AnnotatedTypeDecorator(AnnotatedType<X> decoratedType, Set<Annotation> decoratingAnnotations,
+                           Set<AnnotatedMethod<? super X>> decoratedMethods) {
         super(decoratedType, decoratingAnnotations);
         this.decoratedType = decoratedType;
         this.decoratedMethods = decoratedMethods;

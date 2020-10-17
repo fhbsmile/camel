@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,8 +22,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.component.iec60870.ObjectAddress;
-import org.apache.camel.impl.DefaultConsumer;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultConsumer;
+import org.apache.camel.support.DefaultMessage;
 import org.eclipse.neoscada.protocol.iec60870.asdu.types.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +58,7 @@ public class ClientConsumer extends DefaultConsumer {
         try {
             final Exchange exchange = getEndpoint().createExchange();
             exchange.setIn(mapMessage(value));
-            getAsyncProcessor().process(exchange);
+            getProcessor().process(exchange);
         } catch (final Exception e) {
             LOG.debug("Failed to process message", e);
         }

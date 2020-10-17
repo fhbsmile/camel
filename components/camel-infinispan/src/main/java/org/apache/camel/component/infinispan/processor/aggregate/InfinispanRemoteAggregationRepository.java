@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.impl.DefaultExchangeHolder;
 import org.apache.camel.spi.RecoverableAggregationRepository;
-import org.apache.camel.support.ServiceSupport;
+import org.apache.camel.support.DefaultExchange;
+import org.apache.camel.support.DefaultExchangeHolder;
+import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.ObjectHelper;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.Configuration;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class InfinispanRemoteAggregationRepository extends ServiceSupport implements RecoverableAggregationRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(InfinispanRemoteAggregationRepository.class.getName());
-    
+
     private boolean useRecovery = true;
     private RemoteCacheManager manager;
     private String cacheName;
@@ -48,15 +48,16 @@ public class InfinispanRemoteAggregationRepository extends ServiceSupport implem
     private Configuration configuration;
 
     /**
-     * Creates new {@link InfinispanRemoteAggregationRepository} that defaults to non-optimistic locking
-     * with recoverable behavior and a local Infinispan cache. 
+     * Creates new {@link InfinispanRemoteAggregationRepository} that defaults to non-optimistic locking with
+     * recoverable behavior and a local Infinispan cache.
      */
     public InfinispanRemoteAggregationRepository() {
     }
-    
+
     /**
-     * Creates new {@link InfinispanRemoteAggregationRepository} that defaults to non-optimistic locking
-     * with recoverable behavior and a local Infinispan cache. 
+     * Creates new {@link InfinispanRemoteAggregationRepository} that defaults to non-optimistic locking with
+     * recoverable behavior and a local Infinispan cache.
+     * 
      * @param cacheName cache name
      */
     public InfinispanRemoteAggregationRepository(final String cacheName) {
@@ -78,7 +79,7 @@ public class InfinispanRemoteAggregationRepository extends ServiceSupport implem
 
     @Override
     public void remove(CamelContext camelContext, String key, Exchange exchange) {
-        LOG.trace("Removing an exchange with ID {} for key {} ", exchange.getExchangeId(), key);
+        LOG.trace("Removing an exchange with ID {} for key {}", exchange.getExchangeId(), key);
         cache.remove(key);
     }
 
@@ -116,7 +117,7 @@ public class InfinispanRemoteAggregationRepository extends ServiceSupport implem
     public void setRecoveryInterval(long interval) {
         this.recoveryInterval = interval;
     }
-    
+
     @Override
     public long getRecoveryIntervalInMillis() {
         return recoveryInterval;
@@ -166,7 +167,7 @@ public class InfinispanRemoteAggregationRepository extends ServiceSupport implem
         } else {
             manager = new RemoteCacheManager(configuration);
             manager.start();
-        }        
+        }
         if (ObjectHelper.isEmpty(cacheName)) {
             cache = manager.getCache();
         } else {
@@ -187,7 +188,7 @@ public class InfinispanRemoteAggregationRepository extends ServiceSupport implem
         }
         return exchange;
     }
-    
+
     public RemoteCacheManager getManager() {
         return manager;
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,20 +24,21 @@ import org.apache.camel.component.thrift.generated.Calculator;
 import org.apache.camel.component.thrift.impl.CalculatorSyncServerImpl;
 import org.apache.camel.component.thrift.server.ThriftThreadPoolServer;
 import org.apache.camel.test.AvailablePortFinder;
-import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.camel.test.junit5.CamelTestSupport;
 import org.apache.thrift.TException;
-import org.apache.thrift.TProcessor;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.transport.TSSLTransportFactory;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TTransport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * TBD
@@ -58,21 +59,22 @@ public class ThriftThreadPoolServerTest extends CamelTestSupport {
     private static TTransport clientTransport;
     private static TServer server;
     private static TProtocol protocol;
-    @SuppressWarnings({"rawtypes"})
+    @SuppressWarnings({ "rawtypes" })
     private static Calculator.Processor processor;
 
-    @Before
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @BeforeEach
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void startThriftServer() throws Exception {
         processor = new Calculator.Processor(new CalculatorSyncServerImpl());
 
         TSSLTransportFactory.TSSLTransportParameters sslParams = new TSSLTransportFactory.TSSLTransportParameters();
 
         sslParams.setKeyStore(KEY_STORE_PATH, SECURITY_STORE_PASSWORD);
-        serverTransport = TSSLTransportFactory.getServerSocket(THRIFT_TEST_PORT, THRIFT_CLIENT_TIMEOUT, InetAddress.getByName("localhost"), sslParams);
+        serverTransport = TSSLTransportFactory.getServerSocket(THRIFT_TEST_PORT, THRIFT_CLIENT_TIMEOUT,
+                InetAddress.getByName("localhost"), sslParams);
         ThriftThreadPoolServer.Args args = new ThriftThreadPoolServer.Args(serverTransport);
 
-        args.processor((TProcessor)processor);
+        args.processor(processor);
         args.executorService(this.context().getExecutorServiceManager().newThreadPool(this, "test-server-invoker", 1, 10));
         args.startThreadPool(this.context().getExecutorServiceManager().newSingleThreadExecutor(this, "test-start-thread"));
         args.context(this.context());
@@ -82,7 +84,7 @@ public class ThriftThreadPoolServerTest extends CamelTestSupport {
         LOG.info("Thrift secured server started on port: {}", THRIFT_TEST_PORT);
     }
 
-    @After
+    @AfterEach
     public void stopThriftServer() throws IOException {
         if (server != null) {
             server.stop();

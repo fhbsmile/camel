@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,24 +16,20 @@
  */
 package org.apache.camel.component.kubernetes.deployments;
 
+import org.apache.camel.Category;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.component.kubernetes.AbstractKubernetesEndpoint;
 import org.apache.camel.component.kubernetes.KubernetesConfiguration;
 import org.apache.camel.spi.UriEndpoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * The Kubernetes Nodes component provides a producer to execute kubernetes node operations
- * and a consumer to consume node events.
+ * Perform operations on Kubernetes Deployments and get notified on Deployment changes.
  */
 @UriEndpoint(firstVersion = "2.20.0", scheme = "kubernetes-deployments", title = "Kubernetes Deployments",
-    syntax = "kubernetes-deployments:masterUrl", consumerClass = KubernetesDeploymentsConsumer.class, label = "container,cloud,paas")
+             syntax = "kubernetes-deployments:masterUrl", category = { Category.CONTAINER, Category.CLOUD, Category.PAAS })
 public class KubernetesDeploymentsEndpoint extends AbstractKubernetesEndpoint {
-
-    private static final Logger LOG = LoggerFactory.getLogger(KubernetesDeploymentsEndpoint.class);
 
     public KubernetesDeploymentsEndpoint(String uri, KubernetesDeploymentsComponent component, KubernetesConfiguration config) {
         super(uri, component, config);
@@ -46,7 +42,9 @@ public class KubernetesDeploymentsEndpoint extends AbstractKubernetesEndpoint {
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new KubernetesDeploymentsConsumer(this, processor);
+        Consumer consumer = new KubernetesDeploymentsConsumer(this, processor);
+        configureConsumer(consumer);
+        return consumer;
     }
 
 }

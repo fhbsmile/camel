@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 package org.apache.camel.generator.swagger;
 
 import io.swagger.models.Path;
+import org.apache.camel.util.ObjectHelper;
 
 class PathVisitor<T> {
 
@@ -25,12 +26,17 @@ class PathVisitor<T> {
     private final CodeEmitter<T> emitter;
     private final OperationFilter filter;
 
-    PathVisitor(final CodeEmitter<T> emitter, OperationFilter filter, final DestinationGenerator destinationGenerator) {
+    PathVisitor(final String basePath, final CodeEmitter<T> emitter, OperationFilter filter,
+                final DestinationGenerator destinationGenerator) {
         this.emitter = emitter;
         this.filter = filter;
         this.destinationGenerator = destinationGenerator;
 
-        emitter.emit("rest");
+        if (ObjectHelper.isEmpty(basePath)) {
+            emitter.emit("rest");
+        } else {
+            emitter.emit("rest", basePath);
+        }
     }
 
     void visit(final String path, final Path definition) {
